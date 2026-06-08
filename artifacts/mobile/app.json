@@ -20,7 +20,11 @@
     },
     "android": {
       "package": "com.snaplife.app",
-      "versionCode": 1
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png",
@@ -50,6 +54,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "363e72c3-f7cf-4afe-b0f6-1cae9344d88e"
+      }
+    },
+    "owner": "sozib69"
   }
 }
