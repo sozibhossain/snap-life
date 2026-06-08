@@ -5,6 +5,7 @@
   },
   "build": {
     "development": {
+      "node": "22.16.0",
       "developmentClient": true,
       "distribution": "internal",
       "env": {
@@ -13,6 +14,7 @@
       }
     },
     "preview": {
+      "node": "22.16.0",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
@@ -25,6 +27,7 @@
       }
     },
     "staging": {
+      "node": "22.16.0",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
@@ -41,6 +44,7 @@
       }
     },
     "production": {
+      "node": "22.16.0",
       "distribution": "store",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://snap-life-api.onrender.com",
