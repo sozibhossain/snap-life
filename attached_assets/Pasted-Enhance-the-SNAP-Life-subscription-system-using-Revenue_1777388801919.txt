@@ -1,0 +1,151 @@
+Enhance the SNAP Life subscription system using RevenueCat to support fully live Plus and Premium tiers, with clear, flexible pricing and a premium user experience.
+
+---
+
+SUBSCRIPTION STRUCTURE:
+
+1. Free Trial:
+- Duration: 7 days
+- Full access to ALL features (Premium level)
+
+IMPORTANT:
+- After Day 3, prompt user to add credit card details:
+  “To ensure uninterrupted access after your trial”
+
+- Do NOT charge until trial ends
+- Ensure seamless continuation with no disruption
+
+---
+
+2. SNAP PLUS:
+
+- Price: £9.99/month
+- Cancel anytime
+
+PLUS includes:
+- Full Breathing Studio (all sessions)
+- Expanded Meditation Library (limited vs Premium)
+- Daily Check-In (mood logging)
+- Basic mood history (recent entries only)
+- Core Meal Plans (non-advanced personalisation)
+- Bone Buddy (standard guidance)
+
+---
+
+3. SNAP PREMIUM:
+
+- Price: £19.99/month
+- Cancel anytime
+
+- Annual Plan:
+  - 20% discount
+  - Paid upfront
+  - Also “Cancel anytime” (no renewal obligation)
+
+---
+
+PREMIUM INCLUDES EVERYTHING IN PLUS, PLUS:
+
+- Advanced Personal Insights (mood trends, patterns)
+- Full Meditation Library
+- Guided Programs
+- Smart Recommendations (adaptive AI)
+- Advanced Bone Buddy (deep personalisation)
+- Fully Personalised Meal Plans (FRAX + assessment driven)
+- Bone Health Tracking (calcium, exercise, sunlight)
+
+---
+
+PAYWALL EXPERIENCE:
+
+Headline:
+“Continue your SNAP journey”
+
+Subheadline:
+“Flexible plans designed to support your health — cancel anytime”
+
+---
+
+DISPLAY OPTIONS:
+
+FREE TRIAL:
+- “7 days full access”
+
+SNAP PLUS (£9.99/month):
+- “Essential tools for daily wellbeing”
+- “Cancel anytime”
+
+SNAP PREMIUM (£19.99/month):
+- “Your full personalised health experience”
+- “Cancel anytime”
+
+ANNUAL PREMIUM:
+- “Save 20% with annual plan”
+- “Cancel anytime”
+
+---
+
+COMPARISON TABLE:
+
+Feature                        | Plus        | Premium
+-----------------------------------------------------
+Breathing Studio              | ✔           | ✔
+Meditation Library            | Limited     | Full
+Daily Check-In                | ✔           | ✔
+Mood Insights                 | Basic       | Advanced
+Guided Programs               | ✖           | ✔
+Smart Recommendations         | ✖           | ✔
+Meal Plans                    | Core        | Personalised
+Bone Buddy                    | Standard    | Advanced AI
+Bone Health Tracking          | ✖           | ✔
+
+---
+
+UPGRADE TRIGGERS:
+
+- Day 3: Prompt card entry
+- Pre-trial end:
+  “Your full access is ending soon — choose how you continue”
+
+- Feature gating:
+  “Unlock your full personalised experience with Premium”
+
+---
+
+USER EXPERIENCE:
+
+- No forced upgrade
+- Smooth transition to Plus if no selection made
+- No disruption in app usage
+- Reinforce flexibility:
+  “You’re always in control — cancel anytime”
+
+---
+
+REVENUECAT INTEGRATION:
+
+- Manage:
+  - Trial status
+  - Subscription tiers
+  - Monthly + annual billing
+
+- Sync access in real time
+
+---
+
+TECHNICAL REQUIREMENTS:
+
+- Secure card capture after Day 3
+- No billing before trial ends
+- Handle:
+  - Failed payments
+  - Subscription expiry
+  - Grace periods
+
+---
+
+GOAL:
+
+Create a premium, flexible subscription model that builds trust and removes friction.
+
+Users should feel confident subscribing, knowing they can cancel anytime while still receiving a high-quality, personalised experience.

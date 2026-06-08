@@ -1,0 +1,376 @@
+Please design and implement a new premium human-support experience within the SNAP Community section called:
+
+# Systemic Coaching
+
+This will be led by:
+
+# Catherine Shaw
+
+Founder of SNAP Life with an ICF Diploma in Systemic Coaching (2025)
+
+The purpose of this feature is to offer emotionally supportive, behaviour-focused coaching sessions that complement SNAP’s healthy ageing, bone health, wellbeing, confidence, and lifestyle transformation mission.
+
+This should feel:
+
+* warm
+* human
+* premium
+* emotionally safe
+* empowering
+* wellness-focused
+
+NOT:
+
+* clinical therapy
+* corporate coaching
+* medical consultation
+
+---
+
+## CORE POSITIONING
+
+Position Systemic Coaching as:
+
+“Supportive coaching designed to help individuals navigate healthy ageing, confidence, wellbeing, mindset, behaviour change, and life transitions.”
+
+The experience should align with:
+
+* bone health journeys
+* menopause transitions
+* confidence rebuilding
+* sustainable healthy habits
+* stress management
+* emotional wellbeing
+* lifestyle transformation
+
+---
+
+## COMMUNITY SECTION INTEGRATION
+
+Please add:
+
+# “Systemic Coaching”
+
+inside the existing:
+
+# Community / Support area
+
+This should feel naturally integrated into the SNAP ecosystem.
+
+---
+
+## NEW COACHING SECTION STRUCTURE
+
+Create the following sections:
+
+1. Welcome / Introduction
+2. About Catherine Shaw
+3. What is Systemic Coaching?
+4. Who Coaching Supports
+5. Session Types & Pricing
+6. Free Consultation Booking
+7. Paid Session Booking
+8. FAQ
+9. Future Testimonials Section (placeholder ready)
+
+---
+
+1. WELCOME SECTION
+
+---
+
+Suggested headline:
+
+# “Support for the person behind the health journey.”
+
+Suggested supporting text:
+“SNAP Systemic Coaching offers supportive conversations designed to help you navigate healthy ageing, confidence, wellbeing, and meaningful lifestyle change.”
+
+Tone:
+
+* warm
+* calm
+* emotionally intelligent
+* premium
+
+---
+
+2. ABOUT CATHERINE SHAW
+
+---
+
+Include founder profile section:
+
+* founder of SNAP Life
+* ICF Diploma in Systemic Coaching (2025)
+* passion for healthy ageing and emotional wellbeing
+* supportive, non-judgemental coaching approach
+
+Visual requirements:
+
+* premium profile card
+* warm photography style
+* soft wellness aesthetic
+
+---
+
+3. WHAT IS SYSTEMIC COACHING?
+
+---
+
+Create simple educational section explaining:
+
+* coaching supports reflection and awareness
+* helps identify patterns and behaviours
+* supports confidence and life transitions
+* encourages sustainable healthy change
+
+Avoid:
+
+* therapy terminology
+* corporate jargon
+* overly academic language
+
+---
+
+4. WHO THIS SUPPORTS
+
+---
+
+Suggested support areas:
+
+* newly diagnosed osteoporosis users
+* menopause transitions
+* confidence rebuilding
+* stress and overwhelm
+* healthy ageing lifestyle changes
+* emotional wellbeing
+* motivation and consistency
+* identity changes through ageing
+
+---
+
+5. SESSION TYPES + PRICING
+
+---
+
+Please implement the following structure:
+
+## Free Consultation
+
+30 minutes — FREE
+
+Purpose:
+
+* introduction
+* connection
+* understanding goals
+* suitability discussion
+
+CTA:
+
+# “Book Your Free Consultation”
+
+---
+
+## Focus Session
+
+45 minutes — £65
+
+Designed for:
+
+* focused support
+* accountability
+* confidence and mindset
+* wellbeing support
+
+---
+
+## Deep Support Session
+
+60 minutes — £85
+
+Designed for:
+
+* deeper reflection
+* healthy ageing transitions
+* stress and emotional wellbeing
+* sustainable behaviour change
+
+---
+
+## Transformation Session
+
+90 minutes — £125
+
+Designed for:
+
+* deeper life transitions
+* diagnosis adjustment
+* menopause support
+* identity and confidence work
+* transformational conversations
+
+---
+
+6. BOOKING EXPERIENCE
+
+---
+
+Please implement:
+
+* calendar scheduling integration
+* availability selection
+* timezone handling
+* email confirmation
+* reminder notifications
+* cancellation/reschedule functionality
+
+Required fields:
+
+* name
+* email
+* preferred date/time
+* optional reason for session
+
+Optional future-ready field:
+“How would you like support?”
+
+---
+
+7. PAYMENT FLOW
+
+---
+
+For paid sessions:
+
+* secure checkout
+* Apple Pay / Google Pay if supported
+* confirmation email
+* session reminder notifications
+
+Maintain premium simplicity:
+
+* minimal friction
+* calm booking flow
+* elegant confirmation screens
+
+---
+
+8. UX / DESIGN REQUIREMENTS
+
+---
+
+The coaching area should feel:
+
+* calming
+* emotionally safe
+* premium wellness
+* spacious
+* warm
+
+Use:
+
+* warm orange / amber gradients
+* soft cards
+* calming typography
+* elegant spacing
+* soft illustrations or imagery
+
+Avoid:
+
+* corporate coaching visuals
+* medical consultation feel
+* busy scheduling interfaces
+
+---
+
+9. ACCESSIBILITY REQUIREMENTS
+
+---
+
+Ensure:
+
+* simple booking flow
+* large tap targets
+* readable typography
+* low cognitive load
+* mobile-first experience
+
+Especially important for:
+
+* older adults
+* menopause users
+* emotionally overwhelmed users
+
+---
+
+10. FUTURE EXPANSION READINESS
+
+---
+
+Please structure this feature so it can later support:
+
+* coaching packages
+* group circles
+* menopause support circles
+* healthy ageing workshops
+* guided transformation programmes
+* live sessions
+* community coaching events
+* AI-supported follow-up journeys
+
+---
+
+11. SNAP FOUNDATIONS INTEGRATION
+
+---
+
+The coaching section should also integrate contextually into SNAP Foundations.
+
+Example:
+
+* confidence lesson → suggest coaching support
+* stress pathway → optional consultation recommendation
+* menopause pathway → coaching awareness
+* emotional wellbeing journey → support prompts
+
+This should feel supportive, never sales-driven.
+
+---
+
+12. TONE OF VOICE
+
+---
+
+All language should feel:
+
+* reassuring
+* empowering
+* human
+* calm
+* emotionally intelligent
+
+Avoid:
+
+* hard selling
+* aggressive wellness language
+* corporate coaching terminology
+
+---
+
+## FINAL PRINCIPLE
+
+This feature should feel like:
+“A safe, supportive human extension of the SNAP experience.”
+
+The goal is not simply coaching.
+
+The goal is to help users feel:
+
+* supported
+* understood
+* emotionally stronger
+* more confident navigating healthy ageing and life transitions.
+
+This should become a premium human connection layer within SNAP’s wider healthy ageing ecosystem.

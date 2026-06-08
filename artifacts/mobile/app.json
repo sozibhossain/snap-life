@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "SNAP Life",
+    "slug": "mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "mobile",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#0f172a"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.snaplife.app",
+      "buildNumber": "1"
+    },
+    "android": {
+      "package": "com.snaplife.app",
+      "versionCode": 1
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png",
+      "name": "SNAP Life",
+      "shortName": "SNAP Life",
+      "description": "Personalised bone health, nutrition, and wellbeing — built for a stronger you.",
+      "themeColor": "#3ABBD4",
+      "backgroundColor": "#0f172a",
+      "display": "standalone",
+      "orientation": "portrait",
+      "lang": "en",
+      "scope": "/",
+      "startUrl": "/",
+      "output": "single"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      "expo-audio"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

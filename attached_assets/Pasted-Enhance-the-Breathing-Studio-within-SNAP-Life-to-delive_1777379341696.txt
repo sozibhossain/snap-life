@@ -1,0 +1,214 @@
+Enhance the “Breathing Studio” within SNAP Life to deliver a premium, state-driven experience designed to actively shift how users feel.
+
+This system should guide users through different emotional and physical states using breath, sound, and visual design.
+
+---
+
+CORE PRINCIPLE:
+
+Each session must be designed to influence a specific state:
+CALM → STRESS RELIEF → FOCUS → ENERGY → SLEEP
+
+Each state must feel distinct in rhythm, sound, and outcome.
+
+---
+
+SESSION TYPES:
+
+1. CALM (Nervous System Reset):
+Goal: Reduce general tension and create a sense of calm
+
+- Breathing:
+  4s inhale / 6–8s exhale
+
+- Music:
+  - Soft ambient tones
+  - Warm, low-frequency sound
+  - Light nature elements
+
+- Effect:
+  Letting go, slowing down
+
+---
+
+2. STRESS (Active Stress Relief):
+Goal: Quickly reduce stress and overwhelm
+
+- Breathing:
+  Slightly deeper breathing with extended exhale
+  (e.g. 4s inhale / 6s exhale)
+
+- Music:
+  - Gentle but slightly more guided than Calm
+  - Subtle rhythmic grounding tones
+  - Reassuring, steady sound
+
+- Effect:
+  Moving from “overwhelmed” → “in control”
+
+---
+
+3. FOCUS (Clarity & Balance):
+Goal: Improve mental clarity and attention
+
+- Breathing:
+  Balanced box breathing (4-4-4-4)
+
+- Music:
+  - Clean, light ambient tones
+  - Subtle rhythm
+  - Slightly brighter frequencies
+
+- Effect:
+  Clear, sharp, present
+
+---
+
+4. ENERGY (Uplift & Activation):
+Goal: Increase alertness and motivation
+
+- Breathing:
+  Slightly faster rhythm (e.g. 3s inhale / 3s exhale)
+
+- Music:
+  - Light, uplifting ambient tones
+  - Gentle rhythmic pulse
+  - Brighter, higher-frequency sounds (not harsh)
+
+- Effect:
+  Awake, motivated, ready
+
+---
+
+5. SLEEP (Deep Relaxation):
+Goal: Prepare body for sleep
+
+- Breathing:
+  Very slow (e.g. 4s inhale / 8s exhale)
+
+- Music:
+  - Deep ambient sound
+  - Low-frequency tones
+  - Soft continuous textures (tranquil, almost hypnotic)
+  - Optional subtle night ambience
+
+- Effect:
+  Heavy, relaxed, drifting into sleep
+
+---
+
+SESSION DURATIONS:
+
+Each session offers 3 options:
+
+1. RESET (Short):
+- 2–3 minutes
+- Quick emotional shift
+
+2. RECONNECT (Medium):
+- 5–7 minutes
+- Mindfulness + body awareness
+
+3. DEEP (Long):
+- 10–15 minutes
+- Nervous system regulation and deeper impact
+
+---
+
+VISUAL EXPERIENCE:
+
+- Breathing orb animation:
+  - Expand (inhale)
+  - Hold (pause)
+  - Contract (exhale)
+
+- Smooth transitions
+- Subtle glow
+
+- Colour themes:
+  - Calm → soft green/blue
+  - Stress → warm neutral tones
+  - Focus → light blue
+  - Energy → soft yellow/orange (gentle, not bright)
+  - Sleep → deep blue/purple
+
+---
+
+AUDIO EXPERIENCE:
+
+- Music must:
+  - Match session state precisely
+  - Fade in/out smoothly
+  - Loop seamlessly
+
+- Controls:
+  - Sound ON/OFF
+  - Volume slider
+
+- Ensure:
+  - No harsh sounds
+  - No sudden changes
+  - Emotionally aligned tone
+
+---
+
+OPTIONAL GUIDANCE:
+
+- Light voice prompts:
+  “Inhale… Exhale…”
+
+- Calm, slow tone
+- Toggle ON/OFF
+
+---
+
+HAPTIC FEEDBACK:
+
+- Gentle vibration:
+  - Start inhale
+  - Start exhale
+
+- Optional toggle
+
+---
+
+SESSION COMPLETION (SNAP SIGNATURE):
+
+At the end:
+
+Display:
+“Pause. Notice how you feel.”
+
+Then:
+“How do you feel now?”
+
+Options:
+- Calm
+- Clear
+- Relaxed
+- Energised
+- Still tense
+
+Store response in user log.
+
+Reinforce:
+“Small daily moments build a stronger body and calmer mind.”
+
+---
+
+PERFORMANCE:
+
+- Preload audio
+- Smooth animation
+- Mobile optimised
+- Reliable on slower connections
+
+---
+
+GOAL:
+
+Create a breathing system that adapts to real-life emotional needs.
+
+Users should be able to choose how they feel — and leave each session feeling noticeably different.
+
+This should become a daily SNAP Life ritual.

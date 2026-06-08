@@ -1,0 +1,87 @@
+I would like to build SNAP Life, a production ready, enterprise grade bone health and wellness platform with a web app and native iOS/Android mobile apps. The app helps users manage bone health conditions such as Osteoporosis and Osteopenia through health tracking, AI coaching, analytics, social engagement, and structured wellness programs.
+Purpose
+SNAP Life enables users to track bone health data, receive personalised insights, build healthy habits, and stay motivated through gamification, community features, and AI driven support. The platform is designed for long term health monitoring, clinical style reporting, and high user engagement.
+Core Features
+1. User Accounts & Security
+•	Secure authentication with email verification and JWT sessions
+•	Profile management with GDPR compliant data export
+•	Row Level Security (RLS) enforced on all data
+•	Optional 2FA support
+•	Account diagnostics page for debugging auth and sessions
+2. Health Tracking
+•	DEXA scan tracking (T scores, Z scores, progress over time)
+•	Daily activity tracking (steps, calories, active minutes)
+•	Nutrition and supplement logging
+•	Wearable device integration (Fitbit, Apple, Garmin)
+•	Sync history and error tracking
+•	FRAX calculator and fracture risk assessment
+3. AI Coach – “Bone Buddy”
+•	AI health coach powered by OpenAI
+•	Chat based guidance with conversation history
+•	Multilingual support (10+ languages)
+•	Voice input and text to speech responses
+•	Automatic conversation summaries with key insights and action points
+4. Analytics & Insights
+•	Correlation engine analysing relationships between health metrics
+•	Statistical analysis using Pearson coefficients (r values, significance)
+•	Trend charts and predictive insights
+•	Scheduled health reports (daily, weekly, monthly)
+•	CSV data export
+•	Email delivery, open, and click tracking
+5. Social, Gamification & Community
+•	XP based progression system (levels 1–100)
+•	Achievement badges and milestones
+•	Daily and weekly challenges
+•	Team and community challenges
+•	Real time leaderboards (global, friends, teams)
+•	Streak tracking and smart engagement reminders
+•	Referral programme
+6. Rewards & Engagement
+•	XP based reward shop
+•	Reward purchase workflows
+•	Fulfilment status tracking
+•	Admin managed reward catalogue
+7. Meditation & Well Being
+•	Guided meditation sessions
+•	Custom playlists
+•	Breathing visualiser
+•	Streak tracking for consistency
+8. Notifications & Automation
+•	Push notifications with user preferences
+•	Smart reminders based on behaviour
+•	Trial and subscription reminder automation
+•	Scheduled health summary notifications
+9. Admin Dashboard
+•	User management
+•	Reward catalogue and fulfilment dashboard
+•	Trial and subscription monitoring
+•	Analytics and system health dashboards
+•	A/B testing and experiment management
+•	Contact and support submissions
+Tech Stack & Architecture
+Frontend
+•	React 18 + TypeScript
+•	Vite
+•	Tailwind CSS + shadcn/ui
+•	React Router v6
+•	React Query
+•	Recharts for data visualisation
+Mobile
+•	Capacitor 6 for native iOS and Android apps
+•	Native plugins: Camera, Haptics, Push Notifications, Network, Keyboard
+•	Offline first architecture with sync queue and conflict resolution
+Backend
+•	PostgreSQL database with 30+ tables
+•	Strict Row Level Security on all tables
+•	Deno based Edge Functions (15+ serverless functions)
+•	Real time subscriptions for live leaderboards and challenges
+Integrations
+•	Stripe for subscriptions, billing, webhooks, and customer portal
+•	OpenAI for AI coaching
+•	Resend for transactional and scheduled emails
+•	Optional Twilio support for SMS
+Monetisation
+•	3 month free trial
+•	Monthly and annual subscriptions
+•	Founder subscription tier
+•	Multi currency support (GBP, USD, EUR, AUD, CAD)

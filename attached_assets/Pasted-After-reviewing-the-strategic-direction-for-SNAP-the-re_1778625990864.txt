@@ -1,0 +1,261 @@
+After reviewing the strategic direction for SNAP, the recommended approach is to make:
+
+# SNAP Foundations
+
+…the central experience layer of the platform.
+
+This is the strongest direction both strategically and behaviourally.
+
+The goal is NOT to rebuild SNAP or replace existing functionality.
+
+The goal IS to:
+- connect everything already built
+- guide users intelligently through the platform
+- improve engagement and retention
+- create daily habit loops
+- reduce overwhelm
+- increase emotional connection
+- improve subscription conversion
+- position SNAP as a preventative healthy ageing ecosystem
+
+-----------------------------------
+CORE RECOMMENDATION
+-----------------------------------
+
+SNAP Foundations should become:
+- the onboarding engine
+- the engagement engine
+- the educational engine
+- the feature discovery engine
+- the behavioural coaching layer
+- the retention engine
+
+This should function as:
+“A guided daily healthy ageing journey.”
+
+NOT:
+- a separate app
+- a replacement platform
+- duplicate tracking systems
+- duplicate wellbeing tools
+
+-----------------------------------
+IMPORTANT IMPLEMENTATION PRINCIPLE
+-----------------------------------
+
+Everything already built within SNAP remains valuable and should stay.
+
+This includes:
+- Nutrition Log
+- Breathing Studio
+- Subscription flows
+- Audio experiences
+- Tracking systems
+- Educational content
+- Mood/wellbeing tools
+- Notifications/reminders
+- Premium features
+- Personalisation
+- Community concepts
+- Progress systems
+
+The new SNAP Foundations experience should ENHANCE and CONNECT these systems through:
+- behavioural design
+- contextual onboarding
+- progressive feature introduction
+- guided journeys
+- habit reinforcement
+
+DO NOT:
+- duplicate existing functionality
+- create disconnected systems
+- rebuild tools unnecessarily
+
+-----------------------------------
+RECOMMENDED EXPERIENCE STRUCTURE
+-----------------------------------
+
+SNAP Foundations becomes the main guided experience.
+
+Inside Foundations, users are progressively introduced to:
+
+- Learn
+- Nourish
+- Move
+- Breathe
+- Reflect
+- Community
+
+These should act as simple “destinations” within the platform.
+
+This simplifies the experience and reduces cognitive overload.
+
+-----------------------------------
+EXAMPLE OF CORRECT IMPLEMENTATION
+-----------------------------------
+
+Lesson:
+“Why calcium matters”
+
+→ Introduce the existing Nutrition Log
+→ Explain mg vs IU vs mcg
+→ Help users confidently log calcium intake
+→ Show progress gently
+
+NOT:
+❌ Build another calcium tracker
+
+-----------------------------------
+
+Lesson:
+“Stress and bone health”
+
+→ Introduce Breathing Studio
+→ Recommend a calming breathing session
+→ Explain why stress management matters
+
+NOT:
+❌ Build a separate meditation system
+
+-----------------------------------
+DUOLINGO-STYLE PROGRESSION
+-----------------------------------
+
+The platform should use:
+- short daily lessons
+- streaks
+- milestone celebrations
+- unlockable content
+- progress maps
+- low-friction engagement
+- habit reinforcement
+
+The tone should feel:
+- warm
+- motivating
+- emotionally supportive
+- premium
+- non-judgemental
+
+Avoid:
+- childish gamification
+- aggressive fitness culture
+- overwhelming dashboards
+
+-----------------------------------
+KEY BEHAVIOURAL GOAL
+-----------------------------------
+
+The experience should help users move from:
+
+“I downloaded an osteoporosis app”
+
+to:
+
+“I have a daily healthy ageing companion helping me improve my strength, movement, confidence, nutrition, and wellbeing.”
+
+-----------------------------------
+VISUAL + BRAND DIRECTION
+-----------------------------------
+
+Maintain the premium warm wellness aesthetic already evolving within SNAP.
+
+Focus on:
+- warm orange gradients
+- calming sunlight-inspired tones
+- premium wellness feel
+- emotionally safe design
+- accessible typography
+- elegant simplicity
+
+Avoid:
+- cold clinical interfaces
+- fear-based osteoporosis imagery
+- overly medical dashboards
+
+Reference inspiration:
+- Calm
+- Headspace
+- Duolingo progression
+- Apple Health clarity
+- Oura behavioural engagement
+
+-----------------------------------
+MOST IMPORTANT STRATEGIC SHIFT
+-----------------------------------
+
+SNAP should evolve from:
+“an osteoporosis management app”
+
+into:
+“a preventative healthy ageing and lifelong strength platform.”
+
+This is the highest-value strategic positioning.
+
+-----------------------------------
+PRIORITY IMPLEMENTATION AREAS
+-----------------------------------
+
+Please focus on:
+1. Guided onboarding architecture
+2. Progressive feature discovery
+3. Behavioural habit loops
+4. Daily engagement systems
+5. Educational journeys
+6. Emotional reinforcement
+7. Subscription retention
+8. Existing feature integration
+9. Reduced cognitive overload
+10. Premium wellness experience cohesion
+
+-----------------------------------
+SUCCESS METRICS
+-----------------------------------
+
+Optimise for:
+- stronger retention
+- higher daily engagement
+- increased feature adoption
+- increased breathing session completion
+- improved subscription conversion
+- reduced overwhelm
+- stronger emotional connection
+- long-term habit formation
+
+-----------------------------------
+PLEASE ALSO RECOMMEND
+-----------------------------------
+
+Please review the existing SNAP platform holistically and advise:
+
+- what should be simplified
+- what should be prioritised
+- what overlaps should be removed
+- what engagement loops are missing
+- how to improve behavioural psychology
+- how AI/personalisation can improve retention
+- how to improve premium feel
+- how to better connect existing features
+- what future roadmap opportunities exist
+
+Think like:
+- a behavioural scientist
+- premium wellness UX designer
+- healthy ageing strategist
+- product architect
+- retention specialist
+
+-----------------------------------
+FINAL PRINCIPLE
+-----------------------------------
+
+Enhance.
+Connect.
+Guide.
+Elevate.
+
+Do not duplicate or overcomplicate.
+
+SNAP already has strong foundations.
+
+The opportunity now is to transform the experience into a beautifully connected, emotionally intelligent, preventative healthy ageing ecosystem powered by small daily habits and guided progression.

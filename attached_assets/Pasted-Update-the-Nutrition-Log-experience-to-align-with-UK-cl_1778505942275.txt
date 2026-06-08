@@ -1,0 +1,316 @@
+Update the Nutrition Log experience to align with UK clinical guidance and improve accuracy, understanding, and confidence for users managing osteoporosis and bone health.
+
+The Nutrition Log should reflect:
+
+* NICE osteoporosis guidance
+* MHRA supplement and safety guidance
+* UK NHS nutritional recommendations for bone health
+
+The experience should help users understand:
+
+* what nutrients matter for osteoporosis
+* safe and effective intake ranges
+* how to accurately log supplements and foods
+* what measurements mean (mg, mcg, IU, g)
+* how to avoid under- or over-supplementation
+
+The tone should feel:
+
+* clinically trustworthy
+* NHS-aligned
+* supportive and easy to understand
+* designed for older adults and non-technical users
+
+---
+
+## CORE OBJECTIVE
+
+Users currently struggle to understand:
+
+* nutrient measurements
+* recommended intake levels
+* supplement labels
+* how to accurately track calcium and vitamin D intake
+* what values are considered safe or beneficial
+
+The app should reduce confusion while improving consistency and confidence in nutrition tracking for osteoporosis support.
+
+---
+
+1. ALIGN NUTRITION GUIDANCE WITH UK OSTEOPOROSIS RECOMMENDATIONS
+
+---
+
+Prioritise nutrients commonly associated with bone health and osteoporosis management:
+
+Primary nutrients:
+
+* Calcium
+* Vitamin D
+* Protein
+* Magnesium
+* Vitamin K
+* Phosphorus
+
+For each nutrient display:
+
+* Recommended daily intake (UK guidance)
+* Safe upper intake where applicable
+* Why the nutrient matters for bone health
+* Common food and supplement examples
+* Measurement explanation
+
+Examples:
+
+CALCIUM
+Recommended intake:
+700mg/day (adults)
+Explain:
+“Calcium helps maintain bone strength and density.”
+
+VITAMIN D
+Recommended intake:
+10mcg/day (400 IU) minimum UK guidance
+Highlight:
+Many osteoporosis patients may be prescribed higher supervised doses.
+
+Explain:
+“Vitamin D helps your body absorb calcium and supports muscle function, balance, and bone strength.”
+
+PROTEIN
+Display guidance linked to healthy muscle and fracture prevention.
+
+---
+
+2. IMPROVE UNIT EDUCATION (mg / mcg / IU / g)
+
+---
+
+Add plain-English explanations beside all nutrient entries.
+
+Examples:
+
+* mg = milligrams
+* mcg = micrograms
+* g = grams
+* IU = International Units
+
+Provide contextual osteoporosis examples:
+
+“Vitamin D supplements are often shown in IU or micrograms.”
+“1000 IU Vitamin D is equal to 25 micrograms.”
+
+“Calcium supplements are usually measured in milligrams (mg).”
+
+Include tap-to-expand educational tooltips.
+
+---
+
+3. ADD SAFE RANGE + WARNING GUIDANCE
+
+---
+
+Add clinically appropriate validation and educational warnings.
+
+Examples:
+
+* Warn if calcium intake appears excessively high
+* Warn against excessive vitamin D supplementation without clinical supervision
+* Encourage discussing supplements with GP/pharmacist if values exceed guidance
+
+Example microcopy:
+“Taking more is not always better. Very high calcium or vitamin D intake may not be safe without medical advice.”
+
+Do NOT present medical diagnosis or treatment recommendations.
+
+Use supportive language:
+“If unsure, speak with your healthcare professional.”
+
+---
+
+4. SMART SUPPLEMENT LOGGING
+
+---
+
+When users enter supplements:
+
+* recognise common UK osteoporosis supplements
+* suggest likely strengths
+* autofill common NHS/UK formats
+
+Examples:
+
+* Adcal-D3
+* Calceos
+* Vitamin D3 1000 IU
+* Calcium 500mg
+
+Example assistance:
+“This supplement commonly contains 1000mg calcium and 800 IU vitamin D.”
+
+Allow users to:
+
+* scan or search supplements
+* choose unit type
+* instantly see converted values
+
+---
+
+5. ADD “HOW TO READ A SUPPLEMENT LABEL”
+
+---
+
+Create a dedicated onboarding/help module.
+
+Include:
+
+* examples of UK supplement labels
+* how to identify nutrient amount
+* difference between serving size and tablet amount
+* IU ↔ mcg conversion examples
+* osteoporosis-specific examples
+
+Example:
+“Vitamin D may appear as:
+400 IU
+800 IU
+1000 IU
+This can also be written as:
+10mcg
+20mcg
+25mcg”
+
+---
+
+6. ADD BONE HEALTH PROGRESS VISUALS
+
+---
+
+Create clearer visual indicators showing progress toward recommended intake.
+
+Examples:
+
+* Calcium progress bar
+* Vitamin D status tracker
+* Protein intake progress
+
+Use:
+
+* soft orange/amber gradients
+* accessible contrast
+* calm wellness aesthetic
+
+Avoid alarming red warning states unless medically necessary.
+
+---
+
+7. UPDATE VISUAL DESIGN SYSTEM
+
+---
+
+Replace current icons and colours with a warmer bone-health-focused visual language.
+
+Style direction:
+
+* warm orange blend
+* amber gradients
+* soft wellness palette
+* accessible typography
+* rounded iconography
+* premium NHS-adjacent health-tech feel
+
+Suggested palette:
+
+* #F59E0B
+* #FB923C
+* #FDBA74
+* #FFF7ED
+* #EA580C
+
+Apply across:
+
+* nutrient icons
+* cards
+* progress indicators
+* tooltips
+* onboarding screens
+* stat chips
+
+---
+
+8. ACCESSIBILITY + OLDER USER UX
+
+---
+
+Design specifically for:
+
+* older adults
+* low confidence digital users
+* visually impaired users
+
+Requirements:
+
+* large touch targets
+* high readability
+* plain language
+* minimal cognitive overload
+* simple data entry
+* responsive mobile-first layouts
+
+Add:
+
+* optional “simple mode”
+* expandable explanations
+* guided logging flow
+
+---
+
+9. VALIDATION + DATA QUALITY
+
+---
+
+Improve logging accuracy by:
+
+* detecting unrealistic values
+* suggesting likely UK supplement dosages
+* preventing unit confusion
+* reducing duplicate nutrient logging
+
+Examples:
+If user enters:
+“Vitamin D = 10000mg”
+Flag:
+“This may be an incorrect unit. Vitamin D is usually measured in IU or micrograms.”
+
+---
+
+10. SUCCESS METRICS
+
+---
+
+Optimise for:
+
+* improved nutrition logging accuracy
+* reduced unit confusion
+* increased daily engagement
+* improved supplement adherence tracking
+* higher confidence in self-management
+* lower abandonment during logging
+
+---
+
+## OUTPUT REQUIRED
+
+Please provide:
+
+1. Updated osteoporosis-focused UX flow
+2. NICE/NHS-aligned nutrient guidance structure
+3. Orange-blend visual refresh
+4. Mobile-first React/Tailwind implementation
+5. Validation and conversion logic
+6. Educational tooltip system
+7. Supplement label guidance screens
+8. Accessible UI components for older adults
+9. Suggested microcopy aligned with UK health guidance
+
+Preserve existing application architecture where possible while modernising the experience and improving clinical clarity.

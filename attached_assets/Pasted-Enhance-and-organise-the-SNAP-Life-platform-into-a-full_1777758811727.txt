@@ -1,0 +1,320 @@
+Enhance and organise the SNAP Life platform into a fully connected, scalable, and intelligent system.
+
+This build must prioritise core functionality, data connectivity, subscription accuracy, and a premium user experience.
+
+All elements must work together to support users, admin visibility, and future growth.
+
+---
+
+PRIORITY ORDER (CRITICAL):
+
+---
+
+1. REVENUECAT INTEGRATION (FIRST PRIORITY):
+
+Review and fully validate RevenueCat integration:
+
+- Ensure correct subscription setup:
+  - 7-day free trial
+  - SNAP Plus (£9.99/month)
+  - SNAP Premium (£19.99/month)
+  - Annual Premium (20% discount)
+
+- Confirm:
+  - Trial transitions correctly
+  - Default fallback to Plus if no upgrade selected
+  - Upgrade/downgrade flows work seamlessly
+
+- Validate:
+  - Payment states
+  - Expiry handling
+  - Grace periods
+  - Failed payments
+
+- Ensure subscription status controls feature access across the app
+
+---
+
+2. CONNECTED DATA & INTELLIGENCE LAYER (CORE SYSTEM):
+
+Build a unified data ecosystem where all features are connected:
+
+MODULES TO CONNECT:
+
+- Meal Planner
+- Nutrition Log
+- Supplement Tracking
+- Bone Tracker (DEXA, FRAX, risk)
+- Activity (movement)
+- Breathing sessions
+- Meditation sessions
+- Mood / Check-ins
+- SNAP Shot
+
+---
+
+DATA FLOW REQUIREMENTS:
+
+Nutrition:
+Meal Planner → Nutrition Log → Supplement Intake
+
+Bone Health:
+DEXA + FRAX + assessments → Bone Tracker
+
+Wellbeing:
+Activity + Breathing + Meditation → Mood → Nervous System Status
+
+---
+
+INSIGHT GENERATION:
+
+Translate data into simple outputs:
+
+- “You’re building consistency”
+- “Your habits are supporting your bone health”
+- “You’ve been feeling calmer this week”
+
+---
+
+3. DAILY INTELLIGENCE ENGINE:
+
+Create “Today’s Focus”:
+
+- 2–3 personalised actions daily:
+  - Nutrition
+  - Movement
+  - Mindfulness
+
+Driven by:
+- User data
+- Behaviour patterns
+- Bone health profile
+
+---
+
+4. BONE BUDDY (AI CORE):
+
+Ensure Bone Buddy:
+
+- Uses user name
+- References real data
+- Connects all modules
+
+Responsibilities:
+- Daily check-ins
+- Reinforcement
+- Simple guidance
+- Emotional support
+
+---
+
+5. BONE TRACKER (HEALTH RECORD):
+
+Store and display:
+
+- DEXA results
+- FRAX score
+- Risk level
+- History over time
+
+Display:
+- Simple, non-clinical interpretation
+
+---
+
+6. PROGRESS & SNAP SHOT:
+
+Weekly summary pulling from:
+
+- Activity
+- Nutrition
+- Mood
+- Consistency
+
+Reinforce:
+- Progress
+- Habit building
+- Feel-good outcomes
+
+---
+
+7. PROFILE ENHANCEMENT:
+
+Enhance user profile to include:
+
+- Profile photo upload
+- Name
+- Email
+- Location / Country (visible)
+- Timezone-aware date and time
+
+Ensure:
+- Global usability
+- Localised experience (time-based recommendations)
+
+---
+
+8. AUTHENTICATION & USER SYSTEM:
+
+Ensure full authentication system:
+
+- Email/password login
+- Password reset
+- Remember user
+- Secure session handling
+
+---
+
+9. DATABASE STRUCTURE (CRITICAL):
+
+Implement scalable database (e.g. Supabase/PostgreSQL):
+
+Store:
+
+User:
+- Profile data
+- Location
+- Preferences
+
+Health:
+- FRAX
+- DEXA
+- Risk
+
+Behaviour:
+- Sessions (breathing, meditation)
+- Nutrition logs
+- Activity
+- Mood
+
+AI:
+- Insights
+- Recommendations history
+
+Subscription:
+- Trial / Plus / Premium status
+
+---
+
+Ensure:
+- All data is connected
+- Supports AI learning
+- GDPR compliant
+
+---
+
+10. ADMIN DASHBOARD:
+
+Build admin access with:
+
+- User metrics (total, active, subscriptions)
+- Engagement tracking
+- Feature usage
+- Feedback monitoring
+
+Ensure scalable for future analytics.
+
+---
+
+11. TESTING ENVIRONMENT:
+
+Create staging environment:
+
+- Access for 2 users
+- Test accounts
+- Simulated subscriptions
+
+Ensure:
+- No impact on live system
+
+---
+
+12. PWA CONFIGURATION:
+
+- Full PWA setup (manifest, service worker)
+- Installable app experience
+
+Prepare for:
+- Future iOS and Android deployment
+
+---
+
+13. WEARABLES:
+
+Display:
+“Wearables – Coming Soon”
+
+No active integration yet.
+
+---
+
+14. UI / BRANDING ENHANCEMENT:
+
+Apply consistent SNAP branding across all screens:
+
+COLOUR PALETTE:
+- Dark Blue (primary – trust, depth)
+- Light Blue (secondary – calm)
+- Orange (accent – energy, highlights)
+
+Ensure:
+- Soft gradients
+- Premium feel
+- Consistent components
+
+---
+
+15. EXPERIENCE OPTIMISATION:
+
+- Remove duplication
+- Simplify navigation
+- Maintain clean layout
+
+Focus on:
+- Calm
+- Clarity
+- Ease of use
+
+---
+
+16. PERFORMANCE & SECURITY:
+
+- Fast load times
+- Secure authentication
+- Encrypted data
+- Reliable API connections
+
+---
+
+17. FUTURE CAPABILITY REVIEW:
+
+Review all previous out-of-scope items and assess:
+
+- What can now be included without risk
+- What enhances:
+  - User experience
+  - Admin capability
+  - AI intelligence
+
+Prioritise:
+- High-impact, low-complexity improvements
+
+---
+
+GOAL:
+
+Deliver a fully connected, intelligent, and premium health platform that:
+
+- Personalises the user journey
+- Connects all data meaningfully
+- Supports long-term engagement
+- Is scalable for future growth
+
+SNAP Life should feel:
+
+- Intelligent
+- Seamless
+- Personal
+- High quality
+
+This is not just an app — it is a connected health system.

@@ -1,0 +1,73 @@
+Thanks—these are all important points. I want to ensure we build this in a sophisticated, scalable way from the outset.
+
+1. Notifications
+   Yes, I want push notifications included from v1 using Expo push with clear user opt-in.
+   However, this must feel premium and not intrusive.
+
+* Keep frequency low and intentional (max 1 per day)
+* Driven by Bone Buddy intelligence (not generic reminders)
+* Personalised where possible (name, behaviour, time of day)
+* Examples:
+  “Hi Catherine, would you like a quick reset today?”
+  “You’ve been consistent this week—let’s keep that going”
+
+In-app prompts should also exist, but push notifications are important for engagement and habit building.
+
+---
+
+2. Movement Content
+   Start with 4–6 simple, safe, beginner-friendly routines written by you, but they must be:
+
+* Clearly positioned as general guidance (not clinical advice)
+* Focused on bone strength, posture, and safe movement
+* Low barrier (no equipment or minimal equipment)
+
+Structure:
+
+* Short routines (5–10 mins)
+* Clear instructions
+* Calm, supportive tone
+
+We will upgrade this later with clinical validation, but for v1 we prioritise usability and safety.
+
+---
+
+3. Weekly Bonus (SNAP Shot XP)
+   Keep this meaningful but not excessive.
+
+Recommendation:
+
+* Weekly SNAP Shot bonus: 100–150 XP
+
+Rationale:
+
+* Should feel like a reward for consistency
+* Must not overshadow daily engagement
+* Reinforces habit without over-gamifying
+
+---
+
+4. Adaptation Window
+   Use a hybrid approach:
+
+* Primary: 7-day rolling window (for responsiveness)
+* Secondary: 30-day background trend (for stability and insight)
+
+This allows:
+
+* Short-term personalisation (daily guidance)
+* Longer-term pattern recognition (Premium insights)
+
+---
+
+Overall Direction
+The app should feel:
+
+* Intelligent
+* Calm
+* Personal
+* Not overly gamified or clinical
+
+We are building a connected health system, not just features, so decisions should prioritise long-term engagement, trust, and simplicity.
+
+Let me know if anything needs further clarification.

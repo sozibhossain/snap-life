@@ -1,0 +1,132 @@
+Build an immersive “Breathing Studio” and “Meditation” experience within the Snap Life app that goes beyond functionality and creates a daily habit loop focused on how users feel.
+
+The goal is to make this a core daily ritual — not just for bone health, but for emotional wellbeing, stress reduction, and consistency.
+
+---
+
+BREATHING STUDIO REQUIREMENTS:
+
+1. Sessions:
+Create 4 guided breathing sessions:
+- Calm (slow breathing)
+- Energy (uplifting rhythm)
+- Focus (balanced breathing)
+- Sleep (deep, slow relaxation)
+
+2. Timer + Visual Guidance:
+- Each session must include a clear, easy-to-read timer
+- Add a breathing animation (expanding/contracting shape or orb)
+- Sync animation precisely with inhale / hold / exhale phases
+- Include subtle prompts: “Inhale”, “Hold”, “Exhale”
+
+3. Relaxing Background Music:
+- Automatically play soft, calming background audio when session starts
+- Use ambient or nature-based sounds
+- Music must:
+  - Loop seamlessly
+  - Be gentle and non-distracting
+  - Fade in at start and fade out at end
+- Include:
+  - Sound ON/OFF toggle
+  - Volume control (default low)
+
+4. User Experience:
+- Minimal, calming interface
+- Soft colours (blues, greens, warm neutrals)
+- Smooth transitions (no abrupt changes)
+- Designed for low cognitive effort
+
+5. Completion + Reflection (CRITICAL – HABIT LOOP):
+At the end of each session:
+- Display a gentle message:
+  “Well done. Take a moment to notice how you feel.”
+
+- Prompt user with:
+  “How do you feel now?”
+
+Options:
+- Calm
+- Energised
+- Less stressed
+- Focused
+- Still tense
+
+- Store this response as part of the user’s daily wellbeing log
+
+- Reinforce habit:
+  “You’re building a daily habit for a stronger body and calmer mind.”
+
+- Show streak indicator (e.g. “Day 3 in a row”)
+
+---
+
+MEDITATION SECTION REQUIREMENTS:
+
+1. Session Types:
+Create guided sessions for:
+- Stress relief
+- Sleep support
+- Focus & clarity
+- Confidence / mindset
+
+2. Voice Guidance:
+- Include a calm, human-like voiceover
+- Tone must be:
+  - Warm
+  - Reassuring
+  - Slow and well-paced
+- Include natural pauses for breathing and reflection
+- Avoid robotic or rushed delivery
+
+3. Audio Design:
+- Combine voice with soft background music
+- Ensure voice is always clear and dominant
+- Smooth fade in/out
+
+4. Playback Controls:
+- Play / pause
+- Progress bar
+- Restart
+- Skip forward/back (10 seconds)
+
+5. Screen Design:
+- Minimal UI
+- Optional subtle animation (slow gradient, breathing orb)
+- Clear session title and duration
+
+---
+
+DAILY HABIT SYSTEM (KEY DIFFERENTIATOR):
+
+- Track completion of breathing/meditation sessions daily
+- Log how the user feels after each session
+- Build a “Daily Wellbeing Score” based on:
+  - Session completed
+  - Emotional feedback
+  - Consistency (streaks)
+
+- Display:
+  - Daily streaks
+  - Weekly progress
+  - Positive reinforcement messages
+
+Example:
+“You’ve completed 4 sessions this week — your consistency is building resilience.”
+
+---
+
+TECHNICAL REQUIREMENTS:
+
+- Ensure seamless audio playback (no glitches)
+- Preload audio for smooth experience
+- Optimise for mobile
+- Keep assets lightweight for fast loading
+- Ensure sessions run reliably on slower connections
+
+---
+
+GOAL:
+
+Create a calm, premium, and emotionally engaging experience that users want to return to daily.
+
+This is not just a feature — it is a daily ritual that connects physical health (bone strength) with mental wellbeing and emotional awareness.

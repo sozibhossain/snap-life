@@ -1,0 +1,137 @@
+Build a subscription system for the Snap Life app using RevenueCat, including a built-in user feedback loop.
+
+The app operates on:
+- 7-day free trial (full access)
+- Plus tier (default after trial)
+- Premium tier (£19.99/month)
+
+Additionally, implement a simple and accessible feedback system to capture user input, testimonials, and engagement insights.
+
+---
+
+SUBSCRIPTION STRUCTURE:
+
+1. Free Trial (7 days):
+- Full access to all Premium features
+- Show subtle countdown (e.g. “Day 3 of 7”)
+
+2. Plus Tier (Post-Trial Default):
+- Reduced experience
+- No forced upgrade
+
+3. Premium Tier:
+- £19.99/month
+- Full access to all features
+
+---
+
+FEEDBACK LOOP (NEW FEATURE):
+
+Create a “Feedback” section accessible from:
+- Main menu
+- Post-session screens (optional prompt)
+
+---
+
+FEEDBACK TYPES:
+
+Allow users to submit:
+
+1. General Feedback:
+- “How can we improve the app?”
+
+2. Testimonials:
+- “What are you enjoying about Snap Life?”
+
+3. Experience Feedback:
+- “Are you having fun? What do you like most?”
+
+---
+
+INPUT OPTIONS:
+
+- Short text input (primary)
+- Optional quick-select tags:
+  - Relaxing
+  - Easy to use
+  - Helpful
+  - Enjoyable
+  - Not working well
+
+---
+
+EMAIL INTEGRATION:
+
+- All feedback submissions must be sent via email to:
+  teamsnap@snaplife.co.uk
+
+- Email should include:
+  - User ID (if available)
+  - User tier (Trial / Plus / Premium)
+  - Feedback type (general / testimonial / experience)
+  - Message content
+  - Timestamp
+
+---
+
+POST-SESSION PROMPT (LIGHT TOUCH):
+
+After completing a session, occasionally show:
+
+“Enjoying this experience?”
+Options:
+- Yes → prompt for short testimonial
+- Not really → prompt for improvement feedback
+
+Keep this optional and non-intrusive.
+
+---
+
+TESTIMONIAL USAGE:
+
+- Store testimonials for future use (admin side)
+- Do NOT auto-publish
+- Include optional consent checkbox:
+  “I’m happy for this to be used as a testimonial”
+
+---
+
+USER EXPERIENCE:
+
+- Keep feedback quick (under 30 seconds)
+- No long forms
+- Clean, minimal UI
+
+---
+
+REWARDS (LIMITED):
+
+- Users earn simple points for completing sessions
+
+- Do NOT include:
+  - Rewards redemption
+  - Gamification systems
+
+- Add placeholder:
+  “Rewards – Coming Soon”
+
+---
+
+REVENUECAT INTEGRATION:
+
+- Manage subscriptions and trial status
+- Sync user tier:
+  - Trial / Plus / Premium
+
+---
+
+GOAL:
+
+Create a premium, user-focused app that continuously improves by capturing real feedback.
+
+The feedback system should:
+- Encourage users to share positive experiences
+- Provide actionable insights
+- Support future testimonials and product development
+
+Keep it simple, human, and easy to use.

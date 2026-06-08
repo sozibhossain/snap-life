@@ -1,0 +1,128 @@
+Enhance the Guided Meditation section in SNAP Life by implementing a premium, session-length-matched audio experience that complements the voiceover.
+
+The music must feel intentional, immersive, and supportive — never distracting.
+
+---
+
+CORE PRINCIPLE:
+
+The voiceover is the primary guide.
+The music exists to:
+- Support emotion
+- Create atmosphere
+- Maintain flow
+
+It must never compete with or overpower the voice.
+
+---
+
+MUSIC STYLE (OVERALL DIRECTION):
+
+Use a chilled, premium sound inspired by:
+- Ibiza sunset chill
+- Ambient soul
+- Soft lounge / downtempo
+- Light jazz textures (very subtle)
+- Warm, organic tones
+
+Avoid:
+- Harsh electronic sounds
+- Fast beats
+- Busy arrangements
+- Anything that distracts attention
+
+---
+
+SESSION-LENGTH MATCHING (CRITICAL):
+
+Each meditation must have music that:
+
+- Matches the full duration of the session (e.g. 5, 10, 15 minutes)
+- Does NOT feel like a short loop repeating
+- Evolves subtly over time
+
+Structure the music in 3 phases:
+
+1. Opening (first 10–15%):
+- Very soft, minimal layers
+- Gentle fade in
+- Creates sense of arrival
+
+2. Middle (main body):
+- Stable, consistent soundscape
+- Slight evolution (layering, subtle variation)
+- Supports breathing and focus
+
+3. Closing (last 10–15%):
+- Gradual reduction in layers
+- Softer, slower feel
+- Gentle fade out to silence
+
+---
+
+AUDIO BALANCE:
+
+- Voice must always be clear and dominant
+- Music volume should sit underneath (approx. 15–30% of voice level)
+- Use soft EQ to avoid frequency clashes with voice
+
+---
+
+MOOD ALIGNMENT BY SESSION TYPE:
+
+1. Stress Relief:
+- Warm, reassuring tones
+- Slow, gentle rhythm (if any)
+- Feels safe and grounding
+
+2. Sleep Support:
+- Deep ambient textures
+- No rhythm or beat
+- Very slow, almost hypnotic
+
+3. Focus & Clarity:
+- Clean, minimal sound
+- Light tonal movement
+- Slight brightness (but soft)
+
+4. Confidence / Mindset:
+- Slightly uplifting tone
+- Warm bass, gentle progression
+- Positive but calm
+
+---
+
+TRANSITIONS:
+
+- Fade music in at session start (1–2 seconds)
+- Fade out naturally at end
+- Avoid sudden stops or resets
+
+---
+
+PLAYBACK EXPERIENCE:
+
+- Ensure seamless playback (no glitches)
+- Preload audio for smooth start
+- Sync music timing with voiceover duration
+
+---
+
+USER CONTROLS:
+
+- Volume control (music independent if possible)
+- Option to turn music OFF (voice only)
+
+---
+
+GOAL:
+
+Create a guided meditation experience that feels like a continuous, immersive journey.
+
+The user should not notice the music technically — but should feel:
+- Supported
+- Calm
+- Engaged
+- Present
+
+The experience should feel premium, emotionally aligned, and worth returning to daily.

@@ -1,0 +1,229 @@
+Here’s a refined prompt ready to paste into Replit:
+
+Please enhance the SNAP onboarding and Profile experience to ensure we properly capture core user profile information during sign up and allow users to manage this information later within their account settings.
+
+This is an important missing foundational layer for:
+
+* personalisation
+* AI guidance
+* behavioural recommendations
+* localisation
+* healthy ageing insights
+* community functionality
+* future adaptive pathways
+
+The experience must feel:
+
+* simple
+* warm
+* premium
+* low friction
+* non-clinical
+* privacy conscious
+
+---
+
+## CORE REQUIREMENT
+
+Currently users are not asked to complete a basic profile during onboarding.
+
+Please add a lightweight profile setup flow during sign up that captures:
+
+* First Name
+* Last Name
+* Age / Date of Birth
+* Location
+
+This information should also be editable later within:
+
+# Profile / Account Settings
+
+---
+
+## ONBOARDING FLOW ENHANCEMENT
+
+After account creation and before entering the main app experience:
+
+Add a new step:
+
+# “Tell us a little about you”
+
+Keep this warm and conversational.
+
+Suggested microcopy:
+“Help us personalise your SNAP experience and recommendations.”
+
+Fields:
+
+1. First Name
+2. Last Name
+3. Age or Date of Birth
+4. Location
+
+---
+
+## LOCATION INPUT
+
+Location should support:
+
+* city/town
+* postcode (optional)
+* country auto-detection where possible
+
+Purpose:
+
+* localisation
+* regional recommendations
+* future community support
+* future vitamin D/sunlight insights
+* localised educational guidance
+
+Avoid:
+
+* requesting exact addresses
+* making this feel intrusive
+
+---
+
+## PROFILE SECTION ENHANCEMENT
+
+Add these fields to:
+
+# Profile / Account Settings
+
+Users should be able to:
+
+* view
+* edit
+* update
+* save changes easily
+
+Profile section should include:
+
+* profile avatar/initial
+* first name
+* last name
+* age/date of birth
+* location
+* joined date (optional premium touch)
+
+---
+
+## PERSONALISATION INTEGRATION
+
+This data should support future intelligent personalisation across:
+
+* Bone Buddy AI
+* SNAP Foundations
+* educational pathways
+* menopause guidance
+* healthy ageing recommendations
+* wellness routing
+* nutrition guidance
+* notifications/reminders
+
+Example future use:
+“Good evening Sarah”
+“Recommended for your stage of healthy ageing”
+“Women aged 50+ often benefit from…”
+
+IMPORTANT:
+Keep all messaging supportive and non-clinical.
+
+---
+
+## UX / DESIGN REQUIREMENTS
+
+Maintain SNAP’s premium wellness aesthetic:
+
+* warm orange / amber gradients
+* clean cards
+* soft onboarding transitions
+* minimal fields per screen
+* calm typography
+* mobile-first layout
+
+The flow should feel:
+
+* elegant
+* quick
+* reassuring
+* emotionally safe
+
+Avoid:
+
+* long forms
+* medical intake feel
+* overwhelming setup processes
+
+---
+
+## ACCESSIBILITY REQUIREMENTS
+
+Ensure:
+
+* large tap targets
+* readable typography
+* low cognitive load
+* simple field validation
+* clear progress indication
+
+Especially important for:
+
+* older adults
+* low digital confidence users
+* newly diagnosed users
+
+---
+
+## PRIVACY + TRUST
+
+Include subtle reassurance:
+“Your information helps personalise your experience and remains private and secure.”
+
+Do NOT:
+
+* overcomplicate permissions
+* request unnecessary personal data
+* create friction at onboarding
+
+---
+
+## FUTURE-READY ARCHITECTURE
+
+Please structure profile data so it can support future expansion including:
+
+* menopause stage
+* diagnosis status
+* mobility confidence
+* goals/preferences
+* notification preferences
+* AI personalisation
+* community features
+
+But do NOT overload the current onboarding flow.
+
+---
+
+## SUCCESS METRICS
+
+Optimise for:
+
+* high onboarding completion
+* low friction setup
+* stronger personalisation
+* improved AI relevance
+* improved engagement
+* stronger emotional connection to SNAP
+
+---
+
+## FINAL PRINCIPLE
+
+The onboarding should feel like:
+“A warm welcome into a personalised healthy ageing experience.”
+
+Not:
+“A medical registration form.”
+
+The experience should build trust, simplicity, and emotional connection from the very first interaction with SNAP.

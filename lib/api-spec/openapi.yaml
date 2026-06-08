@@ -1,0 +1,1726 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: sync
+    description: Cross-device sync of per-user app data
+  - name: admin
+    description: Admin-only read endpoints powering the SNAP Life Admin dashboard
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /sync/snapshot:
+    get:
+      operationId: getSyncSnapshot
+      tags: [sync]
+      summary: Pull the full per-user sync snapshot
+      description: |
+        Returns every per-user document the server has stored for the
+        authenticated user (profile, daily nutrition / activity / meal-plan
+        rows, wellbeing entries, gamification state, badges, assessments,
+        supplements). Used on app launch to reconcile AsyncStorage to the
+        latest server view (server wins on conflict — last-write-wins).
+      responses:
+        "200":
+          description: Snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncSnapshot"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me:
+    get:
+      operationId: getMe
+      tags: [me]
+      summary: Get the authenticated user's canonical profile fields
+      description: |
+        Returns the typed columns the mobile app needs to render the Edit
+        Profile screen on a fresh device install (avatar URL, country,
+        timezone, display name, email) without round-tripping the full
+        /sync/snapshot payload.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/profile:
+    patch:
+      operationId: patchMeProfile
+      tags: [me]
+      summary: Patch the authenticated user's profile (country / timezone)
+      description: |
+        Strict, validated counterpart to PUT /sync/profile. Accepts a
+        partial update — only the fields present in the body are written
+        — and rejects invalid country / timezone values with 400. Returns
+        the updated profile so the client can reconcile without a follow-up
+        GET. Use this from interactive Edit Profile flows; use /sync/profile
+        for the offline write-through queue.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeProfilePatchBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeProfilePatchResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/avatar:
+    post:
+      operationId: postMeAvatar
+      tags: [me]
+      summary: Promote a stored object to the user's profile photo
+      description: |
+        Two-step upload: 1) the client requests a presigned URL via
+        /storage/uploads/request-url, 2) it PUTs the image bytes directly
+        to GCS, 3) it POSTs the returned `objectPath` here. The server
+        validates the stored object's content-type + size and persists
+        the path on user_profile.avatar. Rendering goes through
+        GET /storage/objects/<id>.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeAvatarBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeAvatarResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Object not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncError"
+        "413":
+          description: Object exceeds the avatar size cap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncError"
+        "415":
+          description: Object content-type is not an allowed image type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncError"
+
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned URL for direct-to-GCS upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Presigned URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncError"
+
+  /sync/profile:
+    put:
+      operationId: putSyncProfile
+      tags: [sync]
+      summary: Replace the user's profile + preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncProfileBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncOk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /sync/nutrition/{date}:
+    put:
+      operationId: putSyncNutritionDay
+      tags: [sync]
+      summary: Upsert one day's nutrition log
+      parameters:
+        - $ref: "#/components/parameters/DayParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncDayBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncOk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /sync/activity/{date}:
+    put:
+      operationId: putSyncActivityDay
+      tags: [sync]
+      summary: Upsert one day's activity log
+      parameters:
+        - $ref: "#/components/parameters/DayParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncDayBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncOk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /sync/meal-plan/{date}:
+    put:
+      operationId: putSyncMealPlanDay
+      tags: [sync]
+      summary: Upsert one day's meal plan + dietary prefs + favourites
+      parameters:
+        - $ref: "#/components/parameters/DayParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncDayBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncOk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /sync/supplements:
+    put:
+      operationId: putSyncSupplements
+      tags: [sync]
+      summary: Replace the user's supplement state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncStateBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncOk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /sync/gamification:
+    put:
+      operationId: putSyncGamification
+      tags: [sync]
+      summary: Replace the user's gamification state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncStateBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncOk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /sync/wellbeing:
+    post:
+      operationId: postSyncWellbeingEntry
+      tags: [sync]
+      summary: Append a wellbeing / session entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncWellbeingEntryBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncOk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /sync/assessment:
+    post:
+      operationId: postSyncAssessment
+      tags: [sync]
+      summary: Append a clinical assessment (DEXA / FRAX)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncAssessmentBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncOk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /admin/me:
+    get:
+      operationId: getAdminMe
+      tags: [admin]
+      summary: Probe whether the caller is allowed to use the admin app
+      description: |
+        Returns 200 + `{ isAdmin: true }` when the caller has a valid
+        Clerk session AND `users.isAdmin = true`. Returns 401 when
+        unauthenticated and 403 when authenticated-but-not-admin. Used
+        by the admin web app to gate **all** admin pages on initial load
+        so non-admin users see the NotAuthorised screen immediately,
+        without having to interact with the page first.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMe"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/metrics/users:
+    get:
+      operationId: getAdminUserMetrics
+      tags: [admin]
+      summary: Aggregate user counts by tier and signup window
+      description: |
+        Returns total user count, breakdown by subscription tier
+        (none / trial / plus / premium), admin count, and new signups
+        for the last 7 / 30 days. Tiers are derived from the
+        `subscribers` table — users without a row count as `none`.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserMetrics"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/metrics/engagement:
+    get:
+      operationId: getAdminEngagementMetrics
+      tags: [admin]
+      summary: Active user counts and wellbeing-session totals
+      description: |
+        Returns daily / weekly / monthly active users (distinct
+        `appUserId` from `interaction_events` over the last
+        1 / 7 / 30 days), totals for wellbeing sessions
+        (breathing / meditation), and event counts grouped by `kind`.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEngagementMetrics"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /subscription/me:
+    get:
+      operationId: getSubscriptionMe
+      tags: [subscription]
+      summary: Resolve the caller's subscription/trial state (server-managed)
+      description: |
+        Merges the server-managed 30-day Premium trial granted at
+        registration with any RevenueCat-mirrored entitlement. The mobile
+        app calls this to render trial-day badges, the TrialPromptCard
+        cascade, and the dashboard premium gates without having to
+        reason about both sources independently.
+
+        Cascade rules:
+          - A real store purchase (paying subscriber) always wins, so
+            those callers see `tier ∈ { plus, premium }` and `isOnTrial = false`.
+          - A store-side trial supersedes the server trial (the
+            RevenueCat webhook clears `trialSource = "server"` and writes
+            `"store"` instead) so `isOnTrial = true` with `trialSource = "store"`.
+          - The server trial is reported with `trialSource = "server"` and a
+            `trialDayOf` in `1..30`. Day-of is computed from `trialEndsAt`,
+            which is set once at signup and never moves.
+          - When the trial window has elapsed (`trialEndsAt <= now`) the
+            response degrades to `tier = "free"` automatically — no
+            scheduled job is required.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSubscription"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /admin/metrics/subscriptions:
+    get:
+      operationId: getAdminSubscriptionMetrics
+      tags: [admin]
+      summary: MRR, active subscriptions, trial counts and 30-day churn
+      description: |
+        Returns active subscriber count by tier, in-trial count,
+        approximate MRR (sum of monthly-equivalent prices), and 30-day
+        churn (cancellations + expirations in the last 30 days divided
+        by the active count at the start of the window). Prices are
+        derived from product ids server-side.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSubscriptionMetrics"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/feedback:
+    get:
+      operationId: getAdminFeedback
+      tags: [admin]
+      summary: Recent feedback feed (most-recent-first)
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Max number of rows (1-200, default 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 100
+        - name: feedbackType
+          in: query
+          required: false
+          description: Filter by feedback type
+          schema:
+            type: string
+            enum: [general, testimonial, experience]
+        - name: tier
+          in: query
+          required: false
+          description: Filter by user subscription tier
+          schema:
+            type: string
+            enum: [free, trial, plus, premium]
+        - name: testimonialOnly
+          in: query
+          required: false
+          description: |
+            When true, only return rows the user consented to being used
+            as a public testimonial (`allowTestimonialUse = true`).
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminFeedbackList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/audit:
+    get:
+      operationId: getAdminAudit
+      tags: [admin]
+      summary: Paginated audit log of privileged admin and GDPR actions
+      description: |
+        Returns an append-only list of audit events covering admin-triggered
+        and self-service GDPR operations. Rows are never deleted even after
+        the target account is removed.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Max number of rows (1-200, default 50)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          description: Zero-based row offset for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: action
+          in: query
+          required: false
+          description: Filter to only events matching this action type
+          schema:
+            type: string
+            enum:
+              - test_account_provisioned
+              - account_deleted
+              - tester_data_reset
+        - name: targetAppUserId
+          in: query
+          required: false
+          description: Filter to only events where the target user matches this exact ID
+          schema:
+            type: string
+        - name: actorAppUserId
+          in: query
+          required: false
+          description: Filter to only events where the actor (who performed the action) matches this exact ID
+          schema:
+            type: string
+        - name: from
+          in: query
+          required: false
+          description: Include only events at or after this ISO 8601 date-time (inclusive lower bound on createdAt)
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          description: Include only events before or at this ISO 8601 date-time (inclusive upper bound on createdAt)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditEventList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/users/{id}:
+    delete:
+      operationId: deleteAdminUser
+      tags: [admin]
+      summary: GDPR-delete a user (admin-triggered)
+      description: |
+        Admin-gated soft-delete for honouring a manual GDPR right-to-
+        erasure request. Runs the same cascade as `DELETE /me`:
+        redacts PII on the `users` row, scrubs free-text payloads,
+        hard-deletes push tokens + legacy bearer tokens, calls Clerk
+        `users.deleteUser` (best-effort), and queues the user-facing
+        confirmation email. The 30-day hard-delete cron then purges
+        the cascaded rows.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: appUserId of the account to delete.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+      responses:
+        "200":
+          description: Account soft-deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserDeleteResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: No user with that appUserId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncError"
+
+  /admin/users/lookup:
+    get:
+      operationId: getAdminUserLookup
+      tags: [admin]
+      summary: Look up a user profile + subscription by email
+      parameters:
+        - name: email
+          in: query
+          required: true
+          description: Exact-match email (case-insensitive)
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 320
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserLookupResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: No user with that email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncError"
+
+components:
+  parameters:
+    DayParam:
+      name: date
+      in: path
+      required: true
+      description: Local-time YYYY-MM-DD calendar day.
+      schema:
+        type: string
+        pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SyncError"
+    BadRequest:
+      description: Body / params failed validation
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SyncError"
+    Forbidden:
+      description: Authenticated but lacks the required role (admin)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SyncError"
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    SyncOk:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required:
+        - ok
+
+    SyncError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SyncProfileBody:
+      type: object
+      additionalProperties: false
+      properties:
+        profile:
+          type: object
+          additionalProperties: true
+        updatedAtMs:
+          type: integer
+      required:
+        - profile
+
+    MeProfilePatchBody:
+      type: object
+      additionalProperties: false
+      properties:
+        country:
+          type: string
+          nullable: true
+          pattern: "^[A-Z]{2}$"
+          description: ISO 3166-1 alpha-2 country code, or null to clear.
+        timezone:
+          type: string
+          nullable: true
+          description: IANA timezone (e.g. "Europe/London"), or null to clear.
+
+    MeResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        ok:
+          type: boolean
+        profile:
+          type: object
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              nullable: true
+            email:
+              type: string
+              nullable: true
+            avatarUrl:
+              type: string
+              nullable: true
+            country:
+              type: string
+              nullable: true
+            timezone:
+              type: string
+              nullable: true
+          required: [name, email, avatarUrl, country, timezone]
+        billingIssue:
+          $ref: "#/components/schemas/BillingIssue"
+      required: [ok, profile, billingIssue]
+
+    BillingIssue:
+      description: |
+        Open billing-issue grace window for the calling user, or `null`
+        when payment is healthy. Set by the RevenueCat `BILLING_ISSUE`
+        webhook; cleared automatically by the next successful entitlement
+        write (RENEWAL/INITIAL_PURCHASE/etc) or once `gracePeriodEndsAt`
+        elapses (lazy expiry).
+      type: ["object", "null"]
+      additionalProperties: false
+      properties:
+        since:
+          description: ISO-8601 timestamp of the BILLING_ISSUE webhook (start of grace).
+          type: string
+          format: date-time
+        gracePeriodEndsAt:
+          description: |
+            ISO-8601 timestamp at which `isActive` flips off. Defaults to
+            `since + 3 days`; configurable via the `BILLING_GRACE_DAYS`
+            env var.
+          type: string
+          format: date-time
+      required: [since, gracePeriodEndsAt]
+
+    MeProfilePatchResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        ok:
+          type: boolean
+        profile:
+          type: object
+          additionalProperties: false
+          properties:
+            avatarUrl:
+              type: string
+              nullable: true
+            country:
+              type: string
+              nullable: true
+            timezone:
+              type: string
+              nullable: true
+          required: [avatarUrl, country, timezone]
+      required: [ok, profile]
+
+    MeAvatarBody:
+      type: object
+      additionalProperties: false
+      properties:
+        objectPath:
+          type: string
+          pattern: "^/objects/[A-Za-z0-9._\\-/]+$"
+      required: [objectPath]
+
+    MeAvatarResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        ok:
+          type: boolean
+        avatarUrl:
+          type: string
+      required: [ok, avatarUrl]
+
+    UploadUrlRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required: [name, size, contentType]
+
+    UploadUrlResponse:
+      type: object
+      additionalProperties: true
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+      required: [uploadURL, objectPath]
+
+    SyncDayBody:
+      description: |
+        Per-day domain document body. The `data` payload is opaque to the
+        server (validated only as a JSON object with bounded size); the
+        client is the source of truth for the inner shape so we don't need
+        to migrate the API every time a new field is added.
+      type: object
+      additionalProperties: false
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+        updatedAtMs:
+          type: integer
+      required:
+        - data
+
+    SyncStateBody:
+      description: |
+        Full-state replace body. `state` is opaque to the server (bounded
+        size, JSON object).
+      type: object
+      additionalProperties: false
+      properties:
+        state:
+          type: object
+          additionalProperties: true
+        updatedAtMs:
+          type: integer
+      required:
+        - state
+
+    SyncWellbeingEntryBody:
+      type: object
+      additionalProperties: false
+      properties:
+        entryId:
+          type: string
+          minLength: 1
+          maxLength: 200
+        entry:
+          type: object
+          additionalProperties: true
+        completedAtMs:
+          type: integer
+      required:
+        - entryId
+        - entry
+        - completedAtMs
+
+    SyncAssessmentBody:
+      type: object
+      additionalProperties: false
+      properties:
+        resultId:
+          type: string
+          minLength: 1
+          maxLength: 200
+        kind:
+          type: string
+          minLength: 1
+          maxLength: 64
+        payload:
+          type: object
+          additionalProperties: true
+        takenAtMs:
+          type: integer
+      required:
+        - resultId
+        - kind
+        - payload
+        - takenAtMs
+
+    SyncProfileSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        profile:
+          type: object
+          additionalProperties: true
+        updatedAtMs:
+          type: integer
+          nullable: true
+      required:
+        - profile
+
+    SyncDaySnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        day:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        updatedAtMs:
+          type: integer
+          nullable: true
+      required:
+        - day
+        - data
+
+    SyncStateSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        state:
+          type: object
+          additionalProperties: true
+        updatedAtMs:
+          type: integer
+          nullable: true
+      required:
+        - state
+
+    SyncWellbeingSnapshotEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        entryId:
+          type: string
+        entry:
+          type: object
+          additionalProperties: true
+        completedAtMs:
+          type: integer
+      required:
+        - entryId
+        - entry
+        - completedAtMs
+
+    SyncAssessmentSnapshotEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        resultId:
+          type: string
+        kind:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+        takenAtMs:
+          type: integer
+      required:
+        - resultId
+        - kind
+        - payload
+        - takenAtMs
+
+    SyncSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        appUserId:
+          type: string
+        profile:
+          oneOf:
+            - $ref: "#/components/schemas/SyncProfileSnapshot"
+            - type: "null"
+        nutrition:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncDaySnapshot"
+        activity:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncDaySnapshot"
+        mealPlan:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncDaySnapshot"
+        wellbeing:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncWellbeingSnapshotEntry"
+        gamification:
+          oneOf:
+            - $ref: "#/components/schemas/SyncStateSnapshot"
+            - type: "null"
+        supplements:
+          oneOf:
+            - $ref: "#/components/schemas/SyncStateSnapshot"
+            - type: "null"
+        assessments:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncAssessmentSnapshotEntry"
+      required:
+        - appUserId
+        - profile
+        - nutrition
+        - activity
+        - mealPlan
+        - wellbeing
+        - gamification
+        - supplements
+        - assessments
+
+    AuditEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        actorAppUserId:
+          type: string
+          description: |
+            The appUserId of the admin who triggered the action, or the
+            literal string "self" when the affected user initiated the
+            operation themselves (e.g. DELETE /me).
+        targetAppUserId:
+          type: string
+          description: The appUserId of the account that was affected.
+        action:
+          type: string
+          enum:
+            - test_account_provisioned
+            - account_deleted
+            - tester_data_reset
+            - sign_in_token_generated
+        payload:
+          type: object
+          additionalProperties: true
+          description: Action-specific metadata (email, displayName, etc.)
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - actorAppUserId
+        - targetAppUserId
+        - action
+        - payload
+        - createdAt
+
+    AuditEventList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEvent"
+        total:
+          type: integer
+          description: Total row count (before pagination).
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required:
+        - items
+        - total
+        - limit
+        - offset
+
+    AdminMe:
+      type: object
+      additionalProperties: false
+      required: [isAdmin]
+      properties:
+        isAdmin:
+          type: boolean
+          description: Always true on a 200 response (kept explicit for clarity).
+
+    AdminUserDeleteResult:
+      type: object
+      additionalProperties: false
+      required:
+        - ok
+        - appUserId
+        - deletedAt
+        - hardDeleteAfter
+        - confirmationEmailQueued
+      properties:
+        ok:
+          type: boolean
+        appUserId:
+          type: string
+        deletedAt:
+          type: string
+          format: date-time
+        hardDeleteAfter:
+          type: string
+          format: date-time
+          description: Day-30 deadline at which the cascaded rows are purged.
+        confirmationEmailQueued:
+          type: boolean
+          description: |
+            True when a confirmation email row was appended to
+            `pending_emails`. False when the deleted account had no
+            email address on file (rare — typically already-redacted
+            accounts being re-deleted).
+
+    AdminUserMetrics:
+      type: object
+      additionalProperties: false
+      properties:
+        totalUsers:
+          type: integer
+        adminCount:
+          type: integer
+        newUsersLast7d:
+          type: integer
+        newUsersLast30d:
+          type: integer
+        activeLast7d:
+          description: Distinct users with at least one interaction event in the last 7 days.
+          type: integer
+        activeLast30d:
+          description: Distinct users with at least one interaction event in the last 30 days.
+          type: integer
+        byTier:
+          description: |
+            Tier breakdown derived from the `subscribers` row.
+            - `free`: no subscribers row at all.
+            - `trial`: row exists, `isInTrial = true`.
+            - `plus` / `premium`: active row whose product maps to that tier.
+            - `lapsed`: row exists, `isActive = false` and `isInTrial = false` (was paying, now not).
+          type: object
+          additionalProperties: false
+          properties:
+            free:
+              type: integer
+            trial:
+              type: integer
+            plus:
+              type: integer
+            premium:
+              type: integer
+            lapsed:
+              type: integer
+          required: [free, trial, plus, premium, lapsed]
+      required:
+        - totalUsers
+        - adminCount
+        - newUsersLast7d
+        - newUsersLast30d
+        - activeLast7d
+        - activeLast30d
+        - byTier
+
+    AdminEngagementEventCount:
+      type: object
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+        count:
+          type: integer
+      required: [kind, count]
+
+    AdminWeeklyActivityPoint:
+      type: object
+      additionalProperties: false
+      properties:
+        date:
+          description: UTC calendar day (YYYY-MM-DD).
+          type: string
+        activeUsers:
+          description: Distinct app users with ≥1 interaction event that day.
+          type: integer
+      required: [date, activeUsers]
+
+    AdminEngagementMetrics:
+      type: object
+      additionalProperties: false
+      properties:
+        dau:
+          type: integer
+        wau:
+          type: integer
+        mau:
+          type: integer
+        wellbeingSessionsLast7d:
+          type: object
+          additionalProperties: false
+          properties:
+            breathing:
+              type: integer
+            meditation:
+              type: integer
+            other:
+              type: integer
+          required: [breathing, meditation, other]
+        mealPlansLast7d:
+          description: |
+            Distinct (user, day) meal plan rows updated in the last 7 days.
+            Approximates "users actively engaged with meal planning".
+          type: integer
+        boneBuddyInteractionsLast7d:
+          description: |
+            Count of `push_opened` interaction events in the last 7 days
+            (every push in v1 is a Bone Buddy daily-nudge — see
+            `pushSender.sendBoneBuddyPush`), so push opens are a faithful
+            stand-in for Bone Buddy engagement.
+          type: integer
+        pushRecipientsLast7d:
+          description: |
+            Distinct users in `push_user_state` whose `lastSentAt` falls
+            in the last 7 days (i.e. received at least one push).
+          type: integer
+        pushOpenedLast7d:
+          description: Distinct openers (kind = "push_opened") in the last 7 days.
+          type: integer
+        pushOpenRate:
+          description: |
+            `pushOpenedLast7d / pushRecipientsLast7d`, capped at 1.0
+            (multiple opens per recipient still count as one). `null` if
+            no recipients in the window.
+          type: ["number", "null"]
+        weeklyActivity:
+          description: |
+            Per-day distinct-active-user counts for the last 7 calendar
+            days, oldest first. Powers the dashboard sparkline.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminWeeklyActivityPoint"
+        eventCountsLast7d:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminEngagementEventCount"
+      required:
+        - dau
+        - wau
+        - mau
+        - wellbeingSessionsLast7d
+        - mealPlansLast7d
+        - boneBuddyInteractionsLast7d
+        - pushRecipientsLast7d
+        - pushOpenedLast7d
+        - pushOpenRate
+        - weeklyActivity
+        - eventCountsLast7d
+
+    AdminRevenueByProduct:
+      type: object
+      additionalProperties: false
+      properties:
+        productId:
+          type: ["string", "null"]
+        tier:
+          description: Tier the product maps to (`plus`, `premium`, `unknown`).
+          type: string
+        activeCount:
+          description: Active, non-trial subscribers on this product.
+          type: integer
+        monthlyCents:
+          description: Sum of monthly-equivalent price (cents) across the active subscribers on this product.
+          type: integer
+      required: [productId, tier, activeCount, monthlyCents]
+
+    AdminSubscriptionMetrics:
+      type: object
+      additionalProperties: false
+      properties:
+        activeCount:
+          type: integer
+        inTrialCount:
+          type: integer
+        willRenewCount:
+          type: integer
+        cancelledLast30d:
+          type: integer
+        churnRate30d:
+          description: Cancellations / active-at-window-start. Null if no active users at window start.
+          type: ["number", "null"]
+        approxMrrCents:
+          description: Sum of monthly-equivalent prices for active subscribers, in cents.
+          type: integer
+        approxArrCents:
+          description: 12 × `approxMrrCents`. Convenience field for the dashboard.
+          type: integer
+        trialsStartedLast30d:
+          description: |
+            Server-managed 30-day Premium trials granted in the last 30
+            days (`trialSource = "server"` with `trialEndsAt` falling in
+            the window when projected back from now). Counts the grant
+            event regardless of whether the trial later converted or
+            expired.
+          type: integer
+        trialsActiveCount:
+          description: |
+            Server-managed trials currently in-flight: `trialSource = "server"`
+            AND `trialEndsAt > now`. A snapshot, not a window, so it
+            decays naturally as trials elapse.
+          type: integer
+        trialsConvertedToPaidLast30d:
+          description: |
+            Subscribers whose row now has any paid product (Plus OR Premium,
+            `isActive = true AND isInTrial = false`) and whose underlying
+            user account was created in the last 30 days. Headline
+            conversion KPI for the new trial flow.
+          type: integer
+        trialsConvertedToPlusLast30d:
+          description: |
+            Subset of `trialsConvertedToPaidLast30d` whose product resolves
+            to the Plus tier. Lets the dashboard show how trials
+            distribute across Plus vs Premium without a second query.
+          type: integer
+        trialsConvertedToPremiumLast30d:
+          description: Subset of `trialsConvertedToPaidLast30d` resolving to Premium.
+          type: integer
+        trialsExpiredWithoutConversionLast30d:
+          description: |
+            Server-managed trials whose `trialEndsAt` has passed (within
+            the last 30 days) AND whose row has not converted to a paid
+            product. Surfaces "trial → free" leakage.
+          type: integer
+        billingIssueCount:
+          description: |
+            Subscribers currently in a BILLING_ISSUE grace window
+            (`billingIssueAt` set, `gracePeriodEndsAt > now`). Snapshot,
+            not a window. The admin dashboard surfaces this so we can
+            spot a payment-processor outage early.
+          type: integer
+        paidConvertedLast30d:
+          description: |
+            DEPRECATED alias for `trialsConvertedToPaidLast30d`, kept so
+            existing dashboard tiles render against either field name.
+            Will be removed after the admin client refactor.
+          type: integer
+        trialToPaidRate:
+          description: |
+            `trialsConvertedToPaidLast30d / trialsStartedLast30d`, or
+            `null` if no trials started in the window.
+          type: ["number", "null"]
+        byTier:
+          type: object
+          additionalProperties: false
+          properties:
+            trial:
+              type: integer
+            plus:
+              type: integer
+            premium:
+              type: integer
+          required: [trial, plus, premium]
+        revenueByProduct:
+          description: Per-product revenue split (active, non-trial subscribers only).
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRevenueByProduct"
+      required:
+        - activeCount
+        - inTrialCount
+        - willRenewCount
+        - cancelledLast30d
+        - churnRate30d
+        - approxMrrCents
+        - approxArrCents
+        - trialsStartedLast30d
+        - trialsActiveCount
+        - trialsConvertedToPaidLast30d
+        - trialsConvertedToPlusLast30d
+        - trialsConvertedToPremiumLast30d
+        - trialsExpiredWithoutConversionLast30d
+        - billingIssueCount
+        - paidConvertedLast30d
+        - trialToPaidRate
+        - byTier
+        - revenueByProduct
+
+    UserSubscription:
+      type: object
+      additionalProperties: false
+      description: |
+        Resolved subscription/trial state for the calling user, merged
+        across the server-managed trial and any RevenueCat-mirrored
+        store entitlement.
+      properties:
+        tier:
+          type: string
+          enum: [free, trial, plus, premium]
+        isOnTrial:
+          type: boolean
+        trialSource:
+          description: |
+            Origin of the active trial period. `null` whenever
+            `isOnTrial = false`.
+          type: ["string", "null"]
+          enum: [server, store, null]
+        trialDayOf:
+          description: |
+            1-based day-of-trial in `1..trialLengthDays`. `null` when not
+            on a server trial; for store trials we leave this `null` and
+            let the client fall back to RevenueCat for day-of.
+          type: ["integer", "null"]
+        trialDaysRemaining:
+          description: Whole days remaining in the trial (>= 0), or `null`.
+          type: ["integer", "null"]
+        trialLengthDays:
+          description: |
+            Total length of the server-managed trial in days. Always
+            present so the client can render "Day X of Y" without
+            hard-coding the constant.
+          type: integer
+        trialEndsAt:
+          description: ISO-8601 wall-clock end of the trial, or `null`.
+          type: ["string", "null"]
+          format: date-time
+        billingIssue:
+          $ref: "#/components/schemas/BillingIssue"
+        trialEndedAt:
+          description: |
+            ISO-8601 timestamp of a server-managed trial that has ended in
+            the recent past (within the last 7 days) WITHOUT the user
+            converting to a paid plan. The mobile dashboard uses this to
+            render a one-time post-trial-ended banner. `null` whenever the
+            user has never had a server trial, the trial is still active,
+            the trial ended more than 7 days ago, OR the user is currently
+            on a paid entitlement.
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - tier
+        - isOnTrial
+        - trialSource
+        - trialDayOf
+        - trialDaysRemaining
+        - trialLengthDays
+        - trialEndsAt
+        - trialEndedAt
+        - billingIssue
+
+    AdminFeedbackItem:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        appUserId:
+          type: ["string", "null"]
+        tier:
+          type: string
+        feedbackType:
+          type: string
+        message:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        allowTestimonialUse:
+          type: boolean
+        platform:
+          type: ["string", "null"]
+        appVersion:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - appUserId
+        - tier
+        - feedbackType
+        - message
+        - tags
+        - allowTestimonialUse
+        - platform
+        - appVersion
+        - createdAt
+
+    AdminFeedbackList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminFeedbackItem"
+        total:
+          type: integer
+      required: [items, total]
+
+    AdminRecentSession:
+      type: object
+      additionalProperties: false
+      properties:
+        kind:
+          description: Session kind (`breathing`, `meditation`, `other`).
+          type: string
+        sessionName:
+          type: ["string", "null"]
+        durationSec:
+          type: ["integer", "null"]
+        mood:
+          type: ["string", "null"]
+        completedAt:
+          type: string
+          format: date-time
+      required: [kind, sessionName, durationSec, mood, completedAt]
+
+    AdminRecentFeedback:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        feedbackType:
+          type: string
+        tier:
+          type: string
+        message:
+          type: string
+        allowTestimonialUse:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - feedbackType
+        - tier
+        - message
+        - allowTestimonialUse
+        - createdAt
+
+    AdminUserLookupResult:
+      type: object
+      additionalProperties: false
+      properties:
+        user:
+          type: object
+          additionalProperties: false
+          properties:
+            appUserId:
+              type: string
+            clerkUserId:
+              type: ["string", "null"]
+            email:
+              type: ["string", "null"]
+            displayName:
+              type: ["string", "null"]
+            isAdmin:
+              type: boolean
+            createdAt:
+              type: string
+              format: date-time
+            lastActiveAt:
+              description: Most recent `interaction_events.received_at`, or null if the user has no events.
+              type: ["string", "null"]
+              format: date-time
+            avatar:
+              description: Profile photo (data URI or storage path), null if unset.
+              type: ["string", "null"]
+            country:
+              description: ISO-3166-1 alpha-2 country code (e.g. `GB`).
+              type: ["string", "null"]
+            timezone:
+              description: IANA timezone name (e.g. `Europe/London`).
+              type: ["string", "null"]
+          required:
+            - appUserId
+            - clerkUserId
+            - email
+            - displayName
+            - isAdmin
+            - createdAt
+            - lastActiveAt
+            - avatar
+            - country
+            - timezone
+        subscription:
+          oneOf:
+            - type: "null"
+            - type: object
+              additionalProperties: false
+              properties:
+                entitlementId:
+                  type: string
+                isActive:
+                  type: boolean
+                isInTrial:
+                  type: boolean
+                willRenew:
+                  type: boolean
+                productId:
+                  type: ["string", "null"]
+                periodType:
+                  type: ["string", "null"]
+                store:
+                  type: ["string", "null"]
+                expiresAt:
+                  type: ["string", "null"]
+                  format: date-time
+                cancelledAt:
+                  type: ["string", "null"]
+                  format: date-time
+              required:
+                - entitlementId
+                - isActive
+                - isInTrial
+                - willRenew
+                - productId
+                - periodType
+                - store
+                - expiresAt
+                - cancelledAt
+        counts:
+          type: object
+          additionalProperties: false
+          properties:
+            wellbeingEntries:
+              type: integer
+            interactionEvents:
+              type: integer
+            feedbackSubmissions:
+              type: integer
+          required: [wellbeingEntries, interactionEvents, feedbackSubmissions]
+        recentSessions:
+          description: Last 10 wellbeing entries within the past 30 days, newest first.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRecentSession"
+        recentFeedback:
+          description: Last 10 feedback submissions, newest first.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRecentFeedback"
+      required:
+        - user
+        - subscription
+        - counts
+        - recentSessions
+        - recentFeedback

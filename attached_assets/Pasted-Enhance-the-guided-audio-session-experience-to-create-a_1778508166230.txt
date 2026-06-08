@@ -1,0 +1,328 @@
+Enhance the guided audio session experience to create a premium, emotionally intelligent, and highly personalised sound environment for every user session.
+
+OBJECTIVE:
+Ensure every session feels unique, immersive, calming, and emotionally aligned by improving:
+
+* music variation
+* emotional matching
+* voice quality
+* audio continuity
+* adaptive session flow
+
+The experience should feel:
+
+* cinematic
+* therapeutic
+* emotionally responsive
+* calm and premium
+* comparable to leading wellness and meditation apps
+
+---
+
+1. DYNAMIC MUSIC PERSONALISATION
+
+---
+
+Ensure background music is NEVER repetitive across sessions.
+
+Requirements:
+
+* Different music track combinations for every session
+* Variation based on:
+
+  * session type
+  * emotion selected
+  * session duration
+  * time of day
+  * repeat usage patterns
+  * user listening history
+
+Examples:
+Morning sessions:
+
+* lighter ambient tones
+* uplifting warmth
+* gentle optimism
+
+Evening sessions:
+
+* slower calming soundscapes
+* deeper ambient textures
+* reduced stimulation
+
+Stress/anxiety sessions:
+
+* softer frequencies
+* slower pacing
+* grounding instrumentation
+
+Motivation/confidence sessions:
+
+* subtle uplifting cinematic progression
+* warm rhythmic textures
+* emotionally empowering tones
+
+Avoid:
+
+* repeating identical tracks consecutively
+* obvious loop resets
+* abrupt transitions
+
+---
+
+2. CONTINUOUS MUSIC ENGINE
+
+---
+
+Ensure music flows continuously throughout the full session.
+
+Requirements:
+
+* seamless transitions between tracks
+* crossfade blending
+* adaptive volume balancing with voice
+* no silence gaps between tracks
+* maintain emotional continuity
+
+Music should:
+
+* evolve naturally during session progression
+* support breathing pace and emotional state
+* remain subtle beneath narration
+
+Implement:
+
+* intelligent playlist sequencing
+* ambient transition engine
+* fade in/out logic
+* dynamic layering if available
+
+---
+
+3. EMOTIONALLY MATCHED SOUND DESIGN
+
+---
+
+Each emotional state should trigger a unique sound profile.
+
+Examples:
+
+CALM
+
+* soft piano
+* warm pads
+* slow ambient textures
+
+ANXIETY RELIEF
+
+* grounding low frequencies
+* gentle atmospheric soundscapes
+* reduced melodic complexity
+
+SLEEP
+
+* ultra-soft drones
+* slow evolving ambience
+* low stimulation frequencies
+
+CONFIDENCE
+
+* warm cinematic ambience
+* gentle progression
+* emotionally uplifting undertones
+
+FOCUS
+
+* minimal distraction
+* light rhythmic ambience
+* subtle concentration-enhancing tones
+
+The emotional audio profile should remain coherent for the entire experience.
+
+---
+
+4. HIGH-QUALITY FEMALE VOICE
+
+---
+
+Upgrade narration quality to feel:
+
+* natural
+* emotionally warm
+* calming
+* premium
+* human-like
+
+Voice requirements:
+
+* high-quality female voice
+* emotionally expressive pacing
+* natural breathing and pauses
+* soft therapeutic tone
+* British English preference where possible
+* avoid robotic cadence
+
+Speech should:
+
+* adapt naturally to meditation pace
+* slow during breathing moments
+* emphasise reassurance gently
+* sound conversational and emotionally safe
+
+Add:
+
+* intelligent pause timing
+* breath-aware pacing
+* subtle tonal variation
+
+---
+
+5. TIME-BASED SESSION ADAPTATION
+
+---
+
+Adapt sessions dynamically based on duration selected.
+
+Examples:
+
+5 minutes:
+
+* quicker emotional grounding
+* concise guidance
+* lighter musical development
+
+10–15 minutes:
+
+* deeper immersion
+* emotional progression
+* layered ambience
+
+20+ minutes:
+
+* richer sound evolution
+* extended calming periods
+* adaptive music transitions
+
+Ensure no session feels artificially stretched or rushed.
+
+---
+
+6. PREVENT AUDIO FATIGUE
+
+---
+
+Implement anti-repetition logic:
+
+* rotate tracks intelligently
+* avoid same intro sequence repeatedly
+* vary ambient layers
+* stagger voice/music combinations
+
+Track:
+
+* recently played sessions
+* music reuse frequency
+* emotional audio repetition
+
+Prioritise freshness while maintaining emotional consistency.
+
+---
+
+7. PREMIUM AUDIO EXPERIENCE
+
+---
+
+Improve overall sound production quality.
+
+Requirements:
+
+* balanced mastering
+* soft compression
+* no harsh frequencies
+* smooth voice/music integration
+* headphone-friendly audio mix
+
+The experience should feel:
+
+* immersive
+* restorative
+* emotionally intelligent
+* clinically calming
+
+Reference quality:
+
+* Calm
+* Headspace
+* Endel
+* Apple Mindfulness
+
+---
+
+8. TECHNICAL IMPLEMENTATION
+
+---
+
+Please implement:
+
+* dynamic playlist engine
+* emotional audio tagging system
+* crossfade transition logic
+* adaptive volume ducking
+* session memory for track rotation
+* intelligent audio sequencing
+
+Suggested architecture:
+
+* emotion → sound profile mapping
+* session-duration-aware playlist generation
+* adaptive audio orchestration layer
+
+---
+
+9. USER EXPERIENCE IMPROVEMENTS
+
+---
+
+Add optional controls for:
+
+* voice volume
+* music volume
+* ambient intensity
+* preferred voice style
+* session mood preference
+
+Retain simplicity and accessibility.
+
+---
+
+10. SUCCESS METRICS
+
+---
+
+Optimise for:
+
+* increased session completion
+* reduced repetition fatigue
+* improved emotional engagement
+* longer listening retention
+* higher relaxation satisfaction
+* stronger perceived personalisation
+
+---
+
+## OUTPUT REQUIRED
+
+Please provide:
+
+1. Updated audio architecture
+2. Dynamic music rotation system
+3. Emotion-to-sound mapping logic
+4. Improved female voice implementation
+5. Continuous music transition engine
+6. Session-duration adaptive logic
+7. Anti-repetition system
+8. Premium audio UX recommendations
+9. React/Tailwind compatible implementation approach
+10. Suggested audio provider or TTS optimisation strategy
+
+Preserve current application structure while upgrading the experience to feel significantly more premium, emotionally intelligent, and personalised.

@@ -1,0 +1,176 @@
+Update the music design in the SNAP Life Breathing Studio to create a more premium and emotionally distinctive sound experience.
+
+The current music feels too electronic and generic.
+Replace it with a more sophisticated music identity inspired by:
+
+- Ibiza sunset chill
+- Funky lounge
+- Acid jazz
+- Soulful old-school grooves
+- Warm ambient textures
+
+The sound should feel modern, premium, and enjoyable — not clinical or overly electronic.
+
+---
+
+CORE MUSIC DIRECTION:
+
+The music must feel:
+- Cool
+- Relaxing
+- Stylish
+- Uplifting when needed
+- Deeply calming when required
+
+Avoid:
+- Harsh electronic tones
+- High-frequency synthetic sounds
+- Generic meditation music
+- Repetitive digital loops
+
+---
+
+SESSION MUSIC BY MOOD:
+
+1. CALM ROOM
+Goal: soothe the nervous system
+
+Music style:
+- Soft chilled lounge
+- Warm bass
+- Light jazz textures
+- Gentle percussion
+- Smooth ambient pads
+
+Reference feeling:
+“Ibiza sunset after a long day”
+
+Should feel:
+- Grounding
+- Warm
+- Safe
+- Relaxed
+
+---
+
+2. STRESS ROOM
+Goal: release tension quickly
+
+Music style:
+- Slow funky chill
+- Subtle groove
+- Warm rhythm
+- Light soul influences
+- Smooth melodic loops
+
+Reference feeling:
+“Exhaling stress in a luxury wellness lounge”
+
+Should feel:
+- Reassuring
+- Steady
+- Controlled
+- Comforting
+
+---
+
+3. FOCUS ROOM
+Goal: clarity and mental sharpness
+
+Music style:
+- Minimal acid jazz
+- Soft rhythmic pulse
+- Light instrumental groove
+- Crisp but subtle layers
+
+Reference feeling:
+“Clear thinking in a calm studio space”
+
+Should feel:
+- Balanced
+- Sharp
+- Present
+- Light
+
+---
+
+4. ENERGY ROOM
+Goal: uplift without overstimulation
+
+Music style:
+- Chilled house influence
+- Funky groove
+- Uplifting bassline
+- Smooth rhythm
+
+Reference feeling:
+“Sunrise energy without intensity”
+
+Should feel:
+- Positive
+- Light
+- Motivating
+- Refreshing
+
+---
+
+5. SLEEP ROOM
+Goal: prepare for deep sleep
+
+Music style:
+- Very soft ambient soul
+- Deep warm pads
+- Slow atmospheric textures
+- Minimal melody
+
+Reference feeling:
+“Night-time calm after sunset”
+
+Should feel:
+- Heavy
+- Slow
+- Safe
+- Sleepy
+
+Avoid:
+- Any noticeable beat
+- Bright sounds
+- Sharp percussion
+
+---
+
+MUSIC BEHAVIOUR:
+
+- Fade in smoothly at session start
+- Fade out gently at session end
+- Loop seamlessly
+- Never interrupt breathing flow
+- Volume low by default
+
+Controls:
+- Sound on/off
+- Volume adjustment
+
+---
+
+IMPORTANT:
+
+Each room must have a clearly different sound identity.
+
+Do NOT use the same electronic sound style for every room.
+The music should reinforce the emotional purpose of each breathing session.
+
+Users should immediately feel the difference between:
+Calm → Stress → Focus → Energy → Sleep
+
+through sound alone.
+
+---
+
+GOAL:
+
+Create a signature SNAP Life sound that feels premium, modern, and emotionally connected.
+
+The breathing studio should feel like:
+wellness meets boutique lifestyle,
+not generic meditation software.

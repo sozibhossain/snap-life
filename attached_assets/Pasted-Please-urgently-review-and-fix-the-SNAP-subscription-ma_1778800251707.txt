@@ -1,0 +1,226 @@
+Please urgently review and fix the SNAP subscription management experience before we proceed with full launch readiness review.
+
+There appears to be a critical issue/incomplete flow relating to:
+
+# Subscription visibility and management inside the Profile / Account section.
+
+Currently users do not appear to have a clear or functioning way to:
+
+* view their active subscription
+* manage their subscription
+* upgrade/downgrade
+* understand trial status
+* access billing information
+* cancel/manage plans easily
+
+This must be resolved before launch.
+
+---
+
+## PRIORITY REVIEW REQUIRED
+
+Please investigate and identify:
+
+1. Why the subscription option is missing or incomplete within Profile / Account Settings
+2. Whether subscription state is syncing correctly across the app
+3. Whether the free trial logic is connected correctly
+4. Whether App Store / Google Play subscription management is configured correctly
+5. Whether subscription visibility differs between:
+
+* iOS
+* Android
+* Web/testing environments
+
+---
+
+## EXPECTED USER EXPERIENCE
+
+Users should always have a clear:
+
+# “Subscription” or “Manage Membership” section
+
+inside:
+
+# Profile / Account Settings
+
+This section should feel:
+
+* simple
+* premium
+* transparent
+* trustworthy
+
+---
+
+## REQUIRED SUBSCRIPTION PAGE FEATURES
+
+The subscription area should clearly display:
+
+## Current Plan
+
+Example:
+
+* SNAP Plus
+* SNAP Premium
+* Free Trial Active
+
+---
+
+## Trial Status
+
+If trial active:
+
+* days remaining
+* first billing date
+* “No charge today” reassurance
+* cancel anytime messaging
+
+Example:
+“Your free month ends on 14 June 2026.”
+
+---
+
+## Billing Information
+
+Display:
+
+* next payment date
+* monthly price
+* billing platform (Apple/Google/Web if relevant)
+
+---
+
+## Manage Subscription
+
+Allow users to:
+
+* upgrade plan
+* downgrade plan
+* cancel subscription
+* update payment method where supported
+* restore purchases
+
+---
+
+## Subscription Benefits Reminder
+
+Briefly reinforce value:
+
+* Bone Buddy AI
+* Guided Wellness
+* 9 Pathways
+* DEXA + FRAX Tracking
+* Expert Support
+
+---
+
+## FREE TRIAL REVIEW (CRITICAL)
+
+Please fully review:
+
+* trial activation logic
+* trial expiry logic
+* billing transition
+* reminder notifications
+* cancellation before billing
+* eligibility rules (new users only)
+
+Ensure:
+
+* no accidental charges
+* accurate billing dates
+* clear user communication
+
+---
+
+## APP STORE / GOOGLE PLAY COMPLIANCE
+
+Please verify subscription management complies with:
+
+* Apple App Store guidelines
+* Google Play guidelines
+
+Including:
+
+* clear cancellation access
+* restore purchases
+* transparent pricing
+* visible billing terms
+* subscription disclosures
+
+---
+
+## PROFILE SECTION ENHANCEMENT
+
+Inside Profile / Account Settings add:
+
+# Membership & Subscription
+
+Suggested structure:
+
+* Current Plan
+* Trial Status
+* Billing Date
+* Manage Membership
+* Restore Purchases
+* Support
+
+This should be easy to find and accessible at all times.
+
+---
+
+## UX / DESIGN REQUIREMENTS
+
+The subscription experience should feel:
+
+* reassuring
+* transparent
+* premium
+* low friction
+* easy to understand
+
+Avoid:
+
+* hidden subscription details
+* confusing trial wording
+* unclear cancellation process
+* overly technical billing language
+
+Use:
+
+* clean cards
+* soft SNAP styling
+* warm orange accents
+* calm typography
+
+---
+
+## TESTING REQUIREMENTS
+
+Please fully test:
+
+* new signup + trial flow
+* subscription activation
+* trial expiry
+* payment processing
+* cancellation flow
+* restore purchases
+* upgrade/downgrade flow
+* subscription display within profile
+* logout/login persistence
+* cross-device behaviour
+
+---
+
+## IMPORTANT
+
+Before proceeding with wider launch readiness review:
+Please first confirm:
+
+1. What the issue currently is
+2. Why subscription visibility/management is incomplete
+3. What fixes are required
+4. What has now been implemented
+5. Any remaining subscription-related risks before launch
+
+This is a critical launch dependency and must feel polished, transparent, and fully operational before release.

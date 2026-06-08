@@ -1,0 +1,111 @@
+modules = ["nodejs-24", "python-3.11", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "admin-test"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "admin-e2e"
+
+[[workflows.workflow]]
+name = "admin-test"
+author = "agent"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/admin run test"
+
+[[workflows.workflow]]
+name = "admin-e2e"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/admin run test:e2e"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+integrations = ["revenuecat:1.0.0"]
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 60000
+
+[[ports]]
+localPort = 5179
+externalPort = 5173
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 80
+
+[[ports]]
+localPort = 8082
+externalPort = 3001
+
+[[ports]]
+localPort = 18115
+externalPort = 3000
+
+[[ports]]
+localPort = 18116
+externalPort = 3002
+
+[[ports]]
+localPort = 18555
+externalPort = 3003
+
+[[ports]]
+localPort = 18558
+externalPort = 4200
+
+[[ports]]
+localPort = 18559
+externalPort = 5000
+
+[[ports]]
+localPort = 23744
+externalPort = 8099
+
+[nix]
+channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+REVENUECAT_PROJECT_ID = "proj056bc86d"
+REVENUECAT_TEST_STORE_APP_ID = "appecb0cae7a3"
+REVENUECAT_APPLE_APP_STORE_APP_ID = "app0a859c25ea"
+REVENUECAT_GOOGLE_PLAY_STORE_APP_ID = "app375fd42d5f"
+EXPO_PUBLIC_REVENUECAT_TEST_API_KEY = "test_FHoeBTBdllfIkxIodpprDcbAlBT"
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY = "appl_mwBZTxsGGmiudnZsGYAiRoEzdfZ"
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY = "goog_nlLeoaOHPDicPFZhtMuFuFCZEgC"
+VITE_CLERK_PUBLISHABLE_KEY = "pk_test_Y29tcG9zZWQtaHVtcGJhY2stNjQuY2xlcmsuYWNjb3VudHMuZGV2JA"

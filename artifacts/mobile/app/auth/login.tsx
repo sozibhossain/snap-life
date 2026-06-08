@@ -1,0 +1,356 @@
+import { Feather } from "@expo/vector-icons";
+import { useSignIn } from "@clerk/expo/legacy";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColors } from "@/hooks/useColors";
+
+const SNAP_ICON = require("@/assets/images/snap-icon.png");
+
+const HERO_PILLS = [
+  { icon: "message-circle" as const, label: "Bone Buddy AI" },
+  { icon: "book-open"      as const, label: "9 Pathways"    },
+  { icon: "wind"           as const, label: "Guided Wellness"},
+  { icon: "activity"       as const, label: "Progress Tracker"},
+];
+
+export default function LoginScreen() {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { signIn, setActive, isLoaded } = useSignIn();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+
+  async function handleLogin() {
+    if (!isLoaded) return;
+    if (!email.trim() || !password.trim()) {
+      setError("Please enter your email and password");
+      return;
+    }
+    setError("");
+    setIsLoading(true);
+    try {
+      await AsyncStorage.setItem(
+        "@snaplife/rememberMe/v1",
+        rememberMe ? "true" : "false",
+      );
+      const result = await signIn.create({
+        identifier: email.trim(),
+        password,
+      });
+
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+      } else {
+        setError("Sign in could not be completed. Please try again.");
+      }
+    } catch (e: unknown) {
+      const msg = (e as { errors?: { message?: string }[] })?.errors?.[0]?.message
+        ?? (e as Error)?.message
+        ?? "Something went wrong. Please try again in a moment.";
+      setError(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+
+  return (
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === "ios" ? "padding" : Platform.OS === "android" ? "height" : undefined}
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        {/* ── Hero — scrolls with content so nothing is clipped on small
+            viewports or when the software keyboard is open. ── */}
+        <LinearGradient
+          colors={["#1C3A4A", "#0D2530"]}
+          style={[styles.hero, { paddingTop: topPad + 18 }]}
+        >
+          <View style={styles.logoLockup}>
+            <Image source={SNAP_ICON} style={styles.logoIcon} resizeMode="contain" />
+            <Text style={styles.logoWordmark}>SNAP</Text>
+            <Text style={styles.logoTagline}>Bone Health for Life</Text>
+          </View>
+          <Text style={styles.heroEyebrow}>Welcome to the</Text>
+          <Text style={styles.heroHeadline}>
+            {"Bone Health\n"}
+            <Text style={styles.heroHeadlineTeal}>Movement</Text>
+          </Text>
+          <Text style={styles.heroCaption}>Bone Health for Life and Longevity</Text>
+          <View style={styles.pillRow}>
+            {HERO_PILLS.map((p) => (
+              <View key={p.label} style={styles.pill}>
+                <Feather name={p.icon} size={11} color="rgba(255,255,255,0.85)" />
+                <Text style={styles.pillText}>{p.label}</Text>
+              </View>
+            ))}
+          </View>
+        </LinearGradient>
+
+        <View style={[styles.content, { paddingTop: 28, paddingBottom: bottomPad + 24 }]}>
+
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.foreground }]}>Welcome back</Text>
+          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+            Sign in to continue your bone health journey
+          </Text>
+
+          <View style={styles.fields}>
+            <View>
+              <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
+                placeholder="you@example.com"
+                placeholderTextColor={colors.mutedForeground}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+              />
+            </View>
+
+            <View>
+              <Text style={[styles.label, { color: colors.foreground }]}>Password</Text>
+              <View style={[styles.passwordWrap, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                <TextInput
+                  style={[styles.passwordInput, { color: colors.foreground }]}
+                  placeholder="••••••••"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPw}
+                  autoComplete="password"
+                />
+                <Pressable onPress={() => setShowPw((v) => !v)} style={styles.eyeBtn}>
+                  <Feather name={showPw ? "eye-off" : "eye"} size={18} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+            </View>
+
+            <Pressable
+              style={styles.rememberRow}
+              onPress={() => setRememberMe((v) => !v)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: rememberMe }}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  {
+                    borderColor: rememberMe ? colors.primary : colors.border,
+                    backgroundColor: rememberMe ? colors.primary : "transparent",
+                  },
+                ]}
+              >
+                {rememberMe && <Feather name="check" size={14} color="#fff" />}
+              </View>
+              <Text style={[styles.rememberText, { color: colors.foreground }]}>
+                Keep me signed in
+              </Text>
+            </Pressable>
+
+            {error.length > 0 && (
+              <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text>
+            )}
+
+            <Pressable
+              style={[styles.loginBtn, { backgroundColor: colors.primary, opacity: isLoading ? 0.75 : 1 }]}
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              <Text style={styles.loginBtnText}>
+                {isLoading ? "Signing in…" : "Sign In"}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.forgotBtn}
+              onPress={() => router.push("/auth/forgot-password")}
+            >
+              <Text style={[styles.forgotText, { color: colors.primary }]}>Forgot password?</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: colors.mutedForeground }]}>
+            Don't have an account?{" "}
+          </Text>
+          <Pressable onPress={() => router.push("/auth/register")}>
+            <Text style={[styles.footerLink, { color: colors.accent }]}>Sign up free</Text>
+          </Pressable>
+        </View>
+        </View>
+
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  // ─── Hero ───────────────────────────────────────────────────────────────────
+  hero: {
+    width: "100%",
+    paddingHorizontal: 24,
+    paddingBottom: 22,
+  },
+  logoLockup: {
+    alignItems: "center",
+    marginBottom: 14,
+    gap: 4,
+  },
+  logoIcon: {
+    width: 80,
+    height: 80,
+    marginBottom: 4,
+  },
+  logoWordmark: {
+    fontSize: 32,
+    fontFamily: "Inter_700Bold",
+    color: "#ffffff",
+    letterSpacing: 6,
+  },
+  logoTagline: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#3ABBD4",
+    letterSpacing: 0.5,
+  },
+  heroEyebrow: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    color: "rgba(255,255,255,0.6)",
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  heroHeadline: {
+    fontSize: 34,
+    fontFamily: "Inter_700Bold",
+    color: "#fff",
+    lineHeight: 40,
+    letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+  heroHeadlineTeal: {
+    color: "#3ABBD4",
+  },
+  heroCaption: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.68)",
+    marginBottom: 14,
+    letterSpacing: 0.1,
+  },
+  pillRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+  },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  pillText: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    color: "rgba(255,255,255,0.85)",
+  },
+  // ─── Form ────────────────────────────────────────────────────────────────────
+  content: { paddingHorizontal: 24, alignItems: "center" },
+  card: {
+    width: "100%",
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 24,
+    marginBottom: 24,
+  },
+  title: { fontSize: 22, fontFamily: "Inter_700Bold", marginBottom: 4 },
+  subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", marginBottom: 24, lineHeight: 20 },
+  fields: { gap: 16 },
+  label: { fontSize: 13, fontFamily: "Inter_600SemiBold", marginBottom: 6 },
+  input: {
+    height: 48,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+  },
+  passwordWrap: {
+    height: 48,
+    borderRadius: 10,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    height: "100%",
+  },
+  eyeBtn: { paddingHorizontal: 14 },
+  fieldError: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 4 },
+  rememberRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rememberText: { fontSize: 14, fontFamily: "Inter_500Medium" },
+  error: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
+  loginBtn: {
+    height: 50,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  loginBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
+  forgotBtn: { alignItems: "center", paddingVertical: 4 },
+  forgotText: { fontSize: 14, fontFamily: "Inter_500Medium" },
+  footer: { flexDirection: "row", alignItems: "center" },
+  footerText: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  footerLink: { fontSize: 14, fontFamily: "Inter_700Bold" },
+});

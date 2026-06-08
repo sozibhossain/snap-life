@@ -1,0 +1,199 @@
+Hi — we need to enhance the Bone Tracker and dashboard to correctly reflect how DEXA scan results are assessed clinically.
+
+The current structure is too simplified and does not account for different skeletal sites, which is critical for accuracy and user trust.
+
+Please implement the following:
+
+---
+
+BONE HEALTH – DEXA DATA STRUCTURE & SUMMARY ENHANCEMENT
+
+---
+
+1. MULTI-SITE DEXA INPUT (CRITICAL)
+
+Update DEXA logging to capture results for:
+
+* Spine (L1–L4)
+* Femur / Hip
+
+Each entry must allow:
+
+* T-score (numeric input, including negative values)
+
+Ensure:
+
+* Clear labelling for each site
+* Easy input from real DEXA reports
+
+---
+
+2. UNDERSTAND DIFFERENT RESULTS PER SITE
+
+Important:
+
+Users may have different classifications at each site.
+
+Example:
+
+* Spine: Osteoporosis
+* Hip: Osteopenia
+
+The system must:
+
+* Store and display these separately
+* Not average or merge incorrectly
+
+---
+
+3. CLASSIFICATION LOGIC (BASED ON T-SCORE)
+
+Apply classification per site:
+
+* Normal: T-score ≥ -1.0
+* Osteopenia: T-score between -1.0 and -2.5
+* Osteoporosis: T-score ≤ -2.5
+
+---
+
+4. DISPLAY STANDARD DEVIATION CONTEXT (SIMPLIFIED)
+
+Do NOT show “SD” technically to users.
+
+Instead:
+
+* Explain simply:
+
+“Your score compares your bone density to a healthy average. Lower scores indicate lower bone density.”
+
+Keep:
+
+* Non-clinical
+* Easy to understand
+
+---
+
+5. BONE HEALTH SUMMARY (DASHBOARD)
+
+Update dashboard summary to show:
+
+* Spine (L1–L4):
+
+  * T-score
+  * Classification
+
+* Hip:
+
+  * T-score
+  * Classification
+
+Also include:
+
+* Fracture risk (from FRAX if available)
+
+---
+
+6. VISUAL REPRESENTATION (IMPORTANT)
+
+Create a simple visual indicator:
+
+* Scale from 0 to below -3
+* Mark where the user sits
+
+Use colour guidance:
+
+* Normal → calm/neutral
+* Osteopenia → soft warning
+* Osteoporosis → stronger highlight
+
+Ensure:
+
+* Still calm and non-alarming
+* Premium look
+
+---
+
+7. PROGRESS TRACKING
+
+Track changes over time for BOTH:
+
+* Spine
+* Hip
+
+Display:
+
+* Separate trend lines OR toggle between them
+
+Ensure users can see:
+
+* Improvement
+* Stability
+* Decline
+
+---
+
+8. INSIGHT GENERATION
+
+Generate insights such as:
+
+* “Your spine results indicate lower bone density — consistency will support improvement”
+* “Your hip results are stable — maintaining habits is key”
+
+Keep:
+
+* Supportive
+* Clear
+* Non-clinical
+
+---
+
+9. DATA CONNECTION
+
+Ensure this data feeds into:
+
+* Dashboard
+* Progress visualisation
+* SNAP Shot
+* Bone Buddy
+
+---
+
+10. DATA STRUCTURE UPDATE
+
+Update database to store per DEXA record:
+
+* Date
+* Spine T-score (L1–L4)
+* Hip T-score
+* Classification (auto-calculated per site)
+
+---
+
+11. UX IMPROVEMENT
+
+Ensure:
+
+* Easy data entry from real reports
+* Clear separation between Spine and Hip
+* No confusion for users
+
+---
+
+GOAL
+
+Create a Bone Health system that:
+
+* Reflects real clinical data accurately
+* Tracks multiple skeletal sites correctly
+* Provides clear, meaningful summaries
+* Supports long-term monitoring and engagement
+
+This should feel:
+
+* Intelligent
+* Trustworthy
+* Easy to understand
+
+---
+
+Please confirm once implemented and highlight any enhancements you recommend.

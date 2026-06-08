@@ -1,0 +1,346 @@
+Please complete a full SNAP platform launch readiness review across product, onboarding, subscriptions, AI, wellness, pathways, consultant support, operations, compliance, and deployment infrastructure.
+
+The purpose of this review is to ensure SNAP is fully prepared for:
+
+* beta launch
+* public launch
+* subscription rollout
+* App Store / Google Play submission
+* onboarding scale
+* premium user experience
+* operational readiness
+
+We have completed substantial feature development and now need:
+
+1. A complete review of what has already been implemented
+2. Identification of any missing setup/configuration requirements
+3. A final readiness checklist
+4. Recommendations for anything still required before launch
+
+---
+
+## IMPORTANT CONTEXT
+
+SNAP is evolving into:
+“The first app of its kind supporting bone health, healthy ageing, wellbeing, mobility, menopause support, and longevity.”
+
+The platform now includes:
+
+* Bone Buddy AI
+* 9 educational pathways
+* Guided Wellness Lounge
+* emotional AI routing
+* supplement + medication tracking
+* DEXA + FRAX tracking
+* personalised onboarding
+* subscription system
+* free trial logic
+* community support
+* consultant request system
+* systemic coaching
+* healthy ageing education
+* personalised profile system
+
+Please review the entire platform ecosystem holistically.
+
+---
+
+## PART 1 — FULL PRODUCT REVIEW
+
+Please review and validate all major systems including:
+
+## ONBOARDING
+
+* account creation
+* profile completion
+* email capture
+* personalisation flow
+* motivations/goals
+* onboarding progression
+
+## SUBSCRIPTIONS
+
+* free month trial
+* monthly pricing
+* payment logic
+* cancellation flow
+* reminder notifications
+* App Store / Google Play compliance
+
+## WELLNESS LOUNGE
+
+* emotional routing
+* meditation playback
+* female voice quality
+* music uniqueness
+* session recommendations
+* AI-guided experiences
+
+## EDUCATION / FOUNDATIONS
+
+* 9 pathways
+* progression logic
+* pathway UX
+* learning flow
+* Duolingo-style engagement
+* educational consistency
+
+## TRACKING SYSTEMS
+
+* supplement tracking
+* medication tracking
+* DEXA tracking
+* FRAX risk assessment
+* bone health tracker integration
+
+## AI SYSTEMS
+
+* Bone Buddy AI
+* safety guardrails
+* personalised responses
+* onboarding integration
+* healthy ageing recommendations
+
+## CONSULTANT / COACHING SYSTEM
+
+* consultant profiles
+* request support flow
+* email routing
+* admin oversight
+* systemic coaching
+* session structures
+
+## PROFILE / ACCOUNT AREA
+
+* editable profile
+* personalisation
+* subscription management
+* account settings
+
+---
+
+## PART 2 — LAUNCH READINESS REVIEW
+
+Please identify:
+
+# EVERYTHING STILL REQUIRED
+
+before launch readiness is complete.
+
+This should include:
+
+---
+
+## A. TECHNICAL REQUIREMENTS
+
+Review:
+
+* staging environment
+* production environment
+* QA/testing workflows
+* crash monitoring
+* analytics setup
+* performance optimisation
+* push notification setup
+* email integrations
+* payment testing
+* mobile responsiveness
+* app deployment readiness
+
+Please identify:
+
+* anything incomplete
+* anything missing
+* anything requiring setup/configuration
+
+---
+
+## B. APP STORE / GOOGLE PLAY READINESS
+
+Review:
+
+* subscription compliance
+* free trial compliance
+* restore purchases
+* cancellation visibility
+* screenshots
+* app descriptions
+* metadata
+* disclaimers
+* medical wording
+* privacy positioning
+
+Please identify:
+
+* anything still required
+* anything that could risk rejection
+* recommended improvements
+
+---
+
+## C. LEGAL / GDPR / PRIVACY
+
+Review:
+
+* privacy policy
+* GDPR compliance
+* health data handling
+* email consent
+* consultant request consent
+* notification permissions
+* AI disclaimers
+* coaching disclaimers
+* wellness positioning
+
+Please identify:
+
+* any missing legal/compliance setup
+* any risk areas
+* any required wording/disclosures
+
+---
+
+## D. AI SAFETY + HEALTH POSITIONING
+
+Review Bone Buddy AI and ensure:
+
+* no medical diagnosis language
+* no unsafe medication advice
+* safe redirect handling
+* clinician escalation guidance
+* safe DEXA/FRAX interpretation boundaries
+
+Please identify:
+
+* missing AI guardrails
+* safety improvements
+* moderation requirements
+
+---
+
+## E. USER EXPERIENCE + RETENTION
+
+Review:
+
+* onboarding completion experience
+* emotional engagement
+* push notifications
+* daily habit systems
+* reminder logic
+* streaks/progress
+* home screen personalisation
+* emotional wellness continuity
+
+Please identify:
+
+* missing engagement systems
+* opportunities to improve retention
+* areas causing friction/confusion
+
+---
+
+## F. OPERATIONAL READINESS
+
+Review:
+
+* consultant workflows
+* support email setup
+* admin oversight
+* response management
+* payment operations
+* subscription support
+* customer support readiness
+
+Please identify:
+
+* missing operational processes
+* areas requiring manual handling
+* admin tooling recommendations
+
+---
+
+## PART 3 — FINAL OUTPUT REQUIRED
+
+Please provide:
+
+# 1. Full Launch Readiness Checklist
+
+Categorised by:
+
+* Complete
+* In Progress
+* Missing / Recommended
+
+---
+
+# 2. Priority Ranking
+
+Please rank all remaining tasks:
+
+* Critical before launch
+* Important shortly after launch
+* Future enhancements
+
+---
+
+# 3. Risk Assessment
+
+Identify:
+
+* launch risks
+* user experience risks
+* technical risks
+* subscription risks
+* compliance risks
+
+---
+
+# 4. Recommended Beta Launch Plan
+
+Please recommend:
+
+* staging process
+* testing process
+* beta tester structure
+* rollout approach
+* analytics requirements
+* feedback collection system
+
+---
+
+## IMPORTANT PRODUCT POSITIONING
+
+Please ensure all recommendations align with SNAP’s positioning as:
+
+“A premium healthy ageing platform supporting bone health, wellbeing, mobility, menopause support, confidence, and longevity.”
+
+The platform should feel:
+
+* warm
+* intelligent
+* emotionally supportive
+* premium
+* clinically responsible
+* human-centred
+
+NOT:
+
+* clinical
+* cold
+* overly medical
+* overwhelming
+
+---
+
+## FINAL PRINCIPLE
+
+The goal is not simply to launch features.
+
+The goal is to launch:
+
+* a trusted experience
+* a stable platform
+* a scalable ecosystem
+* a premium healthy ageing companion
+
+Please thoroughly review the entire SNAP ecosystem and provide a detailed assessment of anything still required to fully support launch readiness.

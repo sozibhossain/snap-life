@@ -1,0 +1,376 @@
+Please design and implement a **Dynamic Emotion-Routing System** for SNAP’s Wellness Lounge that automatically selects the most appropriate meditation/audio session based on a user’s likely emotional state.
+
+This system transforms the current static session selection into an **AI-guided emotional wellbeing engine** that increases engagement, retention, and emotional support.
+
+The goal is to ensure users are always gently guided to the *right emotional state intervention at the right time*, without needing to manually choose.
+
+---
+
+# 🧠 CORE CONCEPT
+
+Instead of users selecting:
+
+* Stress Relief
+* Sleep Support
+* Focus & Clarity
+* Confidence & Mindset
+
+The system should:
+
+> intelligently infer emotional state and recommend the most appropriate session automatically.
+
+This creates a:
+
+* personalised
+* emotionally intelligent
+* low-friction experience
+* “always understood” feeling
+
+---
+
+# 🌿 EMOTIONAL STATE MODEL (CORE ENGINE)
+
+The system should classify user state into 7 primary emotional categories:
+
+---
+
+## 1. Stress / Overwhelm
+
+Indicators:
+
+* rapid app activity
+* repeated navigation switching
+* incomplete actions
+* high engagement volatility
+* stress-related content selection
+
+Output:
+→ Stress Relief (5 min)
+
+---
+
+## 2. Sleep / Fatigue
+
+Indicators:
+
+* evening/night usage
+* low interaction speed
+* inactivity before session
+* repeated sleep-related content
+
+Output:
+→ Sleep Support (7 min)
+
+---
+
+## 3. Focus / Cognitive Fog
+
+Indicators:
+
+* mid-day usage spikes
+* task switching behaviour
+* incomplete logging actions
+* low clarity engagement patterns
+
+Output:
+→ Focus & Clarity (6 min)
+
+---
+
+## 4. Low Confidence / Self-Doubt
+
+Indicators:
+
+* missed streaks
+* reduced logging behaviour
+* hesitation in tracking features
+* repeated app revisits without action
+
+Output:
+→ Confidence & Mindset (6 min)
+
+---
+
+## 5. Neutral / Balanced State
+
+Indicators:
+
+* stable usage
+* consistent engagement
+* no emotional spikes
+
+Output:
+→ Calm / Regulation (NEW BASELINE STATE)
+
+---
+
+## 6. Sadness / Worry
+
+Indicators:
+
+* reduced engagement
+* low activity streaks
+* negative behavioural patterns
+* optional user self-report
+
+Output:
+→ Sadness / Worry Support (NEW)
+
+---
+
+## 7. Positive / Uplift
+
+Indicators:
+
+* streak milestones
+* high engagement completion
+* morning positive usage patterns
+
+Output:
+→ Happiness / Positive Lift (NEW)
+
+---
+
+# 🤖 AI ROUTING LOGIC
+
+The system should use a **multi-signal inference model** combining:
+
+## A. Behavioural signals
+
+* session timing
+* navigation patterns
+* engagement depth
+* streak status
+* incomplete actions
+* feature usage
+
+## B. Contextual signals
+
+* time of day
+* recent session history
+* day of week
+* usage rhythm patterns
+
+## C. Optional self-report input
+
+* “How are you feeling?” quick select
+* emoji-based check-in
+* skip allowed (non-mandatory)
+
+## D. Historical emotional trends
+
+* recurring stress cycles
+* sleep disruption patterns
+* adherence patterns
+* engagement consistency
+
+---
+
+# 🎯 ROUTING DECISION ENGINE
+
+Each emotional state is assigned a weighted score.
+
+Example:
+
+Stress Score =
+
+* rapid navigation switching
+* incomplete tasks
+* high engagement volatility
+
+Sleep Score =
+
+* evening usage
+* low interaction speed
+* inactivity prior to session
+
+The system selects:
+→ highest confidence emotional match
+
+Fallback:
+→ Calm / Regulation session (safe default)
+
+---
+
+# 🧘 WELLNESS LOUNGE OUTPUT MAPPING
+
+* Stress → Stress Relief (5 min)
+* Sleep → Sleep Support (7 min)
+* Focus → Focus & Clarity (6 min)
+* Low Confidence → Confidence & Mindset (6 min)
+* Neutral → Calm / Regulation (NEW)
+* Sadness / Worry → Sadness / Worry Support (NEW)
+* Positive → Happiness / Positive Lift (NEW)
+
+---
+
+# 🗣️ VOICE EXPERIENCE REQUIREMENTS (CRITICAL UPDATE)
+
+All audio sessions must use a **high-quality British English female voice**.
+
+This is essential for trust, emotional safety, and premium experience quality.
+
+## Voice requirements:
+
+* Natural British English accent (NOT American)
+* Calm, clear, and gentle tone
+* Warm and reassuring delivery
+* Soft pacing with natural pauses
+* Emotionally intelligent cadence
+* Human-like speech rhythm
+* Subtle variation in tone (not monotone)
+* Non-robotic and non-synthetic sounding
+
+## MUST AVOID:
+
+* robotic TTS tone
+* overly polished synthetic cadence
+* overly energetic “assistant voice” style
+* American accent defaults
+* flat monotone delivery
+* clinical or instructional tone
+
+## REQUIRED EXPERIENCE FEEL:
+
+The voice should feel like:
+
+> a calm, real, supportive guide speaking directly to the user in a moment of emotional need.
+
+It should sound comparable to premium wellness apps such as:
+
+* Calm
+* Headspace
+* Apple Mindfulness audio experiences
+
+---
+
+# 🌙 SESSION NARRATIVE STANDARDS
+
+Each session should follow this emotional arc:
+
+1. Emotional recognition
+2. Validation
+3. Gentle grounding
+4. Nervous system regulation cue
+5. Reassurance / identity support
+6. Soft closure
+
+Avoid:
+
+* instruction-heavy tone
+* clinical language
+* overly scripted robotic phrasing
+
+---
+
+# 🧩 NEW REQUIRED SESSIONS
+
+## 🌤 Calm / Regulation (Baseline)
+
+* daily emotional reset
+* stabilising nervous system tone
+
+## 🌧 Sadness / Worry Support
+
+* emotional holding space
+* reassurance without problem-solving
+
+## ☀️ Happiness / Positive Lift
+
+* gentle uplift
+* gratitude-based awareness
+* light emotional expansion
+
+---
+
+# ⚙️ SYSTEM BEHAVIOUR RULES
+
+## Rule 1: Safety-first fallback
+
+If uncertain → default to Calm / Regulation
+
+## Rule 2: One recommendation only
+
+System shows ONE recommended session to reduce overwhelm
+
+## Rule 3: User control remains
+
+Users can always override and manually select any session
+
+## Rule 4: Emotional safety priority
+
+If conflicting signals → choose calming or neutral session
+
+---
+
+# 📊 CONTINUOUS LEARNING LOOP
+
+System improves via:
+
+* session completion rates
+* skip rates
+* manual overrides
+* repeat usage patterns
+* engagement duration
+* time-of-day success rates
+
+---
+
+# 🧠 USER EXPERIENCE FLOW
+
+User opens Wellness Lounge →
+
+System displays:
+
+## “Recommended for you right now”
+
+→ One AI-selected session
+Label: “Based on your current rhythm”
+
+Below:
+“Or choose another”
+
+* Stress Relief
+* Sleep Support
+* Focus & Clarity
+* Confidence & Mindset
+* Calm
+* Sadness / Worry
+* Happiness / Positive Lift
+
+---
+
+# 💡 STRATEGIC OUTCOME
+
+This transforms SNAP from:
+
+* a static meditation library
+
+into:
+
+> an emotionally intelligent wellbeing companion that understands and responds to user emotional state in real time
+
+This improves:
+
+* daily engagement
+* emotional connection
+* retention
+* subscription value
+* habit formation
+* perceived personalisation
+
+---
+
+# FINAL PRINCIPLE
+
+Do not ask users what they need first.
+
+Instead:
+
+> infer gently, recommend carefully, and always allow choice.
+
+The system should feel like:
+
+> “I am being quietly understood and supported.”
+
+That is the core emotional experience SNAP should deliver.

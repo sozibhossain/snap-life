@@ -1,0 +1,231 @@
+Hi — the current dashboard is too basic and does not provide enough clarity or structure for the user.
+
+We need to redesign and enhance the dashboard so it becomes the central hub of the app — clearly showing user data, progress, and what to do next.
+
+This should feel structured, intelligent, and easy to navigate.
+
+Please implement the following:
+
+---
+
+SNAP LIFE – DASHBOARD ENHANCEMENT (CLARITY + STRUCTURE)
+
+---
+
+1. OVERALL STRUCTURE
+
+Redesign the dashboard into clearly defined sections using a card-based layout.
+
+Each section must have:
+
+* A clear purpose
+* Clean spacing
+* No duplication
+
+Order of sections (top to bottom):
+
+1. Welcome / Today’s Focus
+2. Bone Health Summary
+3. Progress & Trends
+4. Consistency & Activity
+5. Feel Good Insights
+6. Quick Actions
+
+---
+
+2. USER HEADER (TOP SECTION)
+
+Display key user information clearly:
+
+* Name (personalised greeting)
+* Profile photo (if uploaded)
+* Location (optional display)
+
+Optional:
+
+* Subtle status message (e.g. “Building consistency”)
+
+---
+
+3. TODAY’S FOCUS (KEY DRIVER)
+
+Highlight 2–3 daily actions:
+
+* One nutrition suggestion
+* One movement suggestion
+* One mindfulness suggestion
+
+Keep:
+
+* Simple
+* Actionable
+* Easy to tap
+
+---
+
+4. BONE HEALTH SUMMARY (CORE DATA)
+
+Create a clear summary card showing:
+
+* Latest DEXA scan result (if available)
+
+* FRAX results:
+
+  * Major Osteoporotic Fracture (%)
+  * Hip Fracture (%)
+
+* Simple interpretation:
+
+  * Improving / Stable / Needs attention
+
+Ensure:
+
+* Clean layout
+* No overwhelming data
+
+---
+
+5. PROGRESS & TRENDS
+
+Show visual progress over time:
+
+* Bone health metrics
+* Fracture risk
+* BMI
+
+Use:
+
+* Simple line graphs
+* Clear date range
+
+Ensure:
+
+* Easy to read
+* No clutter
+
+---
+
+6. CONSISTENCY & ACTIVITY
+
+Show user engagement clearly:
+
+* Breathing sessions completed
+* Meditation sessions
+* Movement activity
+* Nutrition logging
+
+Display as:
+
+* Weekly overview
+* Simple visual indicators (dots, bars, or rings)
+
+Goal:
+Help users see consistency at a glance.
+
+---
+
+7. FEEL GOOD INSIGHTS
+
+Add a simple insight section that connects behaviour to feeling:
+
+Examples:
+
+* “You’ve been more consistent this week”
+* “Your evening sessions are helping you feel calmer”
+
+Keep:
+
+* Short
+* Positive
+* Human
+
+---
+
+8. SNAP SHOT PREVIEW
+
+Display a weekly summary preview:
+
+* Progress highlight
+* Reinforcement message
+
+CTA:
+“View full SNAP Shot”
+
+---
+
+9. QUICK ACTIONS
+
+Provide clear, easy access to key features:
+
+* Log DEXA Scan
+* Calculate FRAX
+* Start Breathing
+* View Meal Plan
+
+Keep:
+
+* Minimal
+* Well spaced
+* Easy to tap
+
+---
+
+10. DATA CLARITY (IMPORTANT)
+
+Ensure:
+
+* No repeated data across sections
+* Each section has a clear purpose
+* Information is prioritised (most important first)
+
+---
+
+11. PERSONALISATION
+
+Ensure dashboard reflects:
+
+* User data
+* Behaviour
+* Progress
+
+No generic content.
+
+---
+
+12. MOBILE EXPERIENCE
+
+Ensure layout works perfectly on mobile:
+
+* Clean vertical flow
+* Easy scrolling
+* No overcrowding
+
+---
+
+13. PERFORMANCE
+
+* Fast loading
+* Smooth transitions
+* No lag
+
+---
+
+GOAL
+
+Transform the dashboard into a clear, structured, and intelligent experience that:
+
+* Shows users exactly where they are
+* Helps them understand their progress
+* Guides them on what to do next
+
+Users should feel:
+
+* In control
+* Motivated
+* Clear on their journey
+
+This should feel like a premium health dashboard — not a basic overview screen.
+
+---
+
+Please confirm once implemented and highlight any improvements you recommend.

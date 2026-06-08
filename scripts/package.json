@@ -1,0 +1,23 @@
+{
+  "name": "@workspace/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello": "tsx ./src/hello.ts",
+    "backfill-users": "tsx ./src/backfillUsers.ts",
+    "nightly-e2e": "tsx ./src/nightlyE2e.ts",
+    "generate-vapid-keys": "tsx ./src/generateVapidKeys.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/web-push": "^3.6.4",
+    "tsx": "catalog:"
+  }
+}

@@ -1,0 +1,37 @@
+kind = "web"
+previewPath = "/admin/"
+title = "SNAP Life Admin"
+version = "1.0.0"
+id = "artifacts/admin"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/admin/" ]
+localPort = 23744
+
+[services.development]
+run = "pnpm --filter @workspace/admin run dev"
+
+[services.production]
+
+[services.production.build]
+args = [ "pnpm", "--filter", "@workspace/admin", "run", "build" ]
+
+[services.production.run]
+# Tiny Express + Helmet shim that serves the built SPA so we can emit
+# real HTTP security headers (HSTS, CSP, X-Frame-Options, Referrer-
+# Policy, Permissions-Policy). Static-deploy mode cannot set these
+# at the response level.
+args = [ "node", "artifacts/admin/server.mjs" ]
+
+[services.production.health.startup]
+path = "/admin/"
+
+[services.env]
+PORT = "23744"
+BASE_PATH = "/admin/"

@@ -1,0 +1,153 @@
+Hi — before we move forward, I need a full system validation and access handover for SNAP Life.
+
+Please review everything against the original infrastructure brief and confirm that all components are fully configured, connected, and production-ready.
+
+---
+
+FINAL VALIDATION REQUIREMENT
+
+Conduct a full audit of the platform to ensure the following are complete and working correctly:
+
+---
+
+1. PWA SETUP
+
+* App is fully installable (mobile & desktop)
+* Manifest and service worker configured
+* Basic offline capability working
+* App icon and splash screen in place
+
+---
+
+2. AUTHENTICATION & EMAIL
+
+* Email/password login working
+* “Remember me” functioning
+* Password reset flow tested
+* Email verification working
+
+SMTP:
+
+* Emails sending successfully (welcome, reset, verification)
+* Branded and reliable delivery confirmed
+
+---
+
+3. DATABASE & DATA FLOW
+
+* Database fully implemented and connected
+* All user, behaviour, and AI data storing correctly
+
+Confirm:
+
+* Meal Planner → Nutrition Log → Supplement tracking connected
+* Bone Tracker (DEXA/FRAX) storing and displaying correctly
+* Activity, breathing, meditation logging correctly
+* Mood and SNAP Shot capturing data
+
+---
+
+4. AI & PERSONALISATION (BONE BUDDY)
+
+* Bone Buddy using real user data
+* Personalised responses functioning
+* Daily “Today’s Focus” generating correctly
+
+---
+
+5. ADMIN DASHBOARD
+
+Confirm dashboard is live and showing:
+
+* Total users / active users
+* Engagement metrics
+* Feature usage (breathing, nutrition, etc.)
+* Feedback submissions
+
+---
+
+6. TESTING ENVIRONMENT
+
+* Staging environment set up
+* Separate from live environment
+* Test accounts working
+* Data reset functionality available
+
+---
+
+7. REVENUECAT
+
+* Fully integrated and tested
+* Subscription states syncing correctly
+* Trial and upgrade flows working
+
+---
+
+8. SYSTEM CONNECTIVITY
+
+Confirm NO isolated systems:
+
+* Database ↔ AI
+* User activity ↔ insights
+* Admin dashboard ↔ real-time data
+
+Everything must be fully connected.
+
+---
+
+9. PERFORMANCE & SECURITY
+
+* Authentication secure (JWT or equivalent)
+* Data encrypted
+* App performance smooth (no lag)
+
+---
+
+10. FULL USER JOURNEY TEST
+
+Please confirm successful test of:
+
+* User signup
+* Email verification
+* App usage (core features)
+* Data tracking
+* AI responses
+* Dashboard reflection
+
+---
+
+ACCESS HANDOVER (REQUIRED)
+
+Once validated, please provide:
+
+1. Admin Dashboard Access
+
+* URL
+* Admin email
+* Password
+
+2. Testing / Staging Access (2 users)
+
+* URLs
+* Test user emails
+* Passwords
+
+---
+
+IMPORTANT
+
+* Ensure credentials are secure but accessible for immediate testing
+* Highlight any known limitations or areas not fully complete
+* Flag any dependencies or risks before proceeding further
+
+---
+
+GOAL
+
+I need confirmation that SNAP Life is:
+
+* Fully functional
+* Fully connected
+* Ready for testing and refinement
+
+Please confirm once complete and provide access details.

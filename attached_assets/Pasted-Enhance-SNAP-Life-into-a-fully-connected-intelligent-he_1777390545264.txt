@@ -1,0 +1,266 @@
+Enhance SNAP Life into a fully connected, intelligent health platform where all features work together to guide the user through simple, daily actions that improve bone health and overall wellbeing.
+
+The system must feel personal, effortless, and supportive — not complex or overwhelming.
+
+---
+
+CORE PRINCIPLE:
+
+SNAP Life should act as a “daily guide” that answers:
+
+“What should I do today to support my health?”
+
+All features must connect and contribute to this answer.
+
+---
+
+CORE SYSTEM COMPONENTS (CONNECTED):
+
+Integrate and connect the following:
+
+- Breathing Studio
+- Meditation
+- Meal Plans
+- Bone Buddy (AI)
+- Daily Check-In (mood)
+- SNAP Shot (weekly reflection)
+- Bone Health Data (FRAX, assessments)
+- Subscription tier (Plus / Premium)
+
+All data flows into a central intelligence layer.
+
+---
+
+1. DAILY “WHAT TO DO TODAY” ENGINE:
+
+Create a simple daily plan shown on the home screen:
+
+Example:
+“Today’s focus”
+
+- One nutrition goal (e.g. calcium-rich meal)
+- One mental wellbeing action (breathing/meditation)
+- One lifestyle habit (movement, sunlight, etc.)
+
+Keep to 2–3 actions max.
+
+This must be:
+- Personalised
+- Simple
+- Actionable
+
+---
+
+2. USER “DIGITAL PROFILE” (LIGHT DIGITAL TWIN):
+
+Use:
+- FRAX score
+- Behaviour (sessions, meals, mood)
+- Engagement patterns
+
+To generate simple insights:
+
+Examples:
+- “You’re building consistency this week”
+- “Your current habits are supporting bone strength”
+
+Avoid technical language.
+
+---
+
+3. NERVOUS SYSTEM STATUS:
+
+Based on:
+- Mood check-ins
+- App usage (breathing/meditation)
+
+Display simple state:
+- Calm
+- Balanced
+- Stressed
+
+Use this to recommend:
+- Breathing sessions
+- Meditation type
+- Daily focus
+
+---
+
+4. CONNECTED INSIGHTS ENGINE:
+
+Translate behaviour into meaning:
+
+Examples:
+- “You’ve felt calmer after evening sessions”
+- “Your consistency with meals is supporting your bone health”
+
+Keep insights:
+- Short
+- Encouraging
+- Easy to understand
+
+---
+
+5. BONE BUDDY (CENTRAL INTELLIGENCE):
+
+Bone Buddy must:
+
+- Use user name
+- Reference real data
+- Speak conversationally
+
+Responsibilities:
+- Daily check-ins
+- Recommend actions
+- Reinforce progress
+- Connect all features
+
+Example:
+“Hi Catherine, I can see you’ve been consistent this week. Would you like to focus on a calcium-rich meal today?”
+
+---
+
+6. FEATURE CONNECTIONS:
+
+Ensure features influence each other:
+
+- Breathing → affects mood → influences recommendations
+- Meal Plans → supports bone health insights
+- Mood → influences daily plan
+- Activity → feeds SNAP Shot
+
+No feature should exist in isolation.
+
+---
+
+7. MOVEMENT INTEGRATION (NEW):
+
+Add simple bone-strength supporting movement:
+
+- Light strength exercises
+- Impact-safe guidance
+
+Position as:
+“Support your bones through movement”
+
+Keep:
+- Simple
+- Beginner-friendly
+
+---
+
+8. SMART FOOD GUIDANCE (ENHANCED):
+
+Beyond meal plans, add:
+
+“What can I eat today?”
+
+- Quick suggestions:
+  - At home
+  - On the go
+  - Eating out
+
+Keep simple and realistic.
+
+---
+
+9. SNAP SHOT (WEEKLY LOOP):
+
+Provide:
+
+- Weekly summary
+- Emotional insight
+- Reinforcement of consistency
+
+Example:
+“You’ve shown great consistency this week”
+
+Points run in background (for future rewards).
+
+---
+
+10. PROGRESS WITHOUT COMPLEX DATA:
+
+Avoid charts and overwhelming dashboards.
+
+Instead show:
+- “You’re improving”
+- “You’re building momentum”
+
+Focus on:
+- Feeling
+- Behaviour
+- consistency
+
+---
+
+11. IDENTITY & HABIT BUILDING:
+
+Reinforce identity:
+
+- “You’re consistent”
+- “You’re building strength”
+
+Use light streaks (no pressure).
+
+---
+
+12. PREMIUM DIFFERENTIATION:
+
+Premium unlocks:
+
+- Advanced insights
+- Adaptive recommendations
+- Deeper Bone Buddy intelligence
+- Full personalisation
+
+Plus remains:
+- Functional
+- Supportive
+- Less adaptive
+
+---
+
+13. CONTINUOUS LEARNING SYSTEM:
+
+The app must learn from:
+
+- User behaviour
+- Mood trends
+- Engagement patterns
+
+Then:
+- Adjust recommendations
+- Refine tone
+- Improve guidance
+
+---
+
+14. USER EXPERIENCE:
+
+- Clean, calm interface
+- Minimal inputs required
+- No overwhelm
+
+Everything should feel:
+- Guided
+- Personal
+- Easy
+
+---
+
+GOAL:
+
+Transform SNAP Life into an intelligent daily health companion that:
+
+- Understands the user
+- Guides simple actions
+- Connects all aspects of health
+- Improves bone health over time
+
+Users should feel:
+“I know what to do”
+“I feel better”
+“I’m making progress”
+
+This is not just an app — it is a connected health system.

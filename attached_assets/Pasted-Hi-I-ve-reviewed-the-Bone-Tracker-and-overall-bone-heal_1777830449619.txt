@@ -1,0 +1,232 @@
+Hi — I’ve reviewed the Bone Tracker and overall bone health experience in the development environment. We now need to enhance this area significantly to ensure it is structured, clinically aligned, easy to use, and provides meaningful long-term value.
+
+Please implement the following combined updates:
+
+---
+
+BONE TRACKER + FRAX TOOL – ENHANCED BUILD
+
+---
+
+1. DEXA SCAN LOGGING – STRUCTURE ENHANCEMENT
+
+Update the DEXA logging feature to align with real-world reports and improve usability.
+
+Add the following fields within each DEXA record:
+
+* 10-Year Fracture Risk:
+
+  * Major Osteoporotic Fracture (%)
+  * Hip Fracture (%)
+
+* BMI (numeric input)
+
+Ensure:
+
+* Clear labels
+* Logical positioning within the record
+* Easy data entry directly from user reports
+
+---
+
+2. MULTIPLE RECORD SUPPORT (CRITICAL)
+
+Users must be able to log multiple DEXA scans over time.
+
+Each record should include:
+
+* Date of scan
+* Bone density values
+* Fracture risk (%)
+* BMI
+
+Add:
+
+* “Add New Scan” CTA
+* Chronological display of records
+
+---
+
+3. UI / UX IMPROVEMENTS
+
+Restructure layout into clear sections:
+
+* Scan Details
+* Bone Density Results
+* Fracture Risk
+* Additional Metrics (BMI)
+
+Ensure:
+
+* Clean layout
+* Minimal text
+* Easy navigation
+* Mobile-friendly input
+
+Goal:
+Make it simple for users to input data from their reports without confusion.
+
+---
+
+4. DASHBOARD INTEGRATION
+
+Ensure DEXA data feeds into the main dashboard:
+
+Display:
+
+* Latest scan summary
+* Fracture risk values
+* Simple interpretation (non-clinical language)
+
+---
+
+5. PROGRESS VISUALISATION
+
+Create a visual progress view showing trends over time:
+
+Track:
+
+* Bone density values
+* Fracture risk (%)
+* BMI
+
+Use:
+
+* Simple line graphs or trend visuals
+* Clear timeline (by date)
+
+---
+
+6. FRAX RISK TOOL (NEW FEATURE)
+
+Introduce a built-in FRAX risk calculator that users can access anytime.
+
+---
+
+7. NAVIGATION & ACCESS
+
+Make the FRAX tool easy to find:
+
+* Add within Bone Tracker section
+* Include clear CTA:
+  “Calculate your fracture risk”
+
+Optional:
+
+* Add shortcut from dashboard
+
+---
+
+8. FRAX INPUT FLOW
+
+Design a clean, step-by-step input experience with:
+
+* Age
+* Gender
+* Weight / Height (or BMI)
+* Previous fracture (yes/no)
+* Parent fractured hip (yes/no)
+* Smoking status
+* Alcohol intake
+* Glucocorticoid use
+* Rheumatoid arthritis
+* Secondary osteoporosis
+* Bone mineral density (optional)
+
+Use:
+
+* Toggles
+* Dropdowns
+* Minimal typing
+
+---
+
+9. FRAX RESULTS DISPLAY
+
+Display clearly:
+
+* 10-year probability of:
+
+  * Major Osteoporotic Fracture (%)
+  * Hip Fracture (%)
+
+Include:
+
+* Simple risk level (low / moderate / higher)
+* Supportive explanation
+
+Add disclaimer:
+“This tool provides an estimate and is not a medical diagnosis”
+
+---
+
+10. SAVE & CONNECT DATA
+
+Allow users to:
+
+* Save FRAX results
+* Automatically log results into Bone Tracker
+
+Each saved result should include:
+
+* Date
+* Results (%)
+* Optional input summary
+
+---
+
+11. FULL INTEGRATION
+
+Ensure FRAX and DEXA data connect to:
+
+* Bone Tracker
+* Dashboard
+* Progress visualisation
+* SNAP Shot
+* Bone Buddy (AI insights)
+
+No isolated data.
+
+---
+
+12. AI (BONE BUDDY) INTEGRATION
+
+Ensure AI can reference both DEXA and FRAX data:
+
+Examples:
+
+* “Your fracture risk has improved since your last check”
+* “You’re building consistency that supports your bone health”
+
+Always:
+
+* Keep tone supportive
+* Encourage GP/specialist consultation where needed
+
+---
+
+13. EXPERIENCE & DESIGN ALIGNMENT
+
+Ensure all updates follow SNAP design principles:
+
+* Clean, calm interface
+* Soft colour palette
+* Simple, intuitive flow
+* Non-clinical language
+
+---
+
+GOAL
+
+Transform this into a premium, intelligent bone health system that:
+
+* Reflects real clinical data
+* Is easy to use
+* Tracks progress over time
+* Provides meaningful insights
+
+This should feel like a core, standout feature of SNAP Life — not just a data entry tool.
+
+---
+
+Please confirm once implemented and highlight any improvements or technical considerations.

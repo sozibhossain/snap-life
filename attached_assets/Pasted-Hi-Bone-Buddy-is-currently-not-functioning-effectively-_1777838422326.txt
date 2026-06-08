@@ -1,0 +1,202 @@
+Hi — Bone Buddy is currently not functioning effectively in the development environment.
+
+We need to rebuild and enhance this feature so it becomes a reliable, intelligent, and connected guidance system within SNAP Life.
+
+This is not just a chatbot — it must be fully integrated with user data and the dashboard to provide meaningful, personalised support.
+
+---
+
+BONE BUDDY – CORE REBUILD & ENHANCEMENT
+
+---
+
+1. CORE OBJECTIVE
+
+Build Bone Buddy as a:
+
+* Personalised guidance assistant
+* Data-aware insight engine
+* Supportive, conversational interface
+
+It must:
+
+* Understand user data
+* Reference real activity
+* Provide helpful, non-clinical guidance
+
+---
+
+2. DATA CONNECTION (CRITICAL)
+
+Bone Buddy must connect to and read:
+
+* Bone Tracker (DEXA + FRAX + risk)
+* Activity (movement sessions)
+* Breathing sessions
+* Meditation sessions
+* Nutrition / meal tracking
+* Mood / check-ins
+* SNAP Shot summaries
+
+No generic responses — all outputs must reflect real user data.
+
+---
+
+3. PERSONALISED CONVERSATION STYLE
+
+Responses must:
+
+* Use the user’s name
+* Feel conversational (not robotic)
+* Be concise (no long paragraphs)
+* Ask relevant follow-up questions
+
+Remove:
+
+* Symbols like # or *
+* Overly structured or scripted responses
+
+---
+
+4. GUIDANCE RULES (IMPORTANT)
+
+Bone Buddy must:
+
+* Provide general wellness guidance only
+* NOT provide medical diagnosis or treatment
+
+Always include when relevant:
+
+* Suggestion to consult:
+
+  * GP / Doctor
+  * Specialist (e.g. endocrinologist, physiotherapist, nutritionist)
+
+Example:
+“If you’re unsure about these results, it would be a good idea to speak with your GP or a bone health specialist.”
+
+---
+
+5. WEEKLY CHECK-IN SYSTEM
+
+Introduce structured weekly check-ins:
+
+Bone Buddy should:
+
+* Prompt user once per week
+* Ask simple questions:
+
+  * How are you feeling this week?
+  * Energy levels?
+  * Consistency with habits?
+
+Capture responses and store them.
+
+---
+
+6. INSIGHT GENERATION
+
+Based on data, generate insights such as:
+
+* “You’ve been consistent with your breathing sessions this week”
+* “Your activity levels have increased — great progress”
+* “Your bone health data suggests it’s worth reviewing with a specialist”
+
+Keep:
+
+* Supportive
+* Clear
+* Easy to understand
+
+---
+
+7. DAILY SUPPORT (LIGHT TOUCH)
+
+Provide optional daily interaction:
+
+* “Today’s focus” reinforcement
+* Gentle nudges (not intrusive)
+
+---
+
+8. CONTEXT AWARENESS
+
+Ensure responses consider:
+
+* Recent activity (last 7 days)
+* Long-term trends (if available)
+* Bone health status (DEXA + FRAX)
+
+---
+
+9. ESCALATION LOGIC
+
+Introduce simple rules:
+
+If:
+
+* High fracture risk
+* Osteoporosis classification
+* Declining trends
+
+Then:
+
+* Encourage user to seek professional advice
+
+Keep tone:
+
+* Calm
+* Supportive
+* Not alarming
+
+---
+
+10. MEMORY & LEARNING
+
+Ensure system:
+
+* Stores past interactions
+* Learns patterns over time
+* Improves relevance of suggestions
+
+---
+
+11. UI / UX EXPERIENCE
+
+* Chat-style interface
+* Clean, minimal design
+* Easy input and response flow
+
+Optional:
+
+* Quick reply buttons for common responses
+
+---
+
+12. PERFORMANCE
+
+* Fast response time
+* No lag
+* Reliable output
+
+---
+
+GOAL
+
+Build Bone Buddy as a core intelligence layer that:
+
+* Connects all user data
+* Provides meaningful, personalised guidance
+* Encourages consistency and engagement
+* Supports users without crossing into medical advice
+
+This should feel:
+
+* Human
+* Helpful
+* Intelligent
+* Trustworthy
+
+---
+
+Please confirm once implemented and highlight any technical considerations or improvements.

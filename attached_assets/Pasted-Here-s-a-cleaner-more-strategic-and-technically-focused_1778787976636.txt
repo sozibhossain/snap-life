@@ -1,0 +1,209 @@
+Here’s a cleaner, more strategic and technically focused version of the Replit prompt that simplifies the objective and makes the testing/staging environment clearer and easier for Replit to execute:
+
+Please create a dedicated SNAP testing / development environment that allows the admin team to fully review, test, and quality-check the complete app experience before live deployment updates are released to production users.
+
+The goal is to create a:
+
+* stable staging environment
+* simplified admin testing experience
+* safe review process for new features and enhancements
+* clearer collaboration workflow during development
+
+---
+
+## CORE REQUIREMENT
+
+Create a separate:
+
+# SNAP Staging / Development Site
+
+This should function independently from the live production app and allow:
+
+* feature testing
+* onboarding review
+* subscription testing
+* wellness testing
+* education pathway testing
+* AI testing
+* admin review
+* consultant flow testing
+* bug fixing and QA
+
+This environment should mirror the live app experience as closely as possible while remaining isolated from live user activity.
+
+---
+
+## NEW DEVELOPMENT / TESTING URL
+
+Please generate and configure a new dedicated testing URL for the SNAP staging environment.
+
+Suggested examples:
+
+* staging.snaplife.co.uk
+* beta.snaplife.co.uk
+* dev.snaplife.co.uk
+
+The final URL should:
+
+* feel professional
+* be easy to access
+* be simple to share with testers/admins
+* remain separate from production
+
+---
+
+## SIMPLIFIED LOGIN EXPERIENCE
+
+Please simplify the staging login experience for admin and testing users.
+
+The current process creates unnecessary friction during testing.
+
+Requirements:
+
+* fast login process
+* simplified authentication flow
+* easy access for approved testers/admins
+* persistent login where appropriate
+* clear distinction between staging vs live environment
+
+Suggested improvements:
+
+* magic link login
+* simplified admin credentials
+* secure test access codes
+* “Continue as Tester” functionality (where appropriate)
+
+The experience should feel:
+
+* efficient
+* smooth
+* low friction
+* developer/admin friendly
+
+---
+
+## ADMIN TESTING CAPABILITIES
+
+The staging environment should allow admin users to:
+
+* review the full onboarding journey
+* test subscription flows
+* test free trial logic
+* test notifications
+* review wellness lounge sessions
+* test AI recommendations
+* review pathways and learning
+* test supplement and medication tracking
+* test consultant request flows
+* validate paywall messaging
+* test community functionality
+* review profile/account settings
+* simulate user journeys end-to-end
+
+---
+
+## TEST USER MANAGEMENT
+
+Please create a simple admin testing structure allowing:
+
+* creation of test users
+* deletion/reset of test users
+* reusable testing accounts
+* ability to simulate onboarding again
+* ability to reset subscription status
+* ability to reset pathway progress
+
+This is critical for QA and feature testing.
+
+---
+
+## SAFE ENVIRONMENT REQUIREMENTS
+
+The staging environment must:
+
+* remain isolated from live production users
+* prevent accidental live notifications/payments
+* clearly display “TEST ENVIRONMENT” indicators
+* safely test billing logic without impacting real users
+
+Where possible:
+
+* sandbox payment/testing mode
+* test notifications only
+* protected consultant requests
+
+---
+
+## CONSULTANT / EMAIL TESTING
+
+Please ensure:
+
+* consultant request forms can be tested safely
+* email routing can be validated
+* duplicate routing to [teamsnap@snaplife.co.uk](mailto:teamsnap@snaplife.co.uk) works correctly
+* testing emails are clearly marked as staging/test emails
+
+---
+
+## DESIGN + UX REQUIREMENTS
+
+Maintain the same SNAP premium experience:
+
+* warm orange branding
+* smooth transitions
+* wellness-focused design
+* full mobile responsiveness
+
+But include subtle indicators showing:
+
+# “Testing Environment”
+
+to avoid confusion between staging and live.
+
+---
+
+## ADMIN REVIEW MODE (HIGH VALUE)
+
+If possible, create:
+
+# “Admin Review Mode”
+
+Allowing admins to:
+
+* quickly navigate sections
+* jump between pathways
+* unlock premium features
+* test emotional routing
+* simulate onboarding states
+* bypass repetitive flows during QA
+
+This will dramatically improve testing efficiency.
+
+---
+
+## FUTURE DEVELOPMENT WORKFLOW
+
+Please structure this environment so future updates can be:
+
+1. developed in staging
+2. reviewed internally
+3. tested safely
+4. approved by admin
+5. deployed to live production
+
+This should become SNAP’s standard deployment workflow moving forward.
+
+---
+
+## FINAL PRINCIPLE
+
+The staging/testing environment should:
+
+* reduce development friction
+* improve QA
+* simplify admin review
+* accelerate iteration
+* improve deployment confidence
+* protect the live user experience
+
+The goal is to create a professional product development workflow that supports SNAP’s growth into a premium healthy ageing platform.

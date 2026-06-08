@@ -1,0 +1,223 @@
+Here’s the refined enhancement prompt with the named consultants and email routing clearly integrated:
+
+Please enhance the new SNAP Expert Support section by integrating the following existing SNAP website consultants into the platform experience and appointment request workflow.
+
+This enhancement should expand SNAP into a trusted multidisciplinary healthy ageing support ecosystem that combines:
+
+* education
+* wellbeing
+* nutrition
+* bone health expertise
+* behavioural support
+* human connection
+
+The experience should feel:
+
+* premium
+* supportive
+* calm
+* trustworthy
+* human-led
+
+---
+
+## NEW CONSULTANT INTEGRATIONS
+
+Please add the following consultants into:
+
+# SNAP Expert Support
+
+within the Community / Support section.
+
+---
+
+1. MARIA — BONE HEALTH CONSULTANT
+
+---
+
+Website Profile:
+[Maria – Bone Health Consultant](https://www.snaplife.co.uk/Maria-Bone-Health-Consultant?utm_source=chatgpt.com)
+
+Email Routing:
+
+# [mrigopoulou@hotmail.co.uk](mailto:mrigopoulou@hotmail.co.uk)
+
+Category:
+
+* Bone Health Specialist
+* Osteoporosis Support
+
+Purpose:
+Support users with:
+
+* bone health education
+* osteoporosis awareness
+* healthy ageing guidance
+* supportive wellbeing conversations
+
+---
+
+2. LIFT NUTRITION — FAYE
+
+---
+
+Website Profile:
+[Lift Nutrition](https://www.snaplife.co.uk/Lift-Nutrition?utm_source=chatgpt.com)
+
+Email Routing:
+
+# [faye@liftnutrition.co.uk](mailto:faye@liftnutrition.co.uk)
+
+Category:
+
+* Nutritionist
+* Healthy Ageing Nutrition Support
+
+Purpose:
+Support users with:
+
+* bone-supportive nutrition
+* protein intake awareness
+* healthy ageing nutrition
+* menopause nutrition guidance
+* supplement and lifestyle support
+
+---
+
+## BOOKING / REQUEST FLOW ENHANCEMENT
+
+Please create a consistent:
+
+# “Request Support” workflow
+
+for each consultant profile.
+
+Users should be able to:
+
+* view consultant details
+* understand specialist area
+* request support directly from within the SNAP app
+
+---
+
+## APPOINTMENT REQUEST FORM
+
+Required fields:
+
+* Full Name
+* Email Address
+* Phone Number (optional)
+* Preferred Consultant
+* Preferred Days / Times
+* Reason for Support (optional)
+* Consent checkbox
+
+---
+
+## EMAIL ROUTING REQUIREMENTS (CRITICAL)
+
+Every submitted request MUST:
+
+1. Send directly to the selected consultant email
+   AND
+2. Send a duplicate copy to:
+
+# [teamsnap@snaplife.co.uk](mailto:teamsnap@snaplife.co.uk)
+
+This is required for:
+
+* transparency
+* safeguarding
+* operational oversight
+* response management
+* continuity of care/support
+
+---
+
+## ROUTING EXAMPLES
+
+If user selects:
+
+# Maria – Bone Health Consultant
+
+Send to:
+
+* [mrigopoulou@hotmail.co.uk](mailto:mrigopoulou@hotmail.co.uk)
+* [teamsnap@snaplife.co.uk](mailto:teamsnap@snaplife.co.uk)
+
+---
+
+If user selects:
+
+# Lift Nutrition – Faye
+
+Send to:
+
+* [faye@liftnutrition.co.uk](mailto:faye@liftnutrition.co.uk)
+* [teamsnap@snaplife.co.uk](mailto:teamsnap@snaplife.co.uk)
+
+---
+
+## AUTOMATED USER CONFIRMATION
+
+After submission, users should receive a calm confirmation message:
+
+Suggested copy:
+“Thank you for your request. A member of the SNAP Expert Support team will be in touch shortly.”
+
+Optional email confirmation:
+
+* consultant selected
+* submitted request summary
+* reassurance messaging
+
+---
+
+## CONSULTANT PROFILE DESIGN
+
+Each consultant profile should include:
+
+* professional image
+* name
+* title/specialism
+* short biography
+* areas of support
+* request support CTA
+
+Maintain:
+
+* warm SNAP aesthetic
+* soft wellness styling
+* calm typography
+* emotionally safe tone
+
+---
+
+## FUTURE-READY ARCHITECTURE
+
+Please structure this system so additional consultants can easily be added later with:
+
+* profile management
+* email routing
+* category tagging
+* future booking integrations
+* workshops/events
+* webinars
+* group sessions
+
+---
+
+## FINAL EXPERIENCE GOAL
+
+This should feel like:
+“A trusted support network inside SNAP.”
+
+The goal is to help users feel:
+
+* supported
+* guided
+* connected
+* reassured
+* empowered through access to trusted experts.
+
+This feature should strengthen SNAP’s position as the first app of its kind supporting bone health, healthy ageing, wellbeing, and longevity through both digital and human support.

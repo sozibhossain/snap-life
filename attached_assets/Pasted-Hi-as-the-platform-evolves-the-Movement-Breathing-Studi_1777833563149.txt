@@ -1,0 +1,215 @@
+Hi — as the platform evolves, the Movement, Breathing Studio, and Meditation Lounge need to be repositioned as core experience areas rather than embedded features.
+
+We need to restructure the app so these become dedicated sections while ensuring all data remains fully connected and continues to feed into the dashboard and insight systems.
+
+Please implement the following:
+
+---
+
+SNAP LIFE – EXPERIENCE RESTRUCTURE (MOVEMENT / BREATH / MEDITATION)
+
+---
+
+1. CORE STRUCTURE CHANGE
+
+Create three dedicated primary sections:
+
+* Movement
+* Breathing Studio
+* Meditation Lounge
+
+These should be:
+
+* Clearly visible in navigation (tab bar or main menu)
+* Treated as core pillars of the app
+
+---
+
+2. RELOCATION OF EXISTING FEATURES
+
+Move all related content into their respective sections:
+
+Movement:
+
+* Routines
+* Activity tracking
+* Progress
+
+Breathing Studio:
+
+* All breathing sessions
+* Timers
+* Music experiences
+
+Meditation Lounge:
+
+* Guided meditations
+* Audio sessions
+* Voice-led experiences
+
+---
+
+3. USER EXPERIENCE WITHIN EACH SECTION
+
+Each section should have:
+
+* Clear landing screen
+* Simple session selection
+* Easy “Start Session” CTA
+
+Optional:
+
+* Session duration options (short / medium / long)
+* Mood-based selection (calm / focus / sleep / stress)
+
+---
+
+4. DATA CAPTURE (CRITICAL)
+
+Ensure ALL activity within these sections is logged:
+
+Movement:
+
+* Session type
+* Duration
+* Completion
+
+Breathing:
+
+* Session type
+* Duration
+* Completion
+
+Meditation:
+
+* Session type
+* Duration
+* Completion
+
+---
+
+5. DATA CONNECTION (NON-NEGOTIABLE)
+
+All data must feed into:
+
+* Dashboard (user view)
+* Admin dashboard (analytics)
+* SNAP Shot (weekly summary)
+* Bone Buddy (AI insights)
+* Daily “Today’s Focus”
+
+No isolated systems.
+
+---
+
+6. DASHBOARD INTEGRATION
+
+Ensure dashboard reflects:
+
+* Activity completed
+* Consistency across all 3 areas
+* Trends over time
+
+Display as:
+
+* Simple visual indicators
+* Weekly summaries
+
+---
+
+7. CONSISTENCY TRACKING
+
+Introduce unified tracking across:
+
+* Movement
+* Breathing
+* Meditation
+
+Goal:
+Allow users to see:
+
+* Frequency
+* Streaks
+* Balance across activities
+
+---
+
+8. AI INTEGRATION (BONE BUDDY)
+
+Ensure AI can reference behaviour:
+
+Examples:
+
+* “Your breathing sessions are helping regulate your stress levels”
+* “You’ve been consistent with movement this week”
+
+Keep:
+
+* Personal
+* Supportive
+* Insight-driven
+
+---
+
+9. NAVIGATION SIMPLIFICATION
+
+Ensure:
+
+* Clean separation between sections
+* No duplication of features
+* Easy switching between areas
+
+---
+
+10. FUTURE SCALABILITY
+
+Structure these sections so they can expand to include:
+
+* More session types
+* Advanced programs
+* Personalised recommendations
+
+---
+
+11. DESIGN CONSISTENCY
+
+Each section should:
+
+* Follow SNAP branding
+* Have a slightly distinct feel (subtle variation by theme)
+
+Examples:
+
+* Movement → slightly more energy
+* Breathing → calm, slow
+* Meditation → soft, immersive
+
+---
+
+12. PERFORMANCE
+
+Ensure:
+
+* Fast load times
+* Smooth transitions between sections
+* No lag during sessions
+
+---
+
+GOAL
+
+Restructure the app so Movement, Breathing, and Meditation become:
+
+* Core, immersive experiences
+* Easy to access and use
+* Fully connected to the SNAP ecosystem
+
+This should improve:
+
+* User engagement
+* Clarity
+* Long-term scalability
+
+---
+
+Please confirm once implemented and highlight any structural improvements you recommend.

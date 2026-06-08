@@ -1,0 +1,367 @@
+Following the successful SNAP Launch Readiness Review, please now complete a FINAL Production Readiness + Launch Hardening Review to ensure absolutely everything required for beta and public launch is fully configured, tested, monitored, and operationally ready.
+
+The platform is now considered feature-complete.
+
+This next phase is focused on:
+
+* production hardening
+* scalability
+* monitoring
+* deployment confidence
+* app-store readiness
+* operational resilience
+* support readiness
+* commercial readiness
+
+Please review the following additional areas carefully and confirm status, risks, and any remaining actions required.
+
+---
+
+1. CRASH REPORTING + MONITORING
+
+---
+
+Sentry has already been identified as critical.
+
+Please now:
+
+* implement Sentry fully
+* validate crash capture
+* validate source maps
+* validate React Native stack traces
+* validate backend/server exception logging
+
+Also confirm:
+
+* production alerting
+* severity thresholds
+* admin notification routing
+
+Please confirm:
+
+* what errors will be monitored
+* where alerts are sent
+* how crash trends are reviewed
+
+---
+
+2. PERFORMANCE + LOAD TESTING
+
+---
+
+Please complete performance validation for:
+
+* onboarding speed
+* AI response latency
+* subscription processing
+* audio session loading
+* pathway progression
+* notification delivery
+* dashboard loading
+* profile sync
+* consultant requests
+
+Please identify:
+
+* any slow endpoints
+* unnecessary API calls
+* memory risks
+* image optimisation opportunities
+* mobile performance bottlenecks
+
+Also estimate:
+
+* safe concurrent user load
+* scaling considerations
+
+---
+
+3. BACKUP + DISASTER RECOVERY
+
+---
+
+Please confirm:
+
+* database backups
+* backup frequency
+* rollback process
+* environment recovery process
+* webhook failure handling
+* notification retry handling
+
+Please identify:
+
+* single points of failure
+* production recovery risks
+* downtime mitigation strategy
+
+---
+
+4. EMAIL + NOTIFICATION QA
+
+---
+
+Please complete a final audit of:
+
+* onboarding emails
+* verification emails
+* password reset emails
+* free trial reminders
+* consultant request emails
+* coaching booking confirmations
+* push notifications
+* reminder notifications
+
+Please confirm:
+
+* branding consistency
+* delivery reliability
+* spam risk reduction
+* mobile rendering
+* unsubscribe handling
+* fallback behaviour
+
+---
+
+5. APP STORE SUBMISSION READINESS
+
+---
+
+Please prepare and confirm everything required for:
+
+# Apple App Store
+
+# Google Play Store
+
+Including:
+
+* required screenshots
+* metadata
+* keywords
+* app descriptions
+* privacy nutrition labels
+* age rating
+* subscription disclosures
+* restore purchase functionality
+* health/wellness disclaimers
+
+Please identify:
+
+* any risk areas for rejection
+* any wording needing adjustment
+* any policy-sensitive areas
+
+Especially review:
+
+* AI wellness positioning
+* osteoporosis wording
+* FRAX/DXA language
+* coaching language
+* consultant support wording
+
+---
+
+6. SECURITY PENETRATION + FINAL AUDIT
+
+---
+
+Please conduct final review for:
+
+* auth vulnerabilities
+* API abuse
+* webhook spoofing
+* role/access issues
+* admin endpoint exposure
+* token expiry
+* rate limiting
+* email abuse prevention
+* subscription fraud risks
+
+Please confirm:
+
+* admin routes protected
+* test accounts removed
+* staging access isolated
+* production secrets secured
+
+---
+
+7. ANALYTICS + PRODUCT INTELLIGENCE
+
+---
+
+Custom analytics exist.
+
+Please now recommend:
+
+* best analytics platform integration
+* retention tracking structure
+* onboarding funnel tracking
+* churn monitoring
+* subscription conversion analytics
+* wellness engagement analytics
+* AI usage analytics
+
+Please identify:
+
+* most important launch KPIs
+* suggested dashboard metrics
+* retention benchmarks to monitor
+
+---
+
+8. BETA USER FEEDBACK LOOP
+
+---
+
+Please improve beta feedback collection process.
+
+Recommend:
+
+* in-app beta feedback prompts
+* session rating prompts
+* onboarding feedback
+* wellness experience ratings
+* AI helpfulness scoring
+* NPS-style feedback
+
+Please identify:
+
+* best places to collect feedback
+* low-friction review opportunities
+* beta community management recommendations
+
+---
+
+9. OPERATIONAL + SUPPORT READINESS
+
+---
+
+Please confirm operational processes for:
+
+* support inbox handling
+* consultant response management
+* refund requests
+* subscription support
+* technical support escalation
+* moderation of inappropriate AI use
+* bug reporting workflow
+
+Please recommend:
+
+* support SLAs
+* admin workflows
+* internal escalation processes
+
+---
+
+10. AUDIO + CONTENT LICENSING
+
+---
+
+Please confirm:
+
+* all background audio/music is commercially licensed or royalty-free
+* all meditation narration rights are valid
+* no copyright/licensing risks exist
+
+Please identify:
+
+* any assets requiring replacement
+* attribution requirements
+* licensing documentation needed
+
+---
+
+11. FINAL USER EXPERIENCE POLISH
+
+---
+
+Please conduct a final “premium experience” review across:
+
+* onboarding
+* transitions
+* loading states
+* typography
+* animation consistency
+* empty states
+* subscription screens
+* profile UX
+* wellness sessions
+* AI interactions
+
+Please identify:
+
+* any areas still feeling unfinished
+* any friction points
+* any inconsistencies in tone/design
+
+The experience should feel:
+
+* premium
+* emotionally intelligent
+* calm
+* polished
+* trustworthy
+* warm
+* modern wellness-led
+
+---
+
+12. PRODUCTION LAUNCH CHECKLIST
+
+---
+
+Please create a FINAL GO-LIVE checklist covering:
+
+* technical deployment
+* App Store submission
+* Google Play submission
+* environment verification
+* monitoring activation
+* subscription verification
+* consultant routing
+* analytics setup
+* support readiness
+* legal confirmation
+* backup confirmation
+
+---
+
+13. FINAL STRATEGIC REVIEW
+
+---
+
+Please provide a final assessment of:
+
+* strongest product differentiators
+* biggest launch risks
+* biggest retention opportunities
+* likely scaling bottlenecks
+* recommended beta cohort size
+* ideal beta duration
+* launch confidence assessment
+
+---
+
+## IMPORTANT
+
+This is no longer a feature-building phase.
+
+This is:
+
+# Production Launch Hardening
+
+Please approach this as a final professional pre-launch audit for a premium consumer health and wellness platform.
+
+The objective is to ensure SNAP launches:
+
+* stable
+* trustworthy
+* scalable
+* compliant
+* emotionally polished
+* commercially ready
+* operationally manageable
+
+before public release.

@@ -1,0 +1,34 @@
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "preinstall": "node preinstall.mjs",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "test": "pnpm -r --if-present run test",
+    "typecheck:libs": "tsc --build",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+  },
+  "private": true,
+  "devDependencies": {
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.2",
+    "vitest": "^4.1.5"
+  },
+  "dependencies": {
+    "@replit/revenuecat-sdk": "^4.2.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@xmldom/xmldom": ">=0.8.13",
+      "brace-expansion@>=2.0.0 <2.0.3": "^2.0.3",
+      "yaml@>=2.0.0 <2.8.3": "^2.8.3",
+      "postcss@<8.5.10": "^8.5.10",
+      "uuid@<14.0.0": "^14.0.0",
+      "esbuild@<=0.24.2": "^0.25.0",
+      "cookie@<0.7.0": "^0.7.0",
+      "ip-address@<=10.1.0": "^10.1.1",
+      "@tootallnate/once@<3.0.1": "^3.0.1"
+    }
+  }
+}

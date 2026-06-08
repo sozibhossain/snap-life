@@ -1,0 +1,179 @@
+Conduct a full UI/UX refinement of SNAP Life to ensure the app is not only clean and functional, but also visually attractive, emotionally engaging, and premium in feel.
+
+This is a final polish to elevate the app beyond standard wellbeing tools.
+
+---
+
+CORE OBJECTIVE:
+
+- Create a visually attractive, premium experience
+- Maintain simplicity and clarity
+- Reinforce SNAP Life as a lifestyle brand, not just a health app
+
+---
+
+1. VISUAL ATTRACTIVENESS (KEY PRIORITY):
+
+Enhance the overall look and feel:
+
+- Use soft gradients instead of flat colours
+- Introduce subtle depth (cards, shadows, layering)
+- Ensure smooth transitions and animations
+- Add gentle motion where appropriate (micro-interactions)
+
+The app should feel:
+- Modern
+- Calm
+- Premium
+- Inviting
+
+---
+
+2. COLOUR SYSTEM:
+
+Refine colour palette:
+
+- Calm tones (soft blues, greens, warm neutrals)
+- Use accent colours sparingly for key actions
+- Differentiate sections subtly (e.g. breathing vs nutrition)
+
+Avoid:
+- Harsh contrasts
+- Overly bright or clinical colours
+
+---
+
+3. TYPOGRAPHY:
+
+- Use clean, modern fonts
+- Create hierarchy:
+  - Headings (clear and calm)
+  - Body text (easy to read)
+- Ensure spacing improves readability
+
+---
+
+4. MICRO-INTERACTIONS:
+
+Add small but meaningful animations:
+
+- Button presses (soft feedback)
+- Breathing orb transitions
+- Page transitions (smooth fade/slide)
+
+Keep all motion:
+- Slow
+- Smooth
+- Non-distracting
+
+---
+
+5. EMOTIONAL DESIGN:
+
+Each screen should evoke a feeling:
+
+- Breathing Studio → calm, immersive
+- Nutrition → simple, supportive
+- Home → clarity and direction
+- SNAP Shot → rewarding and positive
+
+---
+
+6. HOME SCREEN POLISH:
+
+- Clean layout with clear hierarchy
+- Highlight:
+  - “Today’s Focus”
+  - Bone Buddy message
+- Use spacing to avoid clutter
+- Add subtle visual cues (icons, cards)
+
+---
+
+7. CARD-BASED DESIGN:
+
+- Use soft rounded cards for content
+- Add light shadow or elevation
+- Keep spacing consistent
+
+This creates:
+- Structure
+- Visual comfort
+- Premium feel
+
+---
+
+8. ICONOGRAPHY:
+
+- Use consistent, simple icons
+- Avoid overly complex visuals
+- Align icon style across all features
+
+---
+
+9. BRAND PERSONALITY (SNAP LIFE):
+
+The app should feel:
+
+- Supportive, not clinical
+- Stylish, not generic
+- Calm, not boring
+
+Tone should reflect:
+- Wellness + lifestyle + intelligence
+
+---
+
+10. REMOVE VISUAL CLUTTER:
+
+- Eliminate unnecessary text
+- Avoid crowded screens
+- Keep whitespace intentional
+
+Less = more.
+
+---
+
+11. LOADING & TRANSITIONS:
+
+- Use smooth fade-ins
+- Avoid abrupt changes
+- Keep experience fluid
+
+---
+
+12. PREMIUM FINISH:
+
+Add subtle touches that elevate perception:
+
+- Soft background gradients
+- Slight blur effects where appropriate
+- Refined spacing and alignment
+
+The app should feel like:
+a high-end wellness product.
+
+---
+
+13. CONSISTENCY CHECK:
+
+Ensure all screens:
+
+- Follow same design rules
+- Use same spacing system
+- Align visually and structurally
+
+---
+
+GOAL:
+
+Deliver an app that is:
+
+- Beautiful
+- Calm
+- Easy to use
+- Emotionally engaging
+
+Users should not only find it useful — they should enjoy using it and feel good every time they open it.
+
+This should feel like a premium lifestyle experience, not just a functional tool.

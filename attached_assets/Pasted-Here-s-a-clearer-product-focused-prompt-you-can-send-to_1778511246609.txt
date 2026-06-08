@@ -1,0 +1,84 @@
+Here’s a clearer, product-focused prompt you can send to Replit to support the subscription changes and improve user experience:
+
+Please update the SNAP subscription model and user journey with the following changes and UX improvements.
+
+SUBSCRIPTION CHANGES
+
+1. Remove Annual Memberships
+
+* Remove all annual subscription options from the app and payment flows for now
+* Ensure only monthly plans are visible and selectable
+* Remove any references to annual savings or annual pricing throughout the platform
+
+2. Update Monthly Pricing
+
+* SNAP Plus → change to £4.99 per month
+* SNAP Premium → change to £9.99 per month
+
+3. Introduce Free First Month Trial
+
+* Both SNAP Plus and SNAP Premium should include:
+
+  * Full free access for the first month
+  * Access to all premium features during the trial period
+
+4. Payment Details Up Front
+
+* Users must enter payment details when starting the free trial
+* Clearly communicate:
+
+  * “No charge today”
+  * Date first payment will be taken
+  * Ability to cancel before billing
+
+5. Subscription Reminder Notifications
+   Please implement automated reminders before the first payment is processed:
+
+* Push notification reminder
+* Email reminder (if email available)
+
+Recommended timing:
+
+* 7 days before first payment
+* 2 days before first payment
+
+Reminder messaging should include:
+
+* Trial ending date
+* Upcoming subscription amount
+* Simple cancellation/manage subscription link
+
+USER EXPERIENCE / UI ENHANCEMENTS
+
+Please improve the subscription flow to feel more premium, clear and frictionless:
+
+* Simplify subscription comparison screen
+* Clearly show benefits of Plus vs Premium
+* Highlight “1 Month Free Trial”
+* Use clean, confidence-building messaging
+* Make pricing highly visible and easy to understand
+* Ensure mobile responsiveness across all devices
+
+Suggested messaging:
+“Start your free month today. Full access, cancel anytime before your first payment.”
+
+TECHNICAL / PRODUCT REQUIREMENTS
+
+Please ensure:
+
+* Existing subscribers are not impacted
+* Trial logic works correctly for new users only
+* Billing dates are tracked accurately
+* Subscription status updates correctly after trial expiry
+* Reminder notifications trigger reliably
+* App Store / Google Play compliance is maintained where relevant
+
+FINAL CHECKS
+
+Before deployment please:
+
+* Test full user journey end-to-end
+* Confirm pricing displays correctly everywhere
+* Check all references to annual memberships are removed
+* Validate notifications and billing trigger correctly
+* Ensure cancellation flow is simple and functioning properly

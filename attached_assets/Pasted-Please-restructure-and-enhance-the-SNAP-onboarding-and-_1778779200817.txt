@@ -1,0 +1,291 @@
+Please restructure and enhance the SNAP onboarding and account creation flow to ensure users complete a core profile immediately after creating their account and BEFORE any bone health questions, assessments, motivations, or personalised pathways begin.
+
+This is an important foundational UX improvement and should now become the standard onboarding architecture across the app.
+
+---
+
+## NEW REQUIRED USER FLOW
+
+The onboarding order should now be:
+
+1. Welcome Screen
+2. Create Account
+3. Complete Core Profile (NEW REQUIRED STEP)
+4. Bone Health Questions
+5. Motivations & Goals
+6. Personalised SNAP Foundations Setup
+7. Main App Experience
+
+This sequence is critical.
+
+Users should feel:
+
+* welcomed
+* known personally
+* emotionally connected
+
+BEFORE:
+
+* answering health-related questions
+* completing assessments
+* receiving recommendations
+
+---
+
+## CREATE ACCOUNT REQUIREMENTS
+
+The Create Account step should capture:
+
+* Email Address (required)
+* Password
+* Optional social login (Apple / Google if supported)
+
+After successful account creation:
+→ move directly into:
+
+# Complete Your Profile
+
+---
+
+## NEW REQUIRED PROFILE COMPLETION STEP
+
+Before any health or motivation questions, users must complete a lightweight personal profile.
+
+Capture:
+
+* First Name
+* Last Name
+* Age or Date of Birth
+* Location
+* Email Address (pre-filled from account creation but editable)
+
+Suggested heading:
+
+# “Tell us a little about you”
+
+Suggested microcopy:
+“Help us personalise your SNAP experience, guidance, and recommendations.”
+
+---
+
+## WHY THIS CHANGE IS IMPORTANT
+
+This profile data supports:
+
+* Bone Buddy AI personalisation
+* emotional engagement
+* personalised learning pathways
+* wellness recommendations
+* localisation
+* future community functionality
+* reminder notifications
+* healthy ageing insights
+* adaptive AI experiences
+
+This should make the app feel:
+
+* personal
+* intelligent
+* premium
+* emotionally supportive
+
+NOT:
+
+* clinical
+* transactional
+* assessment-heavy
+
+---
+
+## EMAIL CAPTURE REQUIREMENTS
+
+Email address is now critical because it supports:
+
+* account security
+* free trial reminders
+* subscription reminders
+* progress updates
+* personalised wellbeing communications
+* future educational journeys
+* AI engagement messaging
+
+Ensure:
+
+* email captured at account creation
+* editable in profile settings
+* verified if needed
+* integrated into reminder systems
+
+---
+
+## LOCATION INPUT
+
+Location should support:
+
+* town/city
+* postcode optional
+* country auto-detection where possible
+
+Purpose:
+
+* localisation
+* regional recommendations
+* future sunlight/vitamin D insights
+* future community support
+
+Do NOT request exact addresses.
+
+---
+
+## POST-PROFILE FLOW
+
+Only AFTER profile completion should users proceed into:
+
+* Bone health questions
+* Risk factors
+* Motivations
+* Goals
+* Healthy ageing preferences
+* Personalised pathway setup
+
+This ensures the emotional flow feels:
+
+1. welcomed
+2. personalised
+3. understood
+4. guided
+
+Rather than:
+
+1. assessed immediately
+
+---
+
+## PROFILE SECTION ENHANCEMENT
+
+Add all captured fields into:
+
+# Profile / Account Settings
+
+Users should be able to:
+
+* view
+* edit
+* update
+* save changes
+
+Include:
+
+* profile avatar/initial
+* first name
+* last name
+* email
+* age/date of birth
+* location
+* joined SNAP date (optional premium touch)
+
+---
+
+## UX / DESIGN REQUIREMENTS
+
+Maintain SNAP’s premium wellness aesthetic:
+
+* warm orange gradients
+* soft transitions
+* minimal field clutter
+* calm typography
+* elegant onboarding cards
+* mobile-first design
+
+The onboarding should feel:
+
+* welcoming
+* reassuring
+* effortless
+* premium
+* emotionally safe
+
+Avoid:
+
+* long forms
+* medical registration feel
+* overwhelming questioning too early
+
+---
+
+## ACCESSIBILITY REQUIREMENTS
+
+Ensure:
+
+* large tap targets
+* clear progress indicators
+* readable typography
+* low cognitive load
+* step-by-step onboarding
+
+Especially important for:
+
+* older adults
+* newly diagnosed users
+* lower digital confidence users
+
+---
+
+## PRIVACY + TRUST
+
+Add subtle reassurance:
+“Your information helps personalise your experience and remains private and secure.”
+
+Keep tone:
+
+* calm
+* trustworthy
+* human
+
+---
+
+## FUTURE-READY ARCHITECTURE
+
+Structure profile system to support future expansion:
+
+* menopause stage
+* diagnosis status
+* movement confidence
+* healthy ageing goals
+* AI personalisation
+* community features
+* adaptive learning pathways
+
+But DO NOT overload initial onboarding.
+
+---
+
+## SUCCESS METRICS
+
+Optimise for:
+
+* onboarding completion rate
+* emotional connection
+* personalisation quality
+* AI relevance
+* subscription conversion
+* reduced user overwhelm
+* improved retention
+
+---
+
+## FINAL PRINCIPLE
+
+The onboarding experience should feel like:
+“A warm welcome into a personalised healthy ageing journey.”
+
+NOT:
+“A clinical intake questionnaire.”
+
+The user should first feel:
+
+* welcomed
+* known
+* supported
+
+Before being guided into deeper health and wellbeing questions.

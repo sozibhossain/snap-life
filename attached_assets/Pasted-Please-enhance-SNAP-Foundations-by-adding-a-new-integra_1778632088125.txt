@@ -1,0 +1,289 @@
+Please enhance SNAP Foundations by adding a new integrated learning module that connects education directly to real in-app behaviour, specifically focusing on **where and how users log supplements and medications within SNAP**.
+
+This is NOT a standalone education section.
+
+It is a **behavioural bridge between learning → confidence → action inside the existing app features**.
+
+The goal is to reduce confusion, improve adoption of the tracking system, and ensure users understand exactly:
+
+* what to log
+* where to log it
+* why it matters
+* how it connects to their bone health journey
+
+---
+
+## CORE PRODUCT INTENT
+
+Add a new guided learning module inside:
+
+# SNAP Foundations → Nutrition Pathway
+
+## NEW MODULE:
+
+“Supplements, Medication & How to Log Your Intake in SNAP”
+
+This module should:
+
+* educate users on supplements + medication basics
+* explain dosage clearly (mg, mcg, IU, g)
+* introduce safe understanding of prescriptions vs supplements
+* and most importantly:
+  → SHOW USERS EXACTLY HOW TO USE THE EXISTING SNAP TRACKING SYSTEM
+
+DO NOT:
+
+* create a new tracker
+* duplicate supplement logging
+* build separate medication systems
+
+This must integrate fully with the existing SNAP Supplement Tracking + Bone Health Tracker.
+
+---
+
+## PRIMARY OBJECTIVE
+
+Help users confidently understand:
+
+1. What they are taking (supplements + medications)
+2. Why they are taking it (bone health context)
+3. How to correctly log it in SNAP
+4. How it contributes to their overall Bone Health Tracker insights
+
+This should feel:
+
+* simple
+* reassuring
+* clinically safe
+* non-overwhelming
+* behaviourally guided
+
+---
+
+## MODULE STRUCTURE (DUOLINGO-STYLE MICRO LEARNING)
+
+Break into short progressive lessons:
+
+---
+
+## LESSON 1: WHY TRACKING MATTERS
+
+Explain:
+
+* bone health is influenced by daily consistency
+* supplements and medications support prevention and treatment
+* tracking helps users build awareness and routine confidence
+
+Key message:
+“You don’t need perfection — just consistency.”
+
+---
+
+## LESSON 2: SUPPLEMENTS VS MEDICATIONS (SIMPLE CLARITY)
+
+Explain clearly:
+
+* Supplements = nutritional support (vitamin D, calcium, magnesium, etc.)
+* Medications = prescribed clinical treatments (e.g. bisphosphonates, HRT, denosumab)
+
+Important:
+
+* Both are part of bone health care
+* Both can be logged in SNAP
+* Always follow clinician guidance for medications
+
+---
+
+## LESSON 3: UNDERSTANDING DOSAGE (CRITICAL UX EDUCATION)
+
+Teach:
+
+* mg = milligrams
+* mcg = micrograms
+* IU = international units
+* g = grams
+
+Explain:
+
+* different substances use different units
+* prescriptions must be followed exactly
+* SNAP helps users record, not interpret clinical dosing
+
+---
+
+## LESSON 4: HOW TO LOG IN SNAP (MOST IMPORTANT STEP)
+
+This is the core behavioural bridge.
+
+Show users EXACTLY how to use the existing system:
+
+STEP 1:
+Go to “Nutrition / Intake Tracker” (existing feature)
+
+STEP 2:
+Select:
+
+* Supplement OR Medication
+
+STEP 3:
+Search or add item
+
+STEP 4:
+Enter:
+
+* dose
+* unit (mg, mcg, IU, etc.)
+* frequency
+* timing (optional)
+
+STEP 5:
+Save to “Today’s Intake”
+
+STEP 6:
+Mark as taken (optional daily check-in)
+
+---
+
+## LESSON 5: HOW THIS LINKS TO YOUR BONE HEALTH TRACKER
+
+Explain simply:
+
+* your intake contributes to your Bone Health insights
+* consistency helps build long-term strength habits
+* SNAP tracks behaviour patterns (not medical outcomes)
+
+Avoid clinical claims.
+
+Use language like:
+
+* “helps you understand your routine”
+* “builds awareness of your daily habits”
+* “supports your healthy ageing journey”
+
+---
+
+## LESSON 6: BUILDING YOUR DAILY ROUTINE
+
+Encourage habit formation:
+
+* take supplements consistently
+* log medications simply
+* don’t aim for perfection
+* aim for routine stability
+
+Introduce:
+
+* gentle streaks (optional)
+* daily check-in habit
+* “Today’s Intake” view
+
+---
+
+## INTEGRATION REQUIREMENTS (CRITICAL)
+
+This module MUST:
+
+1. Deep link into existing Supplement Tracker
+2. Reuse existing logging UI (no duplication)
+3. Feed all entries into Bone Health Tracker
+4. Improve feature adoption of current system
+5. Reduce user confusion about where to log items
+
+---
+
+## UX REQUIREMENTS
+
+The experience should feel:
+
+* calm
+* supportive
+* simple
+* mobile-first
+* confidence-building
+
+Avoid:
+
+* clinical dashboards
+* overwhelming tables
+* technical complexity
+* medical tone
+
+Use:
+
+* warm guidance
+* step-by-step instructions
+* reassuring microcopy
+
+---
+
+## DESIGN LANGUAGE
+
+Maintain SNAP aesthetic:
+
+* warm orange / amber palette
+* soft cards
+* clean layout
+* large readable typography
+* simple icons for supplement vs medication
+
+---
+
+## ACCESSIBILITY REQUIREMENTS
+
+Ensure:
+
+* low cognitive load
+* simple English
+* large tap targets
+* guided flow
+* optional “simple mode” for low confidence users
+
+---
+
+## BEHAVIOURAL DESIGN GOAL
+
+This module should drive:
+
+* higher supplement tracking adoption
+* improved medication logging confidence
+* increased daily engagement with Intake Tracker
+* stronger understanding of dosage units
+* reduced overwhelm
+* improved retention
+
+---
+
+## IMPORTANT SAFETY POSITIONING
+
+Include gentle guidance:
+
+* SNAP does not provide medical advice
+* users should follow clinician instructions
+* SNAP supports tracking and awareness only
+
+---
+
+## FINAL OUTCOME
+
+After completing this module, users should:
+
+* clearly understand what to log
+* know exactly where to log it in SNAP
+* feel confident using the existing tracker
+* understand how their intake connects to bone health insights
+* be more likely to return daily to log consistently
+
+---
+
+## CORE PRINCIPLE
+
+Do NOT add complexity.
+
+Instead:
+
+* simplify understanding
+* connect education to action
+* guide users into existing SNAP features
+* increase confidence through clarity
+
+This is a behavioural education layer that turns SNAP from a passive tracker into an active guided healthy ageing companion.

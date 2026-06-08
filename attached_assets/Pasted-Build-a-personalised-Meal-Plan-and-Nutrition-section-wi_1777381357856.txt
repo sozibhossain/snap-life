@@ -1,0 +1,145 @@
+Build a personalised Meal Plan and Nutrition section within SNAP Life that removes decision-making for the user and supports daily eating habits for bone health.
+
+The system must be simple, guided, and tailored using user data (FRAX score, bone health assessment, and risk profile).
+
+The goal is to help users consistently meet their nutritional needs without having to think about food combinations.
+
+---
+
+CORE PRINCIPLE:
+
+Deliver a “done-for-you” daily nutrition experience that:
+- Is personalised
+- Is easy to follow
+- Supports bone health, joint health, and overall wellbeing
+
+---
+
+PERSONALISATION ENGINE:
+
+Use the following inputs:
+- FRAX score (fracture risk)
+- Bone health assessment results
+- Age
+- Gender
+- Lifestyle factors (if available)
+
+Based on this, generate:
+- Daily nutritional targets:
+  - Calcium
+  - Vitamin D
+  - Protein
+  - Magnesium (optional)
+- Suggested supplement support (if needed)
+
+---
+
+MEAL PLAN STRUCTURE:
+
+Provide a daily plan including:
+
+- Breakfast
+- Lunch
+- Dinner
+- Optional snacks
+
+Each day should:
+- Meet nutritional targets
+- Be balanced and realistic
+- Avoid complexity
+
+---
+
+RECIPES (KEY FEATURE):
+
+Each meal must include:
+
+1. Simple Recipe:
+- Ingredients list (clear + minimal)
+- Step-by-step instructions
+- Max 5–7 steps
+
+2. Quick Prep Indicator:
+- Time required (e.g. “10 mins”, “20 mins”)
+
+3. Nutritional Highlight:
+- Example:
+  “High in calcium and protein”
+
+---
+
+“HOW TO” GUIDES (IMPORTANT):
+
+Include a section for simple guidance:
+
+- “How to build a bone-friendly meal”
+- “Easy ways to increase calcium daily”
+- “Simple swaps for better nutrition”
+
+Keep these:
+- Short
+- Practical
+- Easy to follow
+
+---
+
+USER EXPERIENCE:
+
+- Daily plan view (today’s meals)
+- Option to:
+  - Swap meals
+  - Save favourites
+- Keep interface clean and visual
+
+Avoid:
+- Overwhelming data
+- Complex nutritional breakdowns
+
+---
+
+SUPPLEMENTS GUIDANCE:
+
+- Suggest supplements where needed:
+  Example:
+  “Based on your profile, consider Vitamin D support”
+
+- Keep guidance general (not medical advice)
+- Position as support, not requirement
+
+---
+
+ADAPTABILITY:
+
+- Allow users to:
+  - Regenerate meal plans
+  - Select preferences (if available later)
+    - Vegetarian
+    - Dairy-free
+
+---
+
+INTEGRATION WITH SNAP SYSTEM:
+
+- Reinforce messaging:
+  “Consistent nutrition supports stronger bones over time”
+
+- Align with overall SNAP Life approach:
+  - Simple
+  - Daily habits
+  - Long-term health
+
+---
+
+FUTURE-READY (DO NOT FULLY BUILD YET):
+
+- Personalised weekly plans
+- Shopping list generation
+- Deeper nutritional tracking
+
+---
+
+GOAL:
+
+Create a personalised, easy-to-follow meal system that removes guesswork and helps users build consistent, bone-supporting eating habits.
+
+The experience should feel supportive, practical, and achievable — not clinical or overwhelming.

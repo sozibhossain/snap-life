@@ -1,0 +1,230 @@
+Hi — now that the Bone Tracker, DEXA logging, and FRAX tool are being enhanced, we need to elevate the dashboard experience to a high-end, premium standard.
+
+This should not feel like a medical dashboard or basic charts — it should feel like a luxury wellness product that is calm, intelligent, and visually engaging.
+
+Please implement the following:
+
+---
+
+SNAP LIFE – PREMIUM DASHBOARD EXPERIENCE (BONE HEALTH FOCUS)
+
+---
+
+1. OVERALL DESIGN DIRECTION
+
+The dashboard should feel:
+
+* Calm
+* Premium
+* Minimal
+* Intelligent
+
+Avoid:
+
+* Clinical layouts
+* Data overload
+* Harsh visuals
+
+Use:
+
+* Soft gradients (dark blue → light blue)
+* Orange accents for key highlights
+* Card-based layout with spacing and depth
+
+---
+
+2. HERO SECTION (TOP OF DASHBOARD)
+
+Create a visually strong “at a glance” section:
+
+Include:
+
+* Welcome message (personalised)
+* “Today’s Focus” (2–3 simple actions)
+* Subtle status indicator (e.g. “Building consistency”)
+
+Optional:
+
+* Light animated background (very subtle, calming)
+
+---
+
+3. BONE HEALTH SUMMARY CARD (KEY FEATURE)
+
+Create a premium summary card displaying:
+
+* Latest DEXA status
+
+* Fracture risk:
+
+  * Major Osteoporotic (%)
+  * Hip Fracture (%)
+
+* Simple status:
+
+  * Improving / Stable / Needs attention
+
+Design:
+
+* Rounded card
+* Soft shadow
+* Clean typography
+* Clear hierarchy
+
+---
+
+4. PROGRESS VISUALISATION (HIGH-END)
+
+Replace basic charts with elegant visuals:
+
+* Smooth line graph (minimal gridlines)
+* Soft gradient fill under the line
+* Toggle between:
+
+  * Bone density
+  * Fracture risk
+  * BMI
+
+Include:
+
+* Time filters (e.g. last 3, 6, 12 months)
+
+Keep:
+
+* Clean
+* Easy to read
+* Visually calming
+
+---
+
+5. CONSISTENCY & HABITS SECTION
+
+Create a visual indicator of engagement:
+
+* Weekly consistency (e.g. dots, rings, or bars)
+* Categories:
+
+  * Movement
+  * Nutrition
+  * Mindfulness
+
+Design should feel:
+
+* Light
+* Encouraging
+* Not overly gamified
+
+---
+
+6. “FEEL GOOD” INSIGHT CARD (DIFFERENTIATOR)
+
+Add a dedicated insight section:
+
+Examples:
+
+* “You’ve been feeling calmer this week”
+* “Your consistency is supporting your bone health”
+
+Design:
+
+* Soft background
+* Minimal text
+* Calm tone
+
+This is emotional reinforcement, not data.
+
+---
+
+7. SNAP SHOT (WEEKLY SUMMARY PREVIEW)
+
+Display a preview card:
+
+* Weekly progress summary
+* Positive reinforcement
+
+CTA:
+“View full SNAP Shot”
+
+---
+
+8. QUICK ACTIONS
+
+Add simple, accessible buttons:
+
+* Log DEXA
+* Calculate FRAX
+* Start Breathing Session
+* View Meal Plan
+
+Keep:
+
+* Minimal
+* Clearly spaced
+* Not cluttered
+
+---
+
+9. MICRO-INTERACTIONS
+
+Add subtle animations:
+
+* Smooth transitions between states
+* Soft hover/tap feedback
+* Gentle graph animations
+
+Keep all motion:
+
+* Slow
+* Premium
+* Non-distracting
+
+---
+
+10. DATA HIERARCHY
+
+Ensure:
+
+* Most important info is visible first
+* Secondary data is accessible but not overwhelming
+* No duplication of information
+
+---
+
+11. MOBILE-FIRST DESIGN
+
+Ensure dashboard works seamlessly on mobile:
+
+* Scrollable sections
+* Easy tap targets
+* Clean stacking of cards
+
+---
+
+12. PERFORMANCE
+
+* Fast load times
+* Smooth rendering of graphs
+* No lag between sections
+
+---
+
+GOAL
+
+Deliver a dashboard that:
+
+* Feels premium and high-end
+* Makes data easy to understand
+* Reinforces progress and motivation
+* Encourages daily engagement
+
+Users should feel:
+
+* Calm
+* In control
+* Motivated
+
+This should feel like a luxury wellness experience — not a clinical tool or basic app.
+
+---
+
+Please confirm once implemented and share any design improvements you recommend.

@@ -1,0 +1,236 @@
+Build and configure the core infrastructure required for SNAP Life to function as a fully connected, scalable health application.
+
+This is a foundational system build to support users, admin, AI personalisation, payments, and future mobile deployment.
+
+---
+
+CORE OBJECTIVE:
+
+Ensure all systems are properly connected and production-ready, including:
+
+- PWA capability
+- Authentication
+- Database
+- Admin dashboard
+- Testing environment
+- Subscription system (RevenueCat)
+
+---
+
+1. PWA (PROGRESSIVE WEB APP) SETUP:
+
+- Configure full PWA registration:
+  - Web app manifest
+  - Service worker
+  - Offline capability (basic)
+
+- Ensure:
+  - Installable on mobile and desktop
+  - App icon and splash screen configured
+
+- Prepare for future:
+  - iOS and Android compatibility
+  - Structure codebase for React Native / Expo transition if needed
+
+---
+
+2. AUTHENTICATION SYSTEM (CRITICAL):
+
+Implement secure and user-friendly authentication:
+
+- Email + password login
+- “Remember me” functionality
+- Password reset flow
+- Email verification
+
+---
+
+SMTP EMAIL CONFIGURATION:
+
+- Connect to SMTP server (e.g. SendGrid, Resend, or similar)
+
+Support:
+- Welcome email
+- Password reset email
+- Login verification (if needed)
+
+Ensure:
+- Emails are branded (SNAP Life tone)
+- Reliable delivery
+- Secure token handling
+
+---
+
+3. ADMIN DASHBOARD:
+
+Create a secure admin login and dashboard with:
+
+ACCESS:
+- Admin-only authentication
+
+DASHBOARD FEATURES:
+
+- User metrics:
+  - Total users
+  - Active users
+  - Trial vs Plus vs Premium
+
+- Engagement:
+  - Session usage (breathing, meditation)
+  - Meal plan usage
+  - Bone Buddy interactions
+
+- Subscription tracking:
+  - Conversions
+  - Churn
+  - Revenue overview
+
+- Feedback monitoring:
+  - User submissions
+  - Testimonials
+
+---
+
+4. TESTING ENVIRONMENT:
+
+Create a controlled testing setup:
+
+- Separate environment (staging)
+- Access for 2 authorised users only
+
+Features:
+- Test accounts
+- Simulated subscription flows
+- Ability to reset data
+
+Ensure:
+- No impact on live data
+- Easy switching between environments
+
+---
+
+5. DATABASE (CORE SYSTEM):
+
+Implement a scalable database (e.g. Supabase, PostgreSQL):
+
+STORE:
+
+User Data:
+- Profile (name, email, age, etc.)
+- FRAX score
+- Assessment results
+
+Behaviour Data:
+- Breathing sessions
+- Meditation usage
+- Meal plan interactions
+- Mood logs
+- SNAP Shot activity
+
+AI Data:
+- Insights generated
+- Patterns
+- Recommendations history
+
+Subscription Data:
+- Trial / Plus / Premium status
+- Billing state
+
+---
+
+IMPORTANT:
+
+- Structure database to support:
+  - Personalisation
+  - AI learning
+  - Analytics
+
+- Ensure:
+  - Secure storage
+  - GDPR compliance (UK/EU)
+
+---
+
+6. AI LEARNING & PERSONALISATION LAYER:
+
+Ensure all captured data feeds into:
+
+- Bone Buddy responses
+- Daily “What to do today”
+- Insights engine
+
+System must:
+- Store user behaviour
+- Use it to refine recommendations
+- Improve over time
+
+---
+
+7. REVENUECAT INTEGRATION (FULL CHECK):
+
+- Ensure full integration with:
+  - Trial handling
+  - Plus (£9.99)
+  - Premium (£19.99)
+  - Annual (20% discount)
+
+- Validate:
+  - Subscription states sync correctly
+  - Trial → Plus fallback works
+  - Upgrade/downgrade flows
+
+- Handle:
+  - Payment failures
+  - Expiry
+  - Grace periods
+
+---
+
+8. SECURITY & PERFORMANCE:
+
+- Secure authentication (JWT or equivalent)
+- Encrypted data handling
+- Rate limiting (basic)
+
+- Ensure:
+  - Fast load times
+  - Smooth performance
+
+---
+
+9. SYSTEM CONNECTIVITY (CRITICAL):
+
+Ensure all components connect:
+
+- Database ↔ AI (Bone Buddy)
+- User actions ↔ insights engine
+- Subscription ↔ feature access
+- Admin dashboard ↔ real-time data
+
+No isolated systems.
+
+---
+
+10. FINAL VALIDATION:
+
+Test full flow:
+
+- User signup → trial → usage → subscription
+- Data captured correctly
+- AI responds with personalised context
+- Admin dashboard reflects activity
+- Emails function correctly
+
+---
+
+GOAL:
+
+Build a robust, scalable infrastructure that supports:
+
+- Personalised user journeys
+- Intelligent insights
+- Subscription management
+- Admin visibility
+- Future growth (mobile + AI)
+
+This is the backbone of SNAP Life — it must be stable, secure, and fully connected.

@@ -1,0 +1,335 @@
+Please update and enhance the **existing SNAP Supplement Tracking system** (do NOT rebuild or duplicate it) to include medication tracking, dosage selection, and integration into the overall bone health scoring and insights engine.
+
+This is an **evolution of the current feature**, not a replacement.
+
+---
+
+## CORE PRINCIPLE
+
+Enhance the existing Supplement Tracker by turning it into a unified:
+
+# “Nutrition + Medication Intake System”
+
+This system should:
+
+* extend current supplement tracking
+* allow medication logging
+* enable precise dose selection
+* feed directly into the Bone Health Tracker
+* improve insight generation and behavioural feedback
+* remain simple and non-clinical in UX
+
+Do NOT:
+
+* create a separate medication tracker
+* duplicate existing supplement logging
+* fragment user data across multiple systems
+
+---
+
+1. CORE FEATURE ENHANCEMENT
+
+---
+
+Extend the current supplement tracking to support:
+
+### A. SUPPLEMENTS (existing functionality — enhance only)
+
+* Vitamin D
+* Calcium
+* Magnesium
+* Vitamin K2
+* Omega-3
+* Collagen
+* Multivitamins
+* Protein supplements
+
+Enhancements:
+
+* improved dosage selection UI
+* unit standardisation support (mg, mcg, IU, g)
+* clearer daily intake visualisation
+* easier “add dose” flow
+
+---
+
+### B. MEDICATION TRACKING (NEW EXTENSION INSIDE SAME SYSTEM)
+
+---
+
+Add ability for users to log prescribed medications alongside supplements.
+
+Include commonly used bone-health related categories:
+
+#### Bone Health Medications
+
+* Bisphosphonates (Alendronic acid, Risedronate, Ibandronate)
+* Denosumab
+* SERMs (Raloxifene)
+* Teriparatide / PTH analogues
+* HRT (oestrogen-based therapies)
+* Prescription Calcium / Vitamin D combinations (e.g. Adcal-D3)
+
+#### General Support Medications (optional tracking)
+
+* NSAIDs (Ibuprofen, Naproxen)
+* Paracetamol
+* Statins
+* Blood pressure medication
+* Thyroid medication
+* Anticoagulants
+* Diabetes medication
+
+IMPORTANT:
+
+* Users MUST be able to manually add any medication not listed
+* This is NOT a prescribing system
+* It is a tracking + awareness tool only
+
+---
+
+2. DOSAGE SELECTION SYSTEM (CRITICAL UPDATE)
+
+---
+
+Users must be able to explicitly select or enter:
+
+* dose amount (numeric input)
+* unit type:
+
+  * mg
+  * mcg
+  * IU
+  * g
+  * ml
+  * “as prescribed”
+* frequency:
+
+  * daily
+  * weekly
+  * alternate days
+  * custom schedule
+* timing (optional):
+
+  * morning
+  * afternoon
+  * evening
+  * bedtime
+
+This must apply to BOTH:
+
+* supplements
+* medications
+
+---
+
+3. UNIFIED DAILY INTAKE LOG
+
+---
+
+Enhance existing log into a single daily view:
+
+“Today’s Intake”
+
+Includes:
+
+* supplements taken
+* medications taken
+* dosage recorded
+* completion toggle per item
+
+UI should remain:
+
+* simple
+* scannable
+* mobile-first
+* low cognitive load
+
+Avoid:
+
+* complex tables
+* clinical dashboards
+
+---
+
+4. INTEGRATION WITH BONE HEALTH TRACKER (KEY REQUIREMENT)
+
+---
+
+All logged data MUST feed into the existing Bone Health Tracker.
+
+This includes:
+
+### A. Nutrient contribution scoring (non-clinical)
+
+* Calcium intake trends
+* Vitamin D consistency
+* Magnesium consistency
+* Protein supplementation frequency
+
+### B. Medication adherence awareness (not medical scoring)
+
+* consistency tracking
+* routine stability indicator
+* “routine confidence score” (non-clinical framing)
+
+### C. Behavioural insights
+
+* streaks
+* consistency patterns
+* missed intake patterns
+* improvement over time
+
+IMPORTANT:
+
+* Do NOT imply medical diagnosis
+* Do NOT replace clinician guidance
+* Do NOT generate clinical dosing advice
+
+---
+
+5. USER EXPERIENCE FLOW (SIMPLIFIED)
+
+---
+
+Keep interaction lightweight:
+
+STEP 1:
+Select:
+
+* Supplement
+* Medication
+
+STEP 2:
+Search or Add Custom
+
+STEP 3:
+Enter:
+
+* dose
+* unit
+* frequency
+* timing (optional)
+
+STEP 4:
+Save to “Today’s Intake”
+
+Optional:
+
+* mark as taken
+* edit later
+
+---
+
+6. CONTEXTUAL INTEGRATION WITH SNAP FOUNDATIONS
+
+---
+
+Connect usage to learning journeys:
+
+Example:
+
+Calcium lesson → prompt:
+“Log your calcium intake in your daily tracker”
+
+Vitamin D lesson → explain IU vs mcg → then guide logging
+
+Medication lesson → explain adherence importance → then show tracker
+
+This ensures:
+
+* feature discovery through education
+* behavioural reinforcement
+* reduced overwhelm
+
+---
+
+7. SAFETY + CLINICAL POSITIONING
+
+---
+
+Provide only general educational context:
+
+Examples:
+
+* “This medication is commonly used to support bone health.”
+* “Always follow your healthcare provider’s instructions for dosage.”
+
+Do NOT:
+
+* suggest changing medication
+* interpret clinical outcomes
+* provide medical advice beyond general education
+
+---
+
+8. UX / DESIGN REQUIREMENTS
+
+---
+
+Maintain SNAP’s premium wellness aesthetic:
+
+* warm amber / orange palette
+* soft cards
+* clean layout
+* large tap targets
+* readable typography
+* minimal clutter
+
+Avoid:
+
+* clinical pharmacy interface
+* dense medical tables
+* overwhelming data entry forms
+
+---
+
+9. ACCESSIBILITY REQUIREMENTS
+
+---
+
+Ensure:
+
+* simple language
+* low cognitive load
+* large UI elements
+* step-by-step input
+* optional simplified mode
+
+Designed for:
+
+* older adults
+* newly diagnosed users
+* low confidence digital users
+
+---
+
+10. SUCCESS METRICS
+
+---
+
+Optimise for:
+
+* increased daily logging adoption
+* improved supplement consistency
+* improved medication tracking engagement
+* stronger Bone Health Tracker engagement
+* higher retention
+* improved habit formation
+* reduced user confusion around dosing units
+
+---
+
+## FINAL PRINCIPLE
+
+This is NOT a new feature.
+
+It is a **deep enhancement of the existing Supplement Tracking system** that:
+
+* expands capability (medications + dosing precision)
+* improves clarity
+* strengthens behavioural insights
+* and integrates directly into SNAP’s Bone Health Tracker
+
+The result should feel like:
+“A single, simple daily intake system that helps users confidently manage supplements and medications as part of their healthy ageing journey.”
