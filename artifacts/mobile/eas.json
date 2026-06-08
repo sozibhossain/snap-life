@@ -8,13 +8,32 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://your-staging-domain.replit.app"
+        "EXPO_PUBLIC_API_URL": "http://localhost:5050",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZW5nYWdpbmctc2VhaG9yc2UtNTkuY2xlcmsuYWNjb3VudHMuZGV2JA"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://snap-life-api.onrender.com",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZW5nYWdpbmctc2VhaG9yc2UtNTkuY2xlcmsuYWNjb3VudHMuZGV2JA",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_mwBZTxsGGmiudnZsGYAiRoEzdfZ",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "goog_nlLeoaOHPDicPFZhtMuFuFCZEgC"
       }
     },
     "staging": {
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://your-staging-domain.replit.app",
+        "EXPO_PUBLIC_API_URL": "https://snap-life-api.onrender.com",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZW5nYWdpbmctc2VhaG9yc2UtNTkuY2xlcmsuYWNjb3VudHMuZGV2JA",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_mwBZTxsGGmiudnZsGYAiRoEzdfZ",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "goog_nlLeoaOHPDicPFZhtMuFuFCZEgC",
         "SNAP_LIFE_ENV": "staging"
       },
       "ios": {
@@ -23,6 +42,12 @@
     },
     "production": {
       "distribution": "store",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://snap-life-api.onrender.com",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZW5nYWdpbmctc2VhaG9yc2UtNTkuY2xlcmsuYWNjb3VudHMuZGV2JA",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_mwBZTxsGGmiudnZsGYAiRoEzdfZ",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "goog_nlLeoaOHPDicPFZhtMuFuFCZEgC"
+      },
       "ios": {
         "simulator": false
       }
