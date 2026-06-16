@@ -644,9 +644,16 @@ export default function OnboardingScreen() {
               and{" "}
               <Text
                 style={[styles.legalLink, { color: colors.primary }]}
-                onPress={() => router.push("/settings/privacy")}
+                onPress={() => router.push("/settings/privacy-policy")}
               >
                 Privacy Policy
+              </Text>{" "}
+              including the{" "}
+              <Text
+                style={[styles.legalLink, { color: colors.primary }]}
+                onPress={() => router.push("/settings/disclaimer" as never)}
+              >
+                Medical, AI & Coaching Disclaimer
               </Text>
               .
             </Text>

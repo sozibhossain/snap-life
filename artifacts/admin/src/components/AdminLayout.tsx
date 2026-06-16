@@ -63,9 +63,9 @@ function SidebarBody({
     <div className="flex h-full w-full flex-col">
       <div className="h-16 flex items-center px-6 border-b border-sidebar-border/50 shrink-0">
         <img
-          src={`${basePath}/logo.svg`}
+          src={`${basePath}/logo-icon.png`}
           alt="SNAP Life Logo"
-          className="h-6 w-auto mr-3 brightness-0 invert"
+          className="h-8 w-8 rounded-md object-cover mr-3"
         />
         <span className="font-semibold text-lg tracking-tight">Admin</span>
       </div>
@@ -225,9 +225,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
             <img
-              src={`${basePath}/logo.svg`}
+              src={`${basePath}/logo-icon.png`}
               alt="SNAP Life Logo"
-              className="h-6 w-auto"
+              className="h-8 w-8 rounded-md object-cover"
             />
           </div>
           <div className="flex-1" />

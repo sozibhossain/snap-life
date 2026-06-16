@@ -315,7 +315,15 @@ export default function FraxScreen() {
               </View>
 
               <Text style={styles.disclaimerText}>
-                This tool provides an estimate only — not a medical diagnosis. Always consult your GP or specialist for a full clinical assessment.
+                This tool provides an estimate only - not a medical diagnosis.
+                Always consult your GP or specialist for a full clinical
+                assessment.{" "}
+                <Text
+                  style={{ color: colors.primary, fontFamily: "Inter_600SemiBold" }}
+                  onPress={() => router.push("/settings/disclaimer" as never)}
+                >
+                  View disclaimer
+                </Text>
               </Text>
 
               {!saved ? (
@@ -469,6 +477,25 @@ export default function FraxScreen() {
           </View>
         )}
 
+        {!result && (
+          <Pressable
+            onPress={() => router.push("/settings/disclaimer" as never)}
+            style={[
+              styles.legalNotice,
+              {
+                backgroundColor: colors.warning + "10",
+                borderColor: colors.warning + "30",
+              },
+            ]}
+          >
+            <Feather name="alert-triangle" size={14} color={colors.warning} />
+            <Text style={[styles.legalNoticeText, { color: colors.mutedForeground }]}>
+              FRAX is provided for education and self-tracking only. It does not
+              diagnose or replace clinical advice. View disclaimer.
+            </Text>
+          </Pressable>
+        )}
+
         {/* ── Navigation ── */}
         {!result && (
           <Pressable
@@ -540,6 +567,21 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   infoText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 19 },
+  legalNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 18,
+  },
+  legalNoticeText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 18,
+  },
 
   // Results
   resultsWrap: { gap: 12 },

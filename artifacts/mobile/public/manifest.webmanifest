@@ -1,7 +1,7 @@
 {
   "name": "SNAP Life",
   "short_name": "SNAP Life",
-  "description": "Personalised bone health, nutrition, and wellbeing — built for a stronger you.",
+  "description": "The first app dedicated to osteoporosis, osteopenia, bone health and healthy ageing.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "SNAP Life",
-    "slug": "mobile",
+    "name": "SNAPLifeApp",
+    "slug": "snap-life",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "snaplife",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -30,7 +30,7 @@
       "favicon": "./assets/images/favicon.png",
       "name": "SNAP Life",
       "shortName": "SNAP Life",
-      "description": "Personalised bone health, nutrition, and wellbeing — built for a stronger you.",
+      "description": "The first app dedicated to osteoporosis, osteopenia, bone health and healthy ageing.",
       "themeColor": "#3ABBD4",
       "backgroundColor": "#0f172a",
       "display": "standalone",

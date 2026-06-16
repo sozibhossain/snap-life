@@ -367,6 +367,24 @@ export default function LogDexaScreen() {
           </Text>
         </LinearGradient>
 
+        <Pressable
+          onPress={() => router.push("/settings/disclaimer" as never)}
+          style={[
+            styles.legalNotice,
+            {
+              backgroundColor: colors.warning + "10",
+              borderColor: colors.warning + "30",
+            },
+          ]}
+        >
+          <Feather name="alert-triangle" size={14} color={colors.warning} />
+          <Text style={[styles.legalNoticeText, { color: colors.mutedForeground }]}>
+            DEXA tracking helps you record your report. It is not a diagnosis
+            and does not replace professional clinical interpretation. View
+            disclaimer.
+          </Text>
+        </Pressable>
+
         {/* ── Scan Date ── */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Scan Date</Text>
@@ -504,6 +522,21 @@ const styles = StyleSheet.create({
     padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 8,
   },
   introText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 19 },
+  legalNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  legalNoticeText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 18,
+  },
 
   section: { gap: 10, marginTop: 16 },
   sectionHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },

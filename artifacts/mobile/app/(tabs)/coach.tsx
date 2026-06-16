@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { fetch } from "expo/fetch";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { markCoachOpenedToday } from "@/lib/coachBadge";
@@ -131,6 +131,7 @@ interface UserContextPayload {
 export default function CoachScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { user } = useAuth();
   const {
     getLatestDexaScore,
@@ -1315,7 +1316,13 @@ export default function CoachScreen() {
               fontFamily: "Inter_400Regular",
             }}
           >
-            Bone Buddy is a wellness companion, not a medical advisor
+            Bone Buddy is a wellness companion, not a medical advisor.{" "}
+            <Text
+              style={{ color: colors.primary, fontFamily: "Inter_600SemiBold" }}
+              onPress={() => router.push("/settings/disclaimer" as never)}
+            >
+              View disclaimer
+            </Text>
           </Text>
         </View>
       </KeyboardAvoidingView>

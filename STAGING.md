@@ -143,10 +143,10 @@ data-subject-facing parts.
 | App Store / Play Store            | Privacy nutrition labels          | Owned in App Store Connect / Play Console; mirror our Privacy Policy disclosures                            |
 
 The Privacy Policy screen (`artifacts/mobile/app/settings/privacy-policy.tsx`)
-is the single in-product source of truth and is reachable from the
-onboarding footer + the Privacy & Data settings entry. The marketing
-site (`snaplife.app/privacy`) carries the full legal text, the EU + UK
-representative addresses, and the appointed DPO contact.
+renders the June 2026 legal document and is reachable from the onboarding
+footer plus the Privacy & Data settings entry. The marketing site
+(`www.snaplife.co.uk/privacy`) should mirror the same legal text and publish
+any required representative or DPO contact details.
 
 ### Compliance follow-ups (not yet in code)
 

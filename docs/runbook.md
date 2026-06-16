@@ -276,7 +276,7 @@ Never paste raw query output into a public channel. Summarise.
 
 ## 7. Honouring a GDPR delete request manually
 
-If a user emails `privacy@snaplife.app` asking to be deleted, the
+If a user emails `teamsnap@snaplife.co.uk` asking to be deleted, the
 fastest path is to walk them through the in-app flow (Settings →
 Privacy & Data → Delete my account). If that is not possible (locked
 out of the account, deceased estate, regulator request, etc), use this

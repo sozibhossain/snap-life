@@ -230,7 +230,7 @@ export default function PrivacyScreen() {
     {
       icon: "eye" as const,
       label: "Privacy Policy",
-      desc: "How we collect, store and protect your health data.",
+      desc: "How SNAP Life collects, uses and protects your information.",
       route: "/settings/privacy-policy" as string | undefined,
     },
     {
@@ -238,6 +238,12 @@ export default function PrivacyScreen() {
       label: "Terms of Service",
       desc: "Platform terms, subscriptions and acceptable use.",
       route: "/settings/terms",
+    },
+    {
+      icon: "alert-triangle" as const,
+      label: "Medical, AI & Coaching Disclaimer",
+      desc: "Educational-use notice for Bone Buddy, FRAX, DEXA and coaching.",
+      route: "/settings/disclaimer",
     },
   ];
 
@@ -278,9 +284,9 @@ export default function PrivacyScreen() {
             GDPR Compliant
           </Text>
           <Text style={[styles.gdprText, { color: colors.mutedForeground }]}>
-            Your health data is encrypted in transit, stored on Replit-hosted
-            Postgres in the EU, and never shared with third parties without
-            your consent. Use the controls below to export or remove it.
+            Your health and wellbeing information is used to provide SNAP Life
+            features and is not sold. Use the controls below to export or
+            remove your account data.
           </Text>
         </View>
 
