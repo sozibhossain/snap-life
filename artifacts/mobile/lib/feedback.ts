@@ -1,6 +1,7 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { authHeader } from "./userToken";
+import { getApiBaseUrl } from "./serverIdentity";
 
 export type FeedbackType = "general" | "testimonial" | "experience";
 
@@ -21,15 +22,6 @@ export interface SubmitFeedbackInput {
   tags: FeedbackTag[];
   allowTestimonialUse: boolean;
   appUserId?: string | null;
-}
-
-function getApiBaseUrl(): string {
-  const override = process.env.EXPO_PUBLIC_API_URL;
-  if (override) return override.replace(/\/$/, "");
-  if (Platform.OS === "web") return "";
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (!domain) return "";
-  return domain.startsWith("http") ? domain : `https://${domain}`;
 }
 
 export async function submitFeedback(input: SubmitFeedbackInput): Promise<{ ok: boolean; id?: number; error?: string }> {

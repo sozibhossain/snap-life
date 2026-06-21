@@ -10,6 +10,7 @@ import Purchases, {
   type PurchasesPackage,
 } from "react-native-purchases";
 import { authHeader } from "./userToken";
+import { getApiBaseUrl } from "./serverIdentity";
 
 const REVENUECAT_TEST_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY;
 const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
@@ -96,15 +97,6 @@ interface ServerSubscription {
     since: string;
     gracePeriodEndsAt: string;
   } | null;
-}
-
-function getApiBaseUrl(): string {
-  const override = process.env.EXPO_PUBLIC_API_URL;
-  if (override) return override.replace(/\/$/, "");
-  if (Platform.OS === "web") return "";
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (!domain) return "";
-  return domain.startsWith("http") ? domain : `https://${domain}`;
 }
 
 /**

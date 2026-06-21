@@ -419,6 +419,11 @@ export default function CoachScreen() {
   }
 
   function getApiBase() {
+    // Match resolveApiBase(): an explicit EXPO_PUBLIC_API_URL wins so the app
+    // works off-Replit (native device / local dev / production), where
+    // EXPO_PUBLIC_DOMAIN is not set. Falls back to the Replit dev domain.
+    const override = process.env.EXPO_PUBLIC_API_URL;
+    if (override) return override.replace(/\/$/, "");
     const domain = process.env.EXPO_PUBLIC_DOMAIN;
     if (!domain) return "";
     return domain.startsWith("http") ? domain : `https://${domain}`;

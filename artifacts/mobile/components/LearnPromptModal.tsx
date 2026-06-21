@@ -163,9 +163,13 @@ export function LearnPromptModal() {
             style={[styles.startBtn, { backgroundColor: colors.accent }]}
             onPress={handleStart}
           >
-            <Feather name="book-open" size={18} color="#fff" />
+            <View style={styles.startBtnIconLeft}>
+              <Feather name="book-open" size={18} color="#fff" />
+            </View>
             <Text style={styles.startBtnText}>Start exploring</Text>
-            <Feather name="arrow-right" size={16} color="rgba(255,255,255,0.80)" />
+            <View style={styles.startBtnIconRight}>
+              <Feather name="arrow-right" size={16} color="rgba(255,255,255,0.80)" />
+            </View>
           </Pressable>
 
           {/* Secondary row */}
@@ -272,10 +276,8 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   startBtn: {
-    flexDirection: "row",
-    alignItems: "center",
+    position: "relative",
     justifyContent: "center",
-    gap: 10,
     marginHorizontal: 20,
     marginTop: 16,
     paddingVertical: 16,
@@ -285,8 +287,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Inter_700Bold",
     color: "#fff",
-    flex: 1,
     textAlign: "center",
+  },
+  startBtnIconLeft: {
+    position: "absolute",
+    left: 18,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+  },
+  startBtnIconRight: {
+    position: "absolute",
+    right: 18,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
   },
   secondaryRow: {
     flexDirection: "row",

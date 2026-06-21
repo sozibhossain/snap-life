@@ -18,6 +18,7 @@
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getApiBaseUrl } from "./serverIdentity";
 import { authHeader } from "./userToken";
 
 const WEB_PUSH_PREF_PREFIX = "@snaplife/web-push/v1:";
@@ -58,12 +59,6 @@ async function saveWebPushState(
   } catch {
     // Non-critical local state.
   }
-}
-
-function getApiBaseUrl(): string {
-  const override = process.env.EXPO_PUBLIC_API_URL;
-  if (override) return override.replace(/\/$/, "");
-  return "";
 }
 
 /** Convert a base64url string to a Uint8Array for applicationServerKey. */

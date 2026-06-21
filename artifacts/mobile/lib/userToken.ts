@@ -20,6 +20,7 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+import { getApiBaseUrl } from "./serverIdentity";
 
 const TOKEN_KEY_PREFIX = "@snaplife/userToken/v1:";
 
@@ -27,15 +28,6 @@ const memCache = new Map<string, string | null>();
 
 function keyFor(appUserId: string): string {
   return `${TOKEN_KEY_PREFIX}${appUserId}`;
-}
-
-function getApiBaseUrl(): string {
-  const override = process.env.EXPO_PUBLIC_API_URL;
-  if (override) return override.replace(/\/$/, "");
-  if (Platform.OS === "web") return "";
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (!domain) return "";
-  return domain.startsWith("http") ? domain : `https://${domain}`;
 }
 
 /**

@@ -22,6 +22,22 @@ export function resolveApiBase(): string | null {
   return domain.startsWith("http") ? domain : `https://${domain}`;
 }
 
+/**
+ * API base for building `${getApiBaseUrl()}/api/...` URLs. Same resolution as
+ * resolveApiBase() but returns "" instead of null when nothing is configured,
+ * so callers can always string-concat. Single source of truth used across the
+ * lib/* helpers (events, feedback, push, webPush, revenuecat, userToken,
+ * engagementProfile).
+ */
+export function getApiBaseUrl(): string {
+  const override = process.env.EXPO_PUBLIC_API_URL;
+  if (override) return override.replace(/\/$/, "");
+  if (Platform.OS === "web") return "";
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (!domain) return "";
+  return domain.startsWith("http") ? domain : `https://${domain}`;
+}
+
 export async function fetchAppIdentity(
   clerkSessionToken: string | null,
 ): Promise<AppIdentity | null> {

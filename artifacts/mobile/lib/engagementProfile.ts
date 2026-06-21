@@ -11,8 +11,8 @@
  * hour, so we're not paying for the freshness on the database.
  */
 
-import { Platform } from "react-native";
 import { authHeader } from "./userToken";
+import { getApiBaseUrl } from "./serverIdentity";
 import type { BehaviouralStats } from "./behaviouralStats";
 
 export interface EngagementByKind {
@@ -57,15 +57,6 @@ interface CacheEntry {
 
 const cache = new Map<string, CacheEntry>();
 let inFlight = new Map<string, Promise<EngagementProfile | null>>();
-
-function getApiBaseUrl(): string {
-  const override = process.env.EXPO_PUBLIC_API_URL;
-  if (override) return override.replace(/\/$/, "");
-  if (Platform.OS === "web") return "";
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (!domain) return "";
-  return domain.startsWith("http") ? domain : `https://${domain}`;
-}
 
 /**
  * Fetch the engagement profile for a user. Returns `null` when there's

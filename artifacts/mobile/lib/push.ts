@@ -20,6 +20,7 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { authHeader } from "./userToken";
+import { getApiBaseUrl } from "./serverIdentity";
 
 const PREF_KEY_PREFIX = "@snaplife/push/v1:";
 
@@ -41,15 +42,6 @@ const DEFAULT_STATE: PushOptInState = {
 
 function keyFor(appUserId: string | null | undefined): string {
   return `${PREF_KEY_PREFIX}${appUserId ?? "anon"}`;
-}
-
-function getApiBaseUrl(): string {
-  const override = process.env.EXPO_PUBLIC_API_URL;
-  if (override) return override.replace(/\/$/, "");
-  if (Platform.OS === "web") return "";
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (!domain) return "";
-  return domain.startsWith("http") ? domain : `https://${domain}`;
 }
 
 /**

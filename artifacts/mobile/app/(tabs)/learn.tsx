@@ -9,6 +9,7 @@
  * Voice: warm, present, forward-looking — matching the Breathing Studio.
  */
 import { Feather } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -243,6 +244,9 @@ export default function LearnScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* White status-bar icons over the dark navy hero */}
+      <StatusBar style="light" />
+
       {/* Deep navy hero backdrop */}
       <LinearGradient
         colors={["#0D2530", "#1C3A4A", colors.background]}
