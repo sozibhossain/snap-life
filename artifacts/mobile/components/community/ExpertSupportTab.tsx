@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
@@ -81,6 +82,7 @@ interface RequestModalProps {
 function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { user } = useAuth();
 
   const [name, setName]             = useState(`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim());
@@ -321,7 +323,20 @@ function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalP
               <View style={[styles.privacyBox, { backgroundColor: accentColor + "0D", borderColor: accentColor + "28" }]}>
                 <Feather name="lock" size={12} color={accentColor} />
                 <Text style={[styles.privacyText, { color: colors.mutedForeground }]}>
-                  All information shared is kept strictly confidential and handled in line with GDPR guidelines.
+                  All information shared is kept strictly confidential and handled in line with GDPR guidelines.{" "}
+                  <Text
+                    style={{ color: accentColor, fontFamily: "Inter_600SemiBold" }}
+                    onPress={() => router.push("/settings/privacy-policy" as never)}
+                  >
+                    Privacy policy
+                  </Text>
+                  {" "}·{" "}
+                  <Text
+                    style={{ color: accentColor, fontFamily: "Inter_600SemiBold" }}
+                    onPress={() => router.push("/settings/disclaimer" as never)}
+                  >
+                    Medical disclaimer
+                  </Text>
                 </Text>
               </View>
 

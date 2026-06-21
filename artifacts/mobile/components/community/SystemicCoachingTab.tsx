@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
@@ -135,6 +136,7 @@ interface BookingModalProps {
 function BookingModal({ visible, session, onClose }: BookingModalProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { user } = useAuth();
   const [name, setName]           = useState(`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim());
   const [email, setEmail]         = useState(user?.email ?? "");
@@ -281,7 +283,20 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
               <View style={[styles.modalPrivacy, { backgroundColor: accentColor + "0D", borderColor: accentColor + "28" }]}>
                 <Feather name="lock" size={12} color={accentColor} />
                 <Text style={[styles.modalPrivacyText, { color: colors.mutedForeground }]}>
-                  All information shared is treated with strict confidence in line with ICF coaching ethics.
+                  All information shared is treated with strict confidence in line with ICF coaching ethics.{" "}
+                  <Text
+                    style={{ color: accentColor, fontFamily: "Inter_600SemiBold" }}
+                    onPress={() => router.push("/settings/privacy-policy" as never)}
+                  >
+                    Privacy policy
+                  </Text>
+                  {" "}·{" "}
+                  <Text
+                    style={{ color: accentColor, fontFamily: "Inter_600SemiBold" }}
+                    onPress={() => router.push("/settings/disclaimer" as never)}
+                  >
+                    Coaching disclaimer
+                  </Text>
                 </Text>
               </View>
 
