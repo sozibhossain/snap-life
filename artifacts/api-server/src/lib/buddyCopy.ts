@@ -12,12 +12,15 @@
 
 import OpenAI from "openai";
 
+const OPENAI_API_KEY =
+  process.env.OPENAI_API_KEY ?? process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+
 const openai = new OpenAI({
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  baseURL: process.env.OPENAI_BASE_URL ?? process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
   // Placeholder so the SDK construction doesn't throw when no key is set;
   // composeDailyNudgeLine() short-circuits to the static fallback above
-  // when AI_INTEGRATIONS_OPENAI_API_KEY is unset, so this is never used.
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? "missing-openai-key",
+  // when OPENAI_API_KEY is unset, so this is never used.
+  apiKey: OPENAI_API_KEY ?? "missing-openai-key",
 });
 
 const PUSH_PERSONA = `You are Bone Buddy — a warm, calm companion in the SNAP Life bone-health app. Compose a single notification body line.
@@ -75,7 +78,7 @@ export async function composeDailyNudgeLine(
 ): Promise<string> {
   // If the backend isn't configured (local dev without a key), skip the
   // round-trip entirely and use the static fallback.
-  if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+  if (!OPENAI_API_KEY) {
     return staticFallback(facts);
   }
   try {

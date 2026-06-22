@@ -11,8 +11,8 @@
  *     each regenerate (via a seed) without becoming chaotic
  *   - select a swap candidate for any meal slot
  *
- * Targets follow widely cited UK / NHS-aligned guidance for adult bone
- * health and are intentionally rounded for clarity. They are NOT medical
+ * Targets follow widely cited adult bone-health guidance and are intentionally
+ * rounded for clarity. They are NOT medical
  * advice — the UI presents them as supportive daily goals, not prescriptions.
  */
 
@@ -85,8 +85,8 @@ export function deriveTargets(inputs: ProfileInputs): NutritionTargets {
     calcium = 1300;
   }
 
-  // Vitamin D — UK NHS baseline is 400 IU; bone health guidance commonly sits
-  // at 800 IU+, with higher cover for osteoporosis or high-risk individuals.
+  // Vitamin D - bone health guidance commonly sits at 800 IU+, with higher
+  // cover for osteoporosis or high-risk individuals.
   let vitaminD = 800;
   if (age >= 70) vitaminD = 1000;
   if (inputs.condition === "osteoporosis" || inputs.fractureRisk === "high") {
@@ -118,12 +118,12 @@ export function deriveTargets(inputs: ProfileInputs): NutritionTargets {
 export function suggestSupplements(inputs: ProfileInputs): SupplementSuggestion[] {
   const out: SupplementSuggestion[] = [];
 
-  // The UK NHS suggests a daily 10µg / 400 IU vitamin D for everyone in
-  // autumn/winter — we always surface this as supportive guidance.
+  // Vitamin D is commonly recommended when sun exposure is limited,
+  // particularly in winter or regions with less year-round sunlight.
   out.push({
     id: "vitd",
     name: "Vitamin D3",
-    reason: "Supports calcium absorption — UK guidance recommends a daily top-up, especially in autumn and winter.",
+    reason: "Supports calcium absorption, especially during winter, limited sun exposure, or in regions with less year-round sunlight.",
     hint: "10–25 μg (400–1000 IU) daily",
   });
 

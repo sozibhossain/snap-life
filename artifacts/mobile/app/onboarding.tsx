@@ -234,8 +234,7 @@ export default function OnboardingScreen() {
     setStep((s) => s + 1);
   }
 
-  // Step 0 can always proceed (all fields optional — low friction)
-  const step0CanProceed = true;
+  const step0CanProceed = Boolean(location.trim());
   const step1CanProceed = Boolean(condition);
   const step2CanProceed = true; // goals are also optional
 
@@ -243,7 +242,7 @@ export default function OnboardingScreen() {
     { title: "Tell us a little about you", subtitle: "Help us personalise your SNAP experience, guidance, and recommendations." },
     { title: "Where are you on your journey?", subtitle: "Tell us a little about yourself so we can personalise every insight and recommendation." },
     { title: "What matters most to you?", subtitle: "Pick everything you'd love SNAP to help with — you can always update this later." },
-    { title: "Your journey starts today", subtitle: "Welcome to SNAP Life — your healthy ageing companion." },
+    { title: "Your journey starts today", subtitle: "Welcome to the Bone Health Movement." },
   ];
 
   return (
@@ -374,10 +373,10 @@ export default function OnboardingScreen() {
               />
 
               <InputField
-                label="Where are you based? (optional)"
+                label="Town / country"
                 value={location}
                 onChangeText={setLocation}
-                placeholder="e.g. London, UK"
+                placeholder="e.g. Lisbon, Portugal"
                 colors={colors}
                 inputRef={locationRef}
                 returnKeyType="done"
@@ -487,15 +486,15 @@ export default function OnboardingScreen() {
               <View style={styles.successHeading}>
                 {firstName.trim() ? (
                   <Text style={[styles.successEyebrow, { color: colors.primary }]}>
-                    Welcome, {firstName.trim()}
+                    Welcome to the Bone Health Movement - {firstName.trim()}
                   </Text>
                 ) : (
                   <Text style={[styles.successEyebrow, { color: colors.primary }]}>
-                    You've joined the
+                    Welcome to the
                   </Text>
                 )}
                 <Text style={[styles.successTitle, { color: colors.foreground }]}>
-                  {"Bone Health\nMovement"}
+                  {firstName.trim() ? "SNAP Life" : "Bone Health\nMovement"}
                 </Text>
               </View>
 
@@ -569,14 +568,6 @@ export default function OnboardingScreen() {
         <View style={[styles.footer, { paddingBottom: bottomPad + 16, borderTopColor: colors.border }]}>
           {step < 3 ? (
             <View style={styles.footerActions}>
-              {/* Skip on step 0 and step 2 (optional steps) */}
-              {(step === 0 || step === 2) && (
-                <Pressable style={styles.skipBtn} onPress={handleNext}>
-                  <Text style={[styles.skipText, { color: colors.mutedForeground }]}>
-                    {step === 0 ? "Skip for now" : "Skip"}
-                  </Text>
-                </Pressable>
-              )}
               <Pressable
                 style={[
                   styles.nextBtn,
@@ -587,11 +578,11 @@ export default function OnboardingScreen() {
                       (step === 2 && step2CanProceed)
                         ? colors.primary
                         : colors.muted,
-                    flex: step === 0 || step === 2 ? 1 : undefined,
+                    flex: 1,
                   },
                 ]}
                 onPress={handleNext}
-                disabled={step === 1 && !step1CanProceed}
+                disabled={(step === 0 && !step0CanProceed) || (step === 1 && !step1CanProceed)}
               >
                 <Text
                   style={[

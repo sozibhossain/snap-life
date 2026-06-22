@@ -118,6 +118,11 @@ export function LessonCompleteModal({
     }
   }
 
+  function handleProfile() {
+    onClose();
+    setTimeout(() => router.replace("/(tabs)/profile" as never), 320);
+  }
+
   return (
     <Modal
       visible={visible}
@@ -216,9 +221,9 @@ export function LessonCompleteModal({
               <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
             </Pressable>
           ) : (
-            <Pressable style={styles.doneBtn} onPress={onClose}>
+            <Pressable style={styles.doneBtn} onPress={handleProfile}>
               <Text style={[styles.doneBtnText, { color: colors.mutedForeground }]}>
-                Back to my journey
+                Complete my profile
               </Text>
             </Pressable>
           )}

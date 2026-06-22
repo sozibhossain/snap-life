@@ -148,25 +148,25 @@ const darkShadows: ShadowTokens = {
 };
 
 const light: Palette = {
-  text: "#1C3A4A",
-  tint: "#3ABBD4",
+  text: "#236184",
+  tint: "#4fb3cd",
 
   background: "#F7FAFB",
-  foreground: "#1C3A4A",
+  foreground: "#236184",
 
   card: "#FFFFFF",
-  cardForeground: "#1C3A4A",
+  cardForeground: "#236184",
 
-  primary: "#3ABBD4",
+  primary: "#4fb3cd",
   primaryForeground: "#FFFFFF",
 
   secondary: "#E5F5F9",
-  secondaryForeground: "#1C3A4A",
+  secondaryForeground: "#236184",
 
   muted: "#EEF4F6",
   mutedForeground: "#5C7E8C",
 
-  accent: "#F47530",
+  accent: "#ff8736",
   accentForeground: "#FFFFFF",
 
   destructive: "#ef4444",
@@ -177,14 +177,14 @@ const light: Palette = {
 
   success: "#22c55e",
   successForeground: "#ffffff",
-  warning: "#F47530",
+  warning: "#ff8736",
   warningForeground: "#ffffff",
 
-  navy: "#1C3A4A",
-  navyMid: "#24576F",
-  navyLight: "#2B7499",
+  navy: "#236184",
+  navyMid: "#2B7892",
+  navyLight: "#4fb3cd",
 
-  xpGold: "#F47530",
+  xpGold: "#ff8736",
   xpBronze: "#92400e",
 
   gradients: {
@@ -192,27 +192,27 @@ const light: Palette = {
     // Dark navy end leads so white-on-gradient text in the top-left
     // corner of a diagonal sweep clears WCAG AA contrast. The cyan
     // bottom-right still gives the surface its brand feel.
-    primary: ["#1C3A4A", "#3ABBD4"],
-    accent: ["#F47530", "#FFB07A"],
-    calm: ["#1C7B8C", "#3ABBD4"],
-    warmth: ["#F47530", "#FFB07A"],
-    insight: ["#1C3A4A", "#3ABBD4"],
+    primary: ["#236184", "#4fb3cd"],
+    accent: ["#ff8736", "#FFB27D"],
+    calm: ["#236184", "#4fb3cd"],
+    warmth: ["#ff8736", "#FFB27D"],
+    insight: ["#236184", "#4fb3cd"],
   },
   shadows: lightShadows,
 };
 
 const dark: Palette = {
   text: "#EEF6FA",
-  tint: "#4ECFE0",
+  tint: "#4fb3cd",
 
-  background: "#0D2530",
+  background: "#0e2228",
   foreground: "#EEF6FA",
 
   card: "#152D3D",
   cardForeground: "#EEF6FA",
 
-  primary: "#4ECFE0",
-  primaryForeground: "#0D2530",
+  primary: "#4fb3cd",
+  primaryForeground: "#0e2228",
 
   secondary: "#1A3A4A",
   secondaryForeground: "#7AACC0",
@@ -220,7 +220,7 @@ const dark: Palette = {
   muted: "#1A3A4A",
   mutedForeground: "#7AACC0",
 
-  accent: "#F68C50",
+  accent: "#ff8736",
   accentForeground: "#ffffff",
 
   destructive: "#ef4444",
@@ -231,25 +231,25 @@ const dark: Palette = {
 
   success: "#22c55e",
   successForeground: "#ffffff",
-  warning: "#F68C50",
+  warning: "#ff8736",
   warningForeground: "#ffffff",
 
-  navy: "#0D2530",
+  navy: "#0e2228",
   navyMid: "#152D3D",
-  navyLight: "#1C3A4A",
+  navyLight: "#236184",
 
-  xpGold: "#F68C50",
+  xpGold: "#ff8736",
   xpBronze: "#92400e",
 
   gradients: {
-    hero: ["#0D2530", "#152D3D"],
+    hero: ["#0e2228", "#152D3D"],
     // Same dark-end-leading rule as light mode so white text on the
     // top-left of a diagonal sweep stays legible.
-    primary: ["#0D2530", "#4ECFE0"],
-    accent: ["#9C4A1F", "#F68C50"],
-    calm: ["#0F4856", "#4ECFE0"],
-    warmth: ["#9C4A1F", "#F68C50"],
-    insight: ["#0D2530", "#4ECFE0"],
+    primary: ["#0e2228", "#4fb3cd"],
+    accent: ["#9C4A1F", "#ff8736"],
+    calm: ["#0e2228", "#4fb3cd"],
+    warmth: ["#9C4A1F", "#ff8736"],
+    insight: ["#0e2228", "#4fb3cd"],
   },
   shadows: darkShadows,
 };

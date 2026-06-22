@@ -4,6 +4,7 @@ import {
   evaluatePremiumEntitlement,
   PREMIUM_ENTITLEMENT_ID,
   renderUserFacts,
+  resolveOpenAiApiKey,
   type ChatUserFacts,
   type PremiumSubscriberRow,
 } from "../chat";
@@ -106,6 +107,25 @@ describe("evaluatePremiumEntitlement", () => {
         NOW,
       ),
     ).toBe(true);
+  });
+});
+
+describe("resolveOpenAiApiKey", () => {
+  it("prefers the standard OPENAI_API_KEY name", () => {
+    expect(
+      resolveOpenAiApiKey({
+        OPENAI_API_KEY: "standard-key",
+        AI_INTEGRATIONS_OPENAI_API_KEY: "legacy-key",
+      }),
+    ).toBe("standard-key");
+  });
+
+  it("falls back to the legacy integration key name", () => {
+    expect(
+      resolveOpenAiApiKey({
+        AI_INTEGRATIONS_OPENAI_API_KEY: "legacy-key",
+      }),
+    ).toBe("legacy-key");
   });
 });
 

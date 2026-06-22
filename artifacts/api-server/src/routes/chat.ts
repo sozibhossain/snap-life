@@ -78,16 +78,26 @@ async function hasPremiumEntitlement(appUserId: string): Promise<boolean> {
 // the module loads without OpenAI configured. /api/chat/bone-buddy will
 // still fail at request time, which surfaces the misconfiguration where
 // it's actionable rather than blocking server boot.
+export function resolveOpenAiApiKey(
+  env: Partial<
+    Pick<NodeJS.ProcessEnv, "OPENAI_API_KEY" | "AI_INTEGRATIONS_OPENAI_API_KEY">
+  > = process.env,
+): string | undefined {
+  return env.OPENAI_API_KEY ?? env.AI_INTEGRATIONS_OPENAI_API_KEY;
+}
+
+const OPENAI_API_KEY = resolveOpenAiApiKey();
+
 const openai = new OpenAI({
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? "missing-openai-key",
+  baseURL: process.env.OPENAI_BASE_URL ?? process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: OPENAI_API_KEY ?? "missing-openai-key",
 });
 
 // Whether a real OpenAI key is configured. When it isn't, the chat route
 // returns a clear 503 up front instead of letting the SDK throw a cryptic
 // 500 mid-request — the client can show a friendly "AI temporarily
 // unavailable" message and we avoid a confusing error in the logs.
-const OPENAI_CONFIGURED = Boolean(process.env.AI_INTEGRATIONS_OPENAI_API_KEY);
+const OPENAI_CONFIGURED = Boolean(OPENAI_API_KEY);
 
 const PERSONA_PROMPT = `You are Bone Buddy, a warm, supportive AI companion inside the SNAP Life app for people managing their bone health (osteoporosis, osteopenia, post-DEXA, or simply at risk).
 
@@ -444,6 +454,15 @@ export function renderUserFacts(c: ChatUserFacts | undefined): string {
 
 router.post("/chat/bone-buddy", async (req, res) => {
   const body = req.body as ChatRequestBody;
+  req.log?.info(
+    {
+      hasMessagesArray: Array.isArray(body?.messages),
+      messageCount: Array.isArray(body?.messages) ? body.messages.length : 0,
+      kickoff: body?.kickoff === true,
+      openaiConfigured: OPENAI_CONFIGURED,
+    },
+    "chat/bone-buddy request received",
+  );
 
   // Kickoff calls are allowed to start with an empty messages array — we
   // synthesise the opener from USER FACTS. Otherwise we need at least one
@@ -461,7 +480,7 @@ router.post("/chat/bone-buddy", async (req, res) => {
   // instead of a cryptic SDK error once we start streaming.
   if (!OPENAI_CONFIGURED) {
     req.log.warn(
-      "chat/bone-buddy: AI_INTEGRATIONS_OPENAI_API_KEY not set — returning 503",
+      "chat/bone-buddy: OPENAI_API_KEY not set — returning 503",
     );
     res.status(503).json({
       error: "ai_unavailable",
@@ -567,6 +586,14 @@ router.post("/chat/bone-buddy", async (req, res) => {
   res.flushHeaders?.();
 
   try {
+    req.log?.info(
+      {
+        model: "gpt-5-mini",
+        turnCount: turns.length,
+        systemPromptChars: systemPrompt.length,
+      },
+      "chat/bone-buddy openai stream starting",
+    );
     // Bone Buddy is a short, conversational coach — replies are 2-4 sentences.
     // gpt-5-mini gives near-instant first-token latency and is more than
     // capable for this surface area. Cap output at 600 tokens to enforce
@@ -580,6 +607,8 @@ router.post("/chat/bone-buddy", async (req, res) => {
         ...turns,
       ],
     });
+
+    req.log?.info("chat/bone-buddy openai stream created");
 
     for await (const chunk of stream) {
       const delta = chunk.choices?.[0]?.delta?.content;
@@ -595,7 +624,22 @@ router.post("/chat/bone-buddy", async (req, res) => {
     res.write("data: [DONE]\n\n");
     res.end();
   } catch (err) {
-    req.log?.error({ err }, "bone-buddy chat failed");
+    const openaiErr = err as {
+      status?: number;
+      code?: string;
+      type?: string;
+      message?: string;
+    };
+    req.log?.error(
+      {
+        err,
+        status: openaiErr.status,
+        code: openaiErr.code,
+        type: openaiErr.type,
+        message: openaiErr.message,
+      },
+      "bone-buddy chat failed",
+    );
     if (!res.headersSent) {
       res.status(500).json({ error: "chat failed" });
     } else {

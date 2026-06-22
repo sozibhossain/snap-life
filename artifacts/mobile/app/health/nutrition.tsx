@@ -1,12 +1,12 @@
 /**
- * Log Nutrition — UK NICE / NHS-aligned bone health tracking.
+ * Log Nutrition - food-only bone health tracking.
  *
  * Improvements in this version:
- *  - UK-aligned goal ranges (NICE osteoporosis guidance)
- *  - Safe upper limit warnings (MHRA / NHS guidance)
+ *  - Total daily targets used by the Bone Health Dashboard
+ *  - Safe upper limit education
  *  - IU ↔ mcg conversion shown for Vitamin D
  *  - Unit education per nutrient (expandable)
- *  - Common UK supplement quick-add chips (Adcal-D3, Calceos, etc.)
+ *  - Food-only logging to prevent supplement double-counting
  *  - Unrealistic-value detection
  *  - "Why it matters" bone-health context per nutrient
  *  - Blended brand navy + warm-amber colour system
@@ -33,39 +33,13 @@ import { useHealth } from "@/context/HealthContext";
 import { useNutrition } from "@/context/NutritionContext";
 import { useColors } from "@/hooks/useColors";
 
-// ─── UK supplement quick-add data ────────────────────────────────────────────
-// Common UK osteoporosis supplements. Values are elemental amounts.
-
-interface SupChip {
-  name:      string;
-  detail:    string;
-  calcium:   number; // mg elemental calcium
-  vitaminD:  number; // IU
-  protein:   number;
-  magnesium: number;
-}
-
-const UK_SUPPLEMENTS: SupChip[] = [
-  { name: "Calcium",   detail: "+500 mg",    calcium: 500, vitaminD: 0,    protein: 0,  magnesium: 0   },
-  { name: "Vitamin D", detail: "+1,000 IU",  calcium: 0,   vitaminD: 1000, protein: 0,  magnesium: 0   },
-  { name: "Protein",   detail: "+20 g",      calcium: 0,   vitaminD: 0,    protein: 20, magnesium: 0   },
-  { name: "Magnesium", detail: "+150 mg",    calcium: 0,   vitaminD: 0,    protein: 0,  magnesium: 150 },
-];
-
 // ─── Nutrient colour palette (brand navy + warm amber blend) ──────────────────
 const NUTRIENT_COLORS = {
   calcium:   "#3ABBD4",   // brand primary teal — mineral/bone
-  vitaminD:  "#F59E0B",   // warm amber — sunshine / NHS vit D awareness
+  vitaminD:  "#F59E0B",   // warm amber - sunshine / vitamin D awareness
   protein:   "#22c55e",   // brand success green — muscle strength
   magnesium: "#FB923C",   // amber-orange blend
   calories:  "#F47530",   // brand accent orange — energy
-};
-
-const SUP_COLOR: Record<string, string> = {
-  "Calcium":   NUTRIENT_COLORS.calcium,
-  "Vitamin D": NUTRIENT_COLORS.vitaminD,
-  "Protein":   NUTRIENT_COLORS.protein,
-  "Magnesium": NUTRIENT_COLORS.magnesium,
 };
 
 // ─── Stepper button ───────────────────────────────────────────────────────────
@@ -106,7 +80,7 @@ interface NutrientFieldProps {
   value:       string;
   onChange:    (v: string) => void;
   step:        number;
-  safeMax:     number;   // MHRA / NHS safe upper limit (0 = no limit shown)
+  safeMax:     number;   // General safe upper limit (0 = no limit shown)
   unitNote:    string;   // "mg = milligrams"
   conversion?: string;   // IU ↔ mcg e.g. "1,000 IU = 25 mcg"
   whyMatters:  string;
@@ -159,11 +133,11 @@ function NutrientField(p: NutrientFieldProps) {
           )}
           {p.safeMax > 0 && (
             <Text style={nf.safeNote}>
-              Safe upper limit: {p.safeMax.toLocaleString()} {p.unit}/day (MHRA guidance)
+              Safe upper limit: {p.safeMax.toLocaleString()} {p.unit}/day.
             </Text>
           )}
           <Text style={[nf.gpNote, { color: p.color + "BB" }]}>
-            If you are prescribed supplements, your dose may differ — always follow your GP or pharmacist's advice.
+            If you are prescribed supplements, your dose may differ. Always follow your healthcare professional's advice.
           </Text>
         </View>
       )}
@@ -188,7 +162,7 @@ function NutrientField(p: NutrientFieldProps) {
         <View style={nf.warningBox}>
           <Feather name="alert-triangle" size={13} color="#F59E0B" />
           <Text style={nf.warningText}>
-            This is above the UK safe upper limit of {p.safeMax.toLocaleString()} {p.unit}/day. If you are taking supplements, please speak with your GP or pharmacist before exceeding this amount.
+            This is above the general safe upper limit of {p.safeMax.toLocaleString()} {p.unit}/day. If you are taking supplements, please speak with your healthcare professional before exceeding this amount.
           </Text>
         </View>
       )}
@@ -249,7 +223,7 @@ export default function NutritionScreen() {
   const topPad    = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  // UK NICE-aligned fallback goals (deriveTargets provides personalised values).
+  // Fallback goals. deriveTargets provides personalised total daily targets.
   const GOALS = useMemo(() => ({
     calcium:   targets?.calcium   || 700,
     vitaminD:  targets?.vitaminD  || 400,
@@ -287,15 +261,6 @@ export default function NutritionScreen() {
 
   const planContributed =
     todayNutrition?.source === "meal_plan" || todayNutrition?.source === "manual+plan";
-
-  // Add UK supplement values to current inputs
-  function addSupplement(chip: SupChip) {
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    if (chip.calcium  > 0) setCalcium  (String(Math.round((parseFloat(calcium)   || 0) + chip.calcium)));
-    if (chip.vitaminD > 0) setVitaminD (String(Math.round((parseFloat(vitaminD)  || 0) + chip.vitaminD)));
-    if (chip.protein  > 0) setProtein  (String(Math.round((parseFloat(protein)   || 0) + chip.protein)));
-    if (chip.magnesium > 0) setMagnesium(String(Math.round((parseFloat(magnesium) || 0) + chip.magnesium)));
-  }
 
   async function handleSave() {
     if (!calcium && !vitaminD && !protein && !magnesium && !calories) {
@@ -389,7 +354,7 @@ export default function NutritionScreen() {
           </View>
         </LinearGradient>
 
-        {/* ── UK supplement quick-add ── */}
+        {/* Food-only examples */}
         <LinearGradient
           colors={[colors.navy, colors.navyMid]}
           start={{ x: 0, y: 0 }}
@@ -398,37 +363,34 @@ export default function NutritionScreen() {
         >
           <View style={styles.cardHeader}>
             <View style={[styles.cardIcon, { backgroundColor: NUTRIENT_COLORS.vitaminD + "22" }]}>
-              <Feather name="plus-circle" size={14} color={NUTRIENT_COLORS.vitaminD} />
+              <Feather name="coffee" size={14} color={NUTRIENT_COLORS.vitaminD} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.cardTitle}>Quick-Add Supplements</Text>
-              <Text style={styles.cardSubtitle}>Common UK osteoporosis supplements — tap to add</Text>
+              <Text style={styles.cardTitle}>Log food intake only</Text>
+              <Text style={styles.cardSubtitle}>
+                Use Supplement & Medication Tracker for tablets, capsules, prescriptions, shakes, and collagen.
+              </Text>
             </View>
           </View>
           <View style={styles.divider} />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.chipRow, { paddingHorizontal: 16, paddingVertical: 14 }]}
-          >
-            {UK_SUPPLEMENTS.map((chip) => {
-              const c = SUP_COLOR[chip.name] ?? NUTRIENT_COLORS.calcium;
-              return (
-                <Pressable
-                  key={chip.name}
-                  onPress={() => addSupplement(chip)}
-                  style={({ pressed }) => [
-                    styles.chip,
-                    { backgroundColor: c + "20", borderColor: c + "55" },
-                    pressed && { opacity: 0.65 },
-                  ]}
-                >
-                  <Text style={[styles.chipName, { color: "#fff" }]}>{chip.name}</Text>
-                  <Text style={[styles.chipDetail, { color: c }]}>{chip.detail}</Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+          <View style={styles.foodExamples}>
+            {[
+              "Milk",
+              "Yogurt",
+              "Cheese",
+              "Sardines",
+              "Salmon",
+              "Tofu",
+              "Eggs",
+              "Protein meal",
+              "Vegetables",
+              "Fortified foods",
+            ].map((item) => (
+              <View key={item} style={styles.foodPill}>
+                <Text style={styles.foodPillText}>{item}</Text>
+              </View>
+            ))}
+          </View>
         </LinearGradient>
 
         {/* ── Bone-health nutrients ── */}
@@ -461,8 +423,8 @@ export default function NutritionScreen() {
             onChange={setCalcium}
             step={100}
             safeMax={2500}
-            unitNote="mg = milligrams. Calcium supplements are measured in milligrams."
-            whyMatters="Calcium builds and maintains bone mineral density — the foundation of fracture prevention."
+            unitNote="mg = milligrams. Log calcium from food here; supplements are tracked separately."
+            whyMatters="Calcium builds and maintains bone mineral density - the foundation of fracture prevention."
           />
           <NutrientField
             icon="sun"
@@ -491,7 +453,7 @@ export default function NutritionScreen() {
             step={10}
             safeMax={0}
             unitNote="g = grams. Protein intake is measured in grams per day."
-            whyMatters="Adequate protein supports muscle mass and strength — essential for fall and fracture prevention."
+            whyMatters="Adequate protein supports muscle mass and strength - essential for fall and fracture prevention."
           />
           <NutrientField
             icon="zap"
@@ -504,7 +466,7 @@ export default function NutritionScreen() {
             onChange={setMagnesium}
             step={50}
             safeMax={400}
-            unitNote="mg = milligrams. The safe upper limit applies to magnesium from supplements — dietary magnesium has no upper limit."
+            unitNote="mg = milligrams. The safe upper limit applies to magnesium from supplements; dietary magnesium has no upper limit."
             whyMatters="Magnesium works with calcium and vitamin D to maintain healthy bones and muscle function."
             isLast
           />
@@ -542,11 +504,11 @@ export default function NutritionScreen() {
           />
         </LinearGradient>
 
-        {/* NHS guidance footnote */}
+        {/* Guidance footnote */}
         <View style={[styles.footNote, { borderColor: colors.border }]}>
           <Feather name="shield" size={12} color={colors.mutedForeground} />
           <Text style={[styles.footText, { color: colors.mutedForeground }]}>
-            Goals are aligned with NICE osteoporosis guidelines and UK NHS guidance. Always follow your GP or pharmacist's specific advice. Taking more is not always better — high doses of calcium or vitamin D without medical supervision may not be safe.
+            Goals are total daily targets. This screen records food only; supplements and medication are tracked separately so SNAP can combine both sources without double-counting. Always follow your healthcare professional's specific advice.
           </Text>
         </View>
 
@@ -602,11 +564,26 @@ const styles = StyleSheet.create({
   divider:   { height: StyleSheet.hairlineWidth, backgroundColor: "rgba(255,255,255,0.10)" },
   ringRow:   { flexDirection: "row", justifyContent: "space-around", paddingHorizontal: 12, paddingVertical: 16 },
 
-  // Supplement chips
-  chipRow:    { gap: 10, paddingRight: 4 },
-  chip:       { borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, gap: 3, minWidth: 130 },
-  chipName:   { fontSize: 13, fontFamily: "Inter_700Bold" },
-  chipDetail: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  foodExamples: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  foodPill: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  foodPillText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: "rgba(255,255,255,0.86)",
+  },
 
   // Footer
   footNote: {

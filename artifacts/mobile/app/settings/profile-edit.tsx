@@ -644,12 +644,12 @@ export default function ProfileEditScreen() {
               </View>
               <View style={{ flex: 2 }}>
                 <Text style={[styles.detailFieldLabel, { color: colors.mutedForeground }]}>
-                  CITY / TOWN
+                  TOWN / COUNTRY
                 </Text>
                 <TextInput
                   value={location}
                   onChangeText={setLocation}
-                  placeholder="e.g. London, UK"
+                  placeholder="e.g. Lisbon, Portugal"
                   placeholderTextColor={colors.mutedForeground + "70"}
                   style={[
                     styles.detailInput,

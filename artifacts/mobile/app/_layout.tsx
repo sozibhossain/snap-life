@@ -1,10 +1,11 @@
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
+  Montserrat_300Light,
+  Montserrat_400Regular,
+  Montserrat_500Medium,
+  Montserrat_600SemiBold,
+  Montserrat_700Bold,
   useFonts,
-} from "@expo-google-fonts/inter";
+} from "@expo-google-fonts/montserrat";
 import { ClerkLoaded, ClerkProvider } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -145,10 +146,11 @@ function MissingClerkKey() {
 
 function RootLayoutInner() {
   const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    Inter_300Light: Montserrat_300Light,
+    Inter_400Regular: Montserrat_400Regular,
+    Inter_500Medium: Montserrat_500Medium,
+    Inter_600SemiBold: Montserrat_600SemiBold,
+    Inter_700Bold: Montserrat_700Bold,
   });
 
   useEffect(() => {

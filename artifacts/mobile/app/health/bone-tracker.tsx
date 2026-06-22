@@ -49,6 +49,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { useAuth } from "@/context/AuthContext";
 import { useHealth, type DexaScan, classifyTScore, worstTScore } from "@/context/HealthContext";
+import { useNutrition } from "@/context/NutritionContext";
 import { useColors } from "@/hooks/useColors";
 
 // Daily goals — kept in sync with app/health/nutrition.tsx so the
@@ -58,6 +59,7 @@ const NUTRITION_GOALS = { calcium: 1200, vitaminD: 800 };
 // Activity guideline used for the 7-day mini bars. Matches the
 // "30 active min/day" framing surfaced elsewhere in the app.
 const ACTIVITY_GOAL_MIN = 30;
+const VITAMIN_K_GOAL_MCG = 100;
 
 const DAY_MS = 86_400_000;
 
@@ -87,6 +89,28 @@ function localISO(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function supplementDailyUnits(
+  supplements: ReturnType<typeof useHealth>["supplements"],
+) {
+  return supplements.reduce(
+    (totals, item) => {
+      if (!item.taken || item.category !== "supplement") return totals;
+      const name = item.name.toLowerCase();
+      const amount = item.doseAmount ?? 0;
+      const multiplier = item.frequency === "twice daily" ? 2 : 1;
+      const daily = amount * multiplier;
+
+      if (name.includes("calcium") && item.unit === "mg") totals.calcium += daily;
+      if ((name.includes("vitamin d") || name.includes("d3")) && item.unit === "IU") totals.vitaminD += daily;
+      if (name.includes("magnesium") && item.unit === "mg") totals.magnesium += daily;
+      if ((name.includes("vitamin k") || name.includes("k2")) && item.unit === "mcg") totals.vitaminK += daily;
+      if ((name.includes("protein") || name.includes("collagen")) && item.unit === "g") totals.protein += daily;
+      return totals;
+    },
+    { calcium: 0, vitaminD: 0, protein: 0, magnesium: 0, vitaminK: 0 },
+  );
 }
 
 function last7Days(): string[] {
@@ -169,6 +193,7 @@ export default function BoneTrackerScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
+  const { targets } = useNutrition();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -299,6 +324,69 @@ export default function BoneTrackerScreen() {
 
   const suppTaken = supplements.filter((s) => s.taken).length;
   const suppTotal = supplements.length;
+  const supplementTotals = useMemo(
+    () => supplementDailyUnits(supplements),
+    [supplements],
+  );
+  const boneHealthSummary = useMemo(
+    () => [
+      {
+        label: "Calcium",
+        food: Math.round(todayNutrition?.calcium ?? 0),
+        supplement: Math.round(supplementTotals.calcium),
+        goal: targets.calcium,
+        unit: "mg",
+        color: colors.primary,
+      },
+      {
+        label: "Vitamin D",
+        food: Math.round(todayNutrition?.vitaminD ?? 0),
+        supplement: Math.round(supplementTotals.vitaminD),
+        goal: targets.vitaminD,
+        unit: "IU",
+        color: colors.accent,
+      },
+      {
+        label: "Protein",
+        food: Math.round(todayNutrition?.protein ?? 0),
+        supplement: Math.round(supplementTotals.protein),
+        goal: targets.protein,
+        unit: "g",
+        color: colors.success,
+      },
+      {
+        label: "Magnesium",
+        food: Math.round(todayNutrition?.magnesium ?? 0),
+        supplement: Math.round(supplementTotals.magnesium),
+        goal: targets.magnesium,
+        unit: "mg",
+        color: colors.warning,
+      },
+      {
+        label: "Vitamin K",
+        food: 0,
+        supplement: Math.round(supplementTotals.vitaminK),
+        goal: VITAMIN_K_GOAL_MCG,
+        unit: "mcg",
+        color: colors.navyLight,
+      },
+    ],
+    [
+      colors.accent,
+      colors.navyLight,
+      colors.primary,
+      colors.success,
+      colors.warning,
+      supplementTotals,
+      targets,
+      todayNutrition,
+    ],
+  );
+  const boneHealthScore = Math.round(
+    boneHealthSummary.reduce((sum, n) => sum + Math.min(1, (n.food + n.supplement) / n.goal), 0) /
+      boneHealthSummary.length *
+      100,
+  );
   // Use the same calendar-day-aligned 7-day window as the Activity bars
   // above, so a session logged earlier today doesn't fall in/out of one
   // metric but not the other.
@@ -351,6 +439,58 @@ export default function BoneTrackerScreen() {
           Your bone health, all in one place — DEXA & FRAX trends plus
           everything you log from the Health Hub.
         </Text>
+
+        <Card variant="elevated" style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.sectionTitleRow}>
+              <View
+                style={[
+                  styles.sectionIcon,
+                  { backgroundColor: colors.primary + "1A" },
+                ]}
+              >
+                <Feather name="activity" size={16} color={colors.primary} />
+              </View>
+              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+                Bone Health Dashboard
+              </Text>
+            </View>
+            <Badge
+              label={`${boneHealthScore}%`}
+              variant={boneHealthScore >= 80 ? "success" : boneHealthScore >= 50 ? "warning" : "default"}
+              size="sm"
+            />
+          </View>
+
+          {boneHealthSummary.map((item) => (
+            <CombinedNutrientRow
+              key={item.label}
+              {...item}
+              trackColor={colors.muted}
+              textColor={colors.foreground}
+              mutedColor={colors.mutedForeground}
+            />
+          ))}
+
+          <View
+            style={[
+              styles.dashboardMedicationRow,
+              {
+                backgroundColor: colors.success + "10",
+                borderColor: colors.success + "25",
+              },
+            ]}
+          >
+            <Feather
+              name={suppTaken > 0 ? "check-circle" : "circle"}
+              size={15}
+              color={suppTaken > 0 ? colors.success : colors.mutedForeground}
+            />
+            <Text style={[styles.dashboardMedicationText, { color: colors.foreground }]}>
+              Medication and supplement adherence: {suppTaken}/{suppTotal} taken today
+            </Text>
+          </View>
+        </Card>
 
         {/* The tracker is intentionally available to every user, not
             gated behind Premium. The user's own logged data should
@@ -1141,6 +1281,65 @@ function NutrientBar({
   );
 }
 
+interface CombinedNutrientRowProps {
+  label: string;
+  food: number;
+  supplement: number;
+  goal: number;
+  unit: string;
+  color: string;
+  trackColor: string;
+  textColor: string;
+  mutedColor: string;
+}
+
+function CombinedNutrientRow({
+  label,
+  food,
+  supplement,
+  goal,
+  unit,
+  color,
+  trackColor,
+  textColor,
+  mutedColor,
+}: CombinedNutrientRowProps) {
+  const total = food + supplement;
+  const pct = goal > 0 ? Math.min(1, total / goal) : 0;
+  const pctLabel = Math.round(pct * 100);
+  const achieved = total >= goal;
+
+  return (
+    <View style={styles.combinedRow}>
+      <View style={styles.combinedHeader}>
+        <Text style={[styles.nutrientLabel, { color: textColor }]}>{label}</Text>
+        <Text style={[styles.nutrientMeta, { color: mutedColor }]}>
+          {total.toLocaleString("en-GB")} / {goal.toLocaleString("en-GB")} {unit}
+        </Text>
+      </View>
+      <View style={[styles.nutrientTrack, { backgroundColor: trackColor }]}>
+        <View
+          style={[
+            styles.nutrientFill,
+            { width: `${Math.max(2, pctLabel)}%`, backgroundColor: achieved ? "#22c55e" : color },
+          ]}
+        />
+      </View>
+      <View style={styles.combinedSplit}>
+        <Text style={[styles.combinedSplitText, { color: mutedColor }]}>
+          Food {food.toLocaleString("en-GB")} {unit}
+        </Text>
+        <Text style={[styles.combinedSplitText, { color: mutedColor }]}>
+          Supplement {supplement.toLocaleString("en-GB")} {unit}
+        </Text>
+        <Text style={[styles.combinedStatus, { color: achieved ? "#22c55e" : color }]}>
+          {achieved ? "Target achieved" : `${pctLabel}%`}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
@@ -1320,6 +1519,36 @@ const styles = StyleSheet.create({
   nutrientMeta: { fontSize: 11, fontFamily: "Inter_400Regular" },
   nutrientTrack: { height: 8, borderRadius: 4, overflow: "hidden" },
   nutrientFill: { height: "100%", borderRadius: 4 },
+  combinedRow: { gap: 5 },
+  combinedHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  combinedSplit: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  combinedSplitText: { fontSize: 10, fontFamily: "Inter_400Regular" },
+  combinedStatus: { marginLeft: "auto", fontSize: 10, fontFamily: "Inter_700Bold" },
+  dashboardMedicationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 2,
+  },
+  dashboardMedicationText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    lineHeight: 17,
+  },
 
   // Supplements / Daily intake
   suppList: { gap: 4 },

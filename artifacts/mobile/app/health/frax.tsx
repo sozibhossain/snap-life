@@ -204,6 +204,7 @@ export default function FraxScreen() {
       });
       setSaved(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace("/health/bone-tracker" as never);
     } finally {
       setIsSaving(false);
     }
@@ -333,7 +334,7 @@ export default function FraxScreen() {
                   disabled={isSaving}
                 >
                   <Feather name="save" size={16} color="#fff" />
-                  <Text style={styles.saveBtnText}>{isSaving ? "Saving…" : "Save to Bone Tracker"}</Text>
+                  <Text style={styles.saveBtnText}>{isSaving ? "Saving…" : "Save and return to Bone Tracker"}</Text>
                 </Pressable>
               ) : (
                 <View style={styles.savedBadge}>

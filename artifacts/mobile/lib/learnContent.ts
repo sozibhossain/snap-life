@@ -137,7 +137,7 @@ export const LESSONS: Lesson[] = [
       },
       {
         heading: "Vitamin D, K2 and the partnership principle",
-        body: "Calcium cannot be absorbed without vitamin D — they are partners. Sunlight on your skin triggers natural vitamin D production, but most people in the UK need a supplement, especially from October to March. Vitamin K2 is the less well-known piece: it directs calcium into bone and away from soft tissue, where you don't want it building up. These nutrients work in concert, which is why SNAP's meal plans consider them together rather than in isolation.",
+        body: "Calcium cannot be effectively absorbed and used by the body without vitamin D - they work together as essential partners in bone health. Vitamin D helps your body absorb calcium from food and supplements, while vitamin K2 helps direct that calcium into bones and teeth, where it is needed most. Many people may struggle to maintain optimal vitamin D levels during periods of limited sun exposure, particularly during winter months, when spending more time indoors, or when living in regions with less year-round sunlight. For this reason, vitamin D supplementation is commonly recommended by healthcare professionals. Vitamin K2 is often overlooked, yet it plays an important role in supporting healthy calcium distribution within the body. Together, calcium, vitamin D and vitamin K2 form a powerful partnership that supports bone strength, mobility and healthy ageing. This is why SNAP considers these nutrients together, helping you build a more complete picture of your bone health rather than focusing on individual nutrients in isolation.",
       },
       {
         heading: "Protein — the forgotten bone builder",
@@ -256,7 +256,7 @@ export const LESSONS: Lesson[] = [
       },
       {
         heading: "Sunlight, vitamin D and seasonal awareness",
-        body: "In the UK, meaningful vitamin D synthesis from sunlight only happens between April and September. Outside that window — and for anyone with darker skin tones, or who spends most time indoors — supplementation is recommended by the NHS. Ten to twenty minutes of unprotected sun exposure on arms and legs during summer months is enough to trigger synthesis. A daily supplement of 10 micrograms from October to March is the UK's standard guidance. Simple to do, significant in effect.",
+        body: "Sunlight plays an important role in both bone health and overall wellbeing. When ultraviolet B (UVB) rays reach the skin, the body can produce vitamin D naturally, helping support calcium absorption, bone strength and healthy ageing. Regular exposure to natural daylight may also help support circadian rhythms, mood, sleep quality and general wellbeing. Spending time outdoors, particularly during daylight hours, can provide benefits that extend beyond vitamin D alone. Vitamin D production varies depending on factors such as season, geographic location, skin tone, age, clothing coverage, sunscreen use and time spent outdoors. During winter months, in regions with limited sunlight, or for people who spend most of their time indoors, maintaining optimal vitamin D levels can be more challenging. When spending time in the sun, it is important to balance the benefits of natural light with appropriate skin protection. Many people choose to use protective clothing, hats, shade or mineral-based sun protection when needed, particularly during periods of strong UV exposure. Understanding how sunlight, nutrition and supplementation work together can help support bone health, mobility, resilience and healthy ageing throughout the year.",
       },
     ],
     ctaLabel: "Browse movement sessions",
@@ -314,7 +314,7 @@ export const LESSONS: Lesson[] = [
     keyAction:
       "Open your SNAP Shot and take a moment to acknowledge one thing from this week — however small. Every step is part of the story.",
     completionMessage:
-      "You have completed all nine SNAP Foundations. What you have built here — understanding, habits, courage, curiosity — nobody can take that from you. This is just the beginning.",
+      "You have completed another SNAP Foundation. What you are building here - understanding, habits, courage, curiosity - is becoming part of your daily rhythm.",
     sections: [
       {
         heading: "A rhythm, not a routine",
@@ -359,7 +359,7 @@ export const LESSONS: Lesson[] = [
       },
       {
         heading: "Supplements and medications — what they each do",
-        body: "Supplements are nutritional support taken to fill gaps in your diet or boost specific nutrients. The most relevant for bone health are vitamin D3 (especially in the UK, where sunlight is limited for much of the year), calcium (when dietary intake falls short), magnesium (which supports calcium metabolism), vitamin K2 (which helps direct calcium into bone), and omega-3 fatty acids. Medications, when prescribed, work at a more clinical level — bisphosphonates like alendronic acid slow bone breakdown; denosumab has a similar effect via a different mechanism; HRT replaces declining oestrogen and can be highly protective during and after menopause. These are not competing approaches. They are different tools for different circumstances. Your clinician is the right person to discuss which apply to your situation.",
+        body: "Supplements are nutritional support taken to fill gaps in your diet or boost specific nutrients. The most relevant for bone health are vitamin D3, calcium when dietary intake falls short, magnesium, vitamin K2, collagen or protein supplements where appropriate, and omega-3 fatty acids. Medications, when prescribed, work at a more clinical level - bisphosphonates like alendronic acid slow bone breakdown; denosumab has a similar effect via a different mechanism; HRT replaces declining oestrogen and can be highly protective during and after menopause. These are not competing approaches. They are different tools for different circumstances. Your clinician is the right person to discuss which apply to your situation.",
       },
       {
         heading: "Reading the label: a plain guide to units",
