@@ -17,8 +17,8 @@ const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
 const REVENUECAT_ANDROID_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
 
 // Two entitlements gate features in SNAP Life:
-//   snap_plus    -> SNAP Plus  (£4.99/mo, 1-month free trial via RC IAP offer)
-//   snap_premium -> SNAP Premium (£9.99/mo, 1-month free trial via RC IAP offer)
+//   snap_plus    -> SNAP Plus  (£6.99/mo, 1-month free trial via RC IAP offer)
+//   snap_premium -> SNAP Premium (£14.99/mo, 1-month free trial via RC IAP offer)
 // Either active entitlement => "premium-equivalent" full access. No active
 // entitlement => the user is on the free post-trial tier.
 // Annual plans removed — monthly only.
@@ -26,8 +26,8 @@ export const PLUS_ENTITLEMENT_IDENTIFIER = "snap_plus";
 export const PREMIUM_ENTITLEMENT_IDENTIFIER = "snap_premium";
 
 // Standard RevenueCat package identifiers used by our offering.
-//   monthly  -> SNAP Plus Monthly    (£4.99/mo, 1-month free trial intro offer)
-//   premium  -> SNAP Premium Monthly (£9.99/mo, 1-month free trial intro offer)
+//   monthly  -> SNAP Plus Monthly    (£6.99/mo, 1-month free trial intro offer)
+//   premium  -> SNAP Premium Monthly (£14.99/mo, 1-month free trial intro offer)
 // Annual packages have been removed from the offering in RevenueCat and the
 // App Store / Play Console. The intro offer (free month) is configured as an
 // introductory price in App Store Connect / Google Play — payment details are

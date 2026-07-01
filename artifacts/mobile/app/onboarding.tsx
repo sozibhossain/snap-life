@@ -170,8 +170,8 @@ export default function OnboardingScreen() {
   const [dob, setDob] = useState(""); // DD/MM/YYYY display string
   const [location, setLocation] = useState("");
 
-  // Step 1 — condition
-  const [condition, setCondition] = useState<string>("");
+  // Step 1 — condition(s)
+  const [conditions, setConditions] = useState<string[]>([]);
   // Step 2 — goals
   const [goals, setGoals] = useState<string[]>([]);
 
@@ -192,6 +192,12 @@ export default function OnboardingScreen() {
   function toggleGoal(id: string) {
     setGoals((prev) =>
       prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]
+    );
+  }
+
+  function toggleCondition(id: string) {
+    setConditions((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     );
   }
 
@@ -225,7 +231,7 @@ export default function OnboardingScreen() {
       dateOfBirth: isoDate,
       age: derivedAge,
       location: location.trim() || undefined,
-      condition: condition as "osteoporosis" | "osteopenia" | "at_risk" | "healthy" | undefined,
+      condition: conditions[0] as "osteoporosis" | "osteopenia" | "at_risk" | "healthy" | undefined,
     });
   }
 
@@ -235,7 +241,7 @@ export default function OnboardingScreen() {
   }
 
   const step0CanProceed = Boolean(location.trim());
-  const step1CanProceed = Boolean(condition);
+  const step1CanProceed = conditions.length > 0;
   const step2CanProceed = true; // goals are also optional
 
   const stepTitles = [
@@ -396,42 +402,43 @@ export default function OnboardingScreen() {
           {/* ── Step 1: Condition ─────────────────────────────────── */}
           {step === 1 && (
             <View style={styles.optionsList}>
-              {CONDITIONS.map((c) => (
-                <Pressable
-                  key={c.id}
-                  style={[
-                    styles.optionCard,
-                    {
-                      backgroundColor:
-                        condition === c.id ? colors.primary + "14" : colors.card,
-                      borderColor:
-                        condition === c.id ? colors.primary : colors.border,
-                    },
-                  ]}
-                  onPress={() => setCondition(c.id)}
-                >
-                  <View style={styles.optionContent}>
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={[
-                          styles.optionLabel,
-                          { color: condition === c.id ? colors.primary : colors.foreground },
-                        ]}
-                      >
-                        {c.label}
-                      </Text>
-                      <Text style={[styles.optionDesc, { color: colors.mutedForeground }]}>
-                        {c.description}
-                      </Text>
-                    </View>
-                    {condition === c.id && (
-                      <View style={[styles.checkmark, { backgroundColor: colors.primary }]}>
-                        <Feather name="check" size={14} color="#fff" />
+              {CONDITIONS.map((c) => {
+                const selected = conditions.includes(c.id);
+                return (
+                  <Pressable
+                    key={c.id}
+                    style={[
+                      styles.optionCard,
+                      {
+                        backgroundColor: selected ? colors.primary + "14" : colors.card,
+                        borderColor: selected ? colors.primary : colors.border,
+                      },
+                    ]}
+                    onPress={() => toggleCondition(c.id)}
+                  >
+                    <View style={styles.optionContent}>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            styles.optionLabel,
+                            { color: selected ? colors.primary : colors.foreground },
+                          ]}
+                        >
+                          {c.label}
+                        </Text>
+                        <Text style={[styles.optionDesc, { color: colors.mutedForeground }]}>
+                          {c.description}
+                        </Text>
                       </View>
-                    )}
-                  </View>
-                </Pressable>
-              ))}
+                      {selected && (
+                        <View style={[styles.checkmark, { backgroundColor: colors.primary }]}>
+                          <Feather name="check" size={14} color="#fff" />
+                        </View>
+                      )}
+                    </View>
+                  </Pressable>
+                );
+              })}
             </View>
           )}
 

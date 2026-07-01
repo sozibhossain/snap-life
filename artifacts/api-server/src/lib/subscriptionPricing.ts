@@ -6,8 +6,8 @@
  * the RevenueCat dashboard.
  *
  * Pricing (effective current):
- *   SNAP Plus    → £4.99 / month (introductory 1-month free trial)
- *   SNAP Premium → £9.99 / month (introductory 1-month free trial)
+ *   SNAP Plus    → £6.99 / month (introductory 1-month free trial)
+ *   SNAP Premium → £14.99 / month (introductory 1-month free trial)
  *
  * Annual plans have been removed. Only monthly products are offered.
  *
@@ -28,11 +28,11 @@ interface ProductInfo {
 const PRODUCT_TABLE: Record<string, ProductInfo> = {
   snaplife_plus_monthly: {
     tier: "plus",
-    monthlyCents: 499,
+    monthlyCents: 699,
   },
   snaplife_premium_monthly: {
     tier: "premium",
-    monthlyCents: 999,
+    monthlyCents: 1499,
   },
 };
 

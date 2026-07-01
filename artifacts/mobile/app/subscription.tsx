@@ -28,8 +28,8 @@ import { openManageSubscription } from "@/lib/manageSubscription";
 import { BillingIssueBanner } from "@/components/BillingIssueBanner";
 
 // Plan keys map 1:1 to RevenueCat package identifiers via SNAP_PLUS_PACKAGE_IDS.
-//   "premium"      → SNAP Premium (£9.99/mo after 1-month free trial)
-//   "plus_monthly" → SNAP Plus   (£4.99/mo after 1-month free trial)
+//   "premium"      → SNAP Premium (£14.99/mo after 1-month free trial)
+//   "plus_monthly" → SNAP Plus   (£6.99/mo after 1-month free trial)
 // Both plans include a RevenueCat IAP introductory offer (1 month free).
 // Payment details are required upfront; no charge until trial ends.
 // Annual plans removed — monthly only.
@@ -151,14 +151,14 @@ export default function SubscriptionScreen() {
   // Billing amount for an active subscriber derived from live RC package prices.
   const billingAmount = useMemo(() => {
     if (!isSubscribed) return null;
-    if (tier === "premium") return premiumPkg?.product.priceString ?? "£9.99";
-    if (tier === "plus") return monthlyPkg?.product.priceString ?? "£4.99";
+    if (tier === "premium") return premiumPkg?.product.priceString ?? "£14.99";
+    if (tier === "plus") return monthlyPkg?.product.priceString ?? "£6.99";
     if (tier === "trial") {
       const onPremiumTrial =
         !!customerInfo?.entitlements?.active?.[PREMIUM_ENTITLEMENT_IDENTIFIER];
       return onPremiumTrial
-        ? (premiumPkg?.product.priceString ?? "£9.99")
-        : (monthlyPkg?.product.priceString ?? "£4.99");
+        ? (premiumPkg?.product.priceString ?? "£14.99")
+        : (monthlyPkg?.product.priceString ?? "£6.99");
     }
     return null;
   }, [tier, isSubscribed, premiumPkg, monthlyPkg, customerInfo]);
@@ -413,8 +413,8 @@ export default function SubscriptionScreen() {
                   ) : (
                     <Text style={styles.upgradeCtaText}>
                       {tier === "trial"
-                        ? `Go Premium — ${premiumPkg?.product.priceString ?? "£9.99"}/mo after trial`
-                        : `Upgrade — ${premiumPkg?.product.priceString ?? "£9.99"}/mo`}
+                        ? `Go Premium — ${premiumPkg?.product.priceString ?? "£14.99"}/mo after trial`
+                        : `Upgrade — ${premiumPkg?.product.priceString ?? "£14.99"}/mo`}
                     </Text>
                   )}
                 </Pressable>
@@ -478,7 +478,7 @@ export default function SubscriptionScreen() {
               loading={isLoading && !premiumPkg}
               colors={colors}
               title="SNAP Premium"
-              priceMain={premiumPkg?.product.priceString ?? "£9.99"}
+              priceMain={premiumPkg?.product.priceString ?? "£14.99"}
               priceSub="/month after free trial"
               note="Everything in Plus — personalised AI coaching, guided programs, advanced insights"
               badge="MOST POPULAR"
@@ -492,7 +492,7 @@ export default function SubscriptionScreen() {
               loading={isLoading && !monthlyPkg}
               colors={colors}
               title="SNAP Plus"
-              priceMain={monthlyPkg?.product.priceString ?? "£4.99"}
+              priceMain={monthlyPkg?.product.priceString ?? "£6.99"}
               priceSub="/month after free trial"
               note="Essential daily tools — breathing basics, check-ins and core meal plans"
             />
