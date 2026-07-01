@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { Resend } from "resend";
 import { db, pendingEmailsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
@@ -6,6 +6,7 @@ import { logger } from "../lib/logger";
 const router: IRouter = Router();
 
 const COACHING_EMAIL = "teamsnap@snaplife.co.uk";
+const FROM_EMAIL = process.env.RESEND_FROM_ADDRESS ?? "SNAP Life <onboarding@resend.dev>";
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -30,7 +31,7 @@ const SESSION_LABELS: Record<string, string> = {
  * not yet have completed their profile when they enquire. Rate-limited
  * by the shared API rate-limiter upstream.
  */
-router.post("/api/coaching/booking", async (req, res) => {
+async function handleCoachingBooking(req: Request, res: Response) {
   const b = req.body as Record<string, unknown>;
 
   const name      = isString(b.name)      ? b.name.trim()      : "";
@@ -64,7 +65,7 @@ router.post("/api/coaching/booking", async (req, res) => {
 
   try {
     const { error } = await resend.emails.send({
-      from: "SNAP Life <onboarding@resend.dev>",
+      from: FROM_EMAIL,
       to: COACHING_EMAIL,
       replyTo: email,
       subject: `Coaching booking request — ${sessionLabel}`,
@@ -109,7 +110,10 @@ router.post("/api/coaching/booking", async (req, res) => {
 
     if (error) {
       req.log?.error({ error, sessionId, name }, "coaching booking: resend error");
-      res.status(502).json({ error: "email_delivery_failed" });
+      res.status(502).json({
+        error: "email_delivery_failed",
+        message: "Email delivery failed. Check RESEND_API_KEY and RESEND_FROM_ADDRESS sender verification.",
+      });
       return;
     }
 
@@ -134,6 +138,9 @@ router.post("/api/coaching/booking", async (req, res) => {
     req.log?.error({ err, sessionId }, "coaching booking: unexpected error");
     res.status(500).json({ error: "internal" });
   }
-});
+}
+
+router.post("/coaching/booking", handleCoachingBooking);
+router.post("/api/coaching/booking", handleCoachingBooking);
 
 export default router;

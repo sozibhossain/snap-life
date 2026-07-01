@@ -125,7 +125,22 @@ function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalP
         }),
       });
       if (!res.ok) {
-        setSendError("Something went wrong. Please try again or contact teamsnap@snaplife.co.uk.");
+        let apiError: { error?: string; message?: string } | null = null;
+        try {
+          apiError = await res.json();
+        } catch {
+          apiError = null;
+        }
+        console.warn("[expert-support] request failed", {
+          status: res.status,
+          error: apiError?.error,
+          message: apiError?.message,
+        });
+        setSendError(
+          res.status === 502 && apiError?.error === "email_delivery_failed"
+            ? "We couldn't send your request by email right now. Please contact teamsnap@snaplife.co.uk."
+            : "Something went wrong. Please try again or contact teamsnap@snaplife.co.uk.",
+        );
       } else {
         setSubmitted(true);
       }

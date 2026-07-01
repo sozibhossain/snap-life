@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { Resend } from "resend";
 import { db, pendingEmailsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
@@ -6,6 +6,7 @@ import { logger } from "../lib/logger";
 const router: IRouter = Router();
 
 const TEAM_EMAIL = "teamsnap@snaplife.co.uk";
+const FROM_EMAIL = process.env.RESEND_FROM_ADDRESS ?? "SNAP Life <onboarding@resend.dev>";
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -45,7 +46,7 @@ const CONSULTANTS: Record<
  * No auth required — users may not yet have a session when they enquire.
  * Rate-limited by the shared API rate-limiter upstream.
  */
-router.post("/api/expert-support/request", async (req, res) => {
+async function handleExpertSupportRequest(req: Request, res: Response) {
   const b = req.body as Record<string, unknown>;
 
   const name         = isString(b.name)         ? b.name.trim()         : "";
@@ -132,7 +133,7 @@ router.post("/api/expert-support/request", async (req, res) => {
   try {
     // 1. Notify the consultant directly
     const { error: consultantError } = await resend.emails.send({
-      from: "SNAP Life <onboarding@resend.dev>",
+      from: FROM_EMAIL,
       to: consultant.email,
       replyTo: email,
       subject: `New support request for you — SNAP Life`,
@@ -141,13 +142,16 @@ router.post("/api/expert-support/request", async (req, res) => {
 
     if (consultantError) {
       req.log?.error({ consultantError, consultantId, name }, "expert support: resend error (consultant)");
-      res.status(502).json({ error: "email_delivery_failed" });
+      res.status(502).json({
+        error: "email_delivery_failed",
+        message: "Email delivery failed. Check RESEND_API_KEY and RESEND_FROM_ADDRESS sender verification.",
+      });
       return;
     }
 
     // 2. CC the SNAP team for safeguarding / oversight
     const { error: teamError } = await resend.emails.send({
-      from: "SNAP Life <onboarding@resend.dev>",
+      from: FROM_EMAIL,
       to: TEAM_EMAIL,
       replyTo: email,
       subject: `Expert Support request — ${consultant.label} (${name})`,
@@ -185,6 +189,9 @@ router.post("/api/expert-support/request", async (req, res) => {
     req.log?.error({ err, consultantId }, "expert support: unexpected error");
     res.status(500).json({ error: "internal" });
   }
-});
+}
+
+router.post("/expert-support/request", handleExpertSupportRequest);
+router.post("/api/expert-support/request", handleExpertSupportRequest);
 
 export default router;
