@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/reac
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { clerkAppearance } from "@/lib/clerkAppearance";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import Dashboard from "@/pages/dashboard";
 import Users from "@/pages/users";
@@ -29,6 +29,10 @@ const clerkPubKey = isLocalHost
   : publishableKeyFromHost(window.location.hostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 const clerkProxyUrl = isLocalHost ? undefined : import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const apiBaseUrl =
+  import.meta.env.VITE_API_URL ?? import.meta.env.VITE_API_UR ?? null;
+
+setBaseUrl(apiBaseUrl);
 
 const queryClient = new QueryClient({
   defaultOptions: {
