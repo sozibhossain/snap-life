@@ -54,6 +54,7 @@ app.use(
           "'unsafe-eval'",
           "https://*.clerk.accounts.dev",
           "https://*.clerk.com",
+          "https://clerk.snaplife.co.uk",
           "https://challenges.cloudflare.com",
         ],
         "style-src": [
@@ -67,12 +68,14 @@ app.use(
           "'self'",
           "https://*.clerk.accounts.dev",
           "https://*.clerk.com",
+          "https://clerk.snaplife.co.uk",
           "https://clerk-telemetry.com",
         ],
         "frame-src": [
           "'self'",
           "https://*.clerk.accounts.dev",
           "https://*.clerk.com",
+          "https://clerk.snaplife.co.uk",
           "https://challenges.cloudflare.com",
         ],
         "worker-src": ["blob:"],
