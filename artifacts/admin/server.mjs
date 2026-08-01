@@ -79,6 +79,7 @@ app.use(
         "frame-ancestors": ["'none'"],
         "base-uri": ["'self'"],
         "object-src": ["'none'"],
+        "upgrade-insecure-requests": null,
       },
     },
     strictTransportSecurity: {
