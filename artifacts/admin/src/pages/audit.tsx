@@ -45,8 +45,6 @@ interface AuditEventList {
   total: number;
 }
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-
 const PAGE_SIZE = 50;
 
 const ACTION_OPTIONS = [
@@ -184,7 +182,7 @@ export default function AuditLog() {
       if (fromFilter) qs.set("from", `${fromFilter}T00:00:00.000Z`);
       if (toFilter) qs.set("to", `${toFilter}T23:59:59.999Z`);
       const token = await getToken();
-      const res = await fetch(`${BASE}/api/admin/audit?${qs}`, {
+      const res = await fetch(`/api/admin/audit?${qs}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         // Admin data must be fresh; bypass the HTTP cache so a stale/304
         // revalidation can never surface as a load failure.
