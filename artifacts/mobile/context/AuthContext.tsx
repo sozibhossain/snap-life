@@ -236,6 +236,25 @@ function userToStoredProfile(u: User): StoredProfile {
 }
 
 const ME_RETRY_DELAYS_MS = [0, 500, 1500];
+const TOKEN_TIMEOUT_MS = 4000;
+const PROFILE_LOAD_TIMEOUT_MS = 8000;
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+): Promise<T | null> {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<null>((resolve) => {
+        timeout = setTimeout(() => resolve(null), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
 
 async function resolveAppIdentityWithRetry(
   getSessionToken: () => Promise<string | null>,
@@ -247,7 +266,7 @@ async function resolveAppIdentityWithRetry(
     if (shouldCancel()) return null;
     let token: string | null = null;
     try {
-      token = await getSessionToken();
+      token = await withTimeout(getSessionToken(), TOKEN_TIMEOUT_MS);
     } catch (err) {
       console.warn("[auth] getToken failed during identity resolve", err);
     }
@@ -262,6 +281,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { isLoaded: clerkLoaded, isSignedIn, getToken } = useClerkAuth();
   const { user: clerkUser } = useUser();
   const clerk = useClerk();
+  const clerkUserId = clerkUser?.id ?? null;
+  const clerkName =
+    (clerkUser?.fullName ??
+      clerkUser?.firstName ??
+      clerkUser?.username ??
+      "") || "";
+  const clerkEmail = clerkUser?.primaryEmailAddress?.emailAddress ?? "";
 
   const [user, setUser] = useState<User | null>(null);
   const [isOnboarded, setIsOnboarded] = useState(false);
@@ -272,6 +298,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [rememberMeChecked, setRememberMeChecked] = useState(false);
 
   const hydratedClerkIdRef = useRef<string | null>(null);
+  const hydratingClerkIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!clerkLoaded || rememberMeChecked) return;
@@ -300,8 +327,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!clerkLoaded || !rememberMeChecked) return;
 
-    if (!isSignedIn || !clerkUser) {
+    if (!isSignedIn || !clerkUserId) {
       hydratedClerkIdRef.current = null;
+      hydratingClerkIdRef.current = null;
       setUser(null);
       setIsOnboarded(false);
       setIsAdmin(false);
@@ -310,9 +338,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const clerkUserId = clerkUser.id;
+    if (hydratedClerkIdRef.current === clerkUserId && profileLoaded) {
+      return;
+    }
+    if (hydratingClerkIdRef.current === clerkUserId) {
+      return;
+    }
+
     let cancelled = false;
     const shouldCancel = () => cancelled;
+    hydratingClerkIdRef.current = clerkUserId;
     setProfileLoaded(false);
 
     // Server sync bootstrap (migration walk → flush → snapshot pull →
@@ -400,7 +435,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           getLegacyOnboarded: async () =>
             (await AsyncStorage.getItem(LEGACY_ONBOARDED_KEY)) === "true",
           getLegacyToken: (legacyAppUserId) => getUserToken(legacyAppUserId),
-          getClerkSessionToken: () => getToken(),
+          getClerkSessionToken: () => withTimeout(getToken(), TOKEN_TIMEOUT_MS),
           postLink: postAuthLink,
           saveProfile: async (cid, profile, onboarded) => {
             await AsyncStorage.setItem(profileKey(cid), JSON.stringify(profile));
@@ -494,8 +529,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           appUserId !== null &&
           identityResolved
         ) {
-          await bootstrapServerSync(appUserId, apiBaseUrl);
-          if (cancelled) return;
+          void bootstrapServerSync(appUserId, apiBaseUrl);
         }
 
         if (cancelled) return;
@@ -515,12 +549,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cancelled || appUserId === null) return;
         const next = buildUser({
           appUserId,
-          clerkName:
-            (clerkUser.fullName ??
-              clerkUser.firstName ??
-              clerkUser.username ??
-              "") || "",
-          clerkEmail: clerkUser.primaryEmailAddress?.emailAddress ?? "",
+          clerkName,
+          clerkEmail,
           profile: storedProfile,
         });
         setUser(next);
@@ -532,6 +562,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         console.warn("[auth] hydrate failed", err);
       } finally {
+        if (hydratingClerkIdRef.current === clerkUserId) {
+          hydratingClerkIdRef.current = null;
+        }
         if (!cancelled) setProfileLoaded(true);
       }
 
@@ -562,8 +595,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!cancelled) {
         const apiBaseUrl = resolveApiBase();
         if (apiBaseUrl !== null) {
-          await bootstrapServerSync(fresh.appUserId, apiBaseUrl);
-          if (cancelled) return;
+          void bootstrapServerSync(fresh.appUserId, apiBaseUrl);
         }
       }
       setIsAdmin(fresh.isAdmin);
@@ -579,7 +611,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [clerkLoaded, isSignedIn, clerkUser, getToken, rememberMeChecked]);
+  }, [
+    clerkLoaded,
+    isSignedIn,
+    clerkUserId,
+    clerkName,
+    clerkEmail,
+    getToken,
+    rememberMeChecked,
+  ]);
+
+  useEffect(() => {
+    if (!clerkLoaded || !rememberMeChecked || isSignedIn !== true || profileLoaded) {
+      return;
+    }
+    const timeout = setTimeout(() => {
+      console.warn("[auth] profile hydrate timed out; continuing to unblock UI");
+      setProfileLoaded(true);
+    }, PROFILE_LOAD_TIMEOUT_MS);
+    return () => clearTimeout(timeout);
+  }, [clerkLoaded, rememberMeChecked, isSignedIn, profileLoaded]);
 
   const persistProfile = useCallback(
     async (next: User) => {

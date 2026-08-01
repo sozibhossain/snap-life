@@ -6,12 +6,13 @@ import {
   Montserrat_700Bold,
   useFonts,
 } from "@expo-google-fonts/montserrat";
-import { ClerkLoaded, ClerkProvider } from "@clerk/expo";
+import { ClerkProvider } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import { StatusBar } from "expo-status-bar";
+import React, { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -47,11 +48,13 @@ try {
 const queryClient = new QueryClient();
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const AUTH_LOADING_REDIRECT_TIMEOUT_MS = 1500;
 
 function RootLayoutNav() {
   const { user, isLoading, isOnboarded, isIdentityResolved } = useAuth();
-  const segments = useSegments();
   const router = useRouter();
+  const segments = useSegments();
+  const [authLoadTimedOut, setAuthLoadTimedOut] = useState(false);
 
   // Tie RevenueCat purchases to the signed-in user so subscriptions follow
   // them across devices and reinstalls. Only fire once we've resolved the
@@ -75,18 +78,39 @@ function RootLayoutNav() {
     }
   }, [user?.id, isIdentityResolved]);
 
+  const inAuth = segments[0] === "auth";
+  const inOnboarding = segments[0] === "onboarding";
+
   useEffect(() => {
-    if (isLoading) return;
-    const inAuth = segments[0] === "auth";
-    const inOnboarding = segments[0] === "onboarding";
+    if (!isLoading || inAuth) {
+      setAuthLoadTimedOut(false);
+      return;
+    }
+    const timeout = setTimeout(
+      () => setAuthLoadTimedOut(true),
+      AUTH_LOADING_REDIRECT_TIMEOUT_MS,
+    );
+    return () => clearTimeout(timeout);
+  }, [inAuth, isLoading]);
+
+  useEffect(() => {
+    if (isLoading && !authLoadTimedOut) return;
     if (!user && !inAuth) {
       router.replace("/auth/login");
-    } else if (user && !isOnboarded && !inOnboarding) {
+      return;
+    }
+    if (user && !isOnboarded && !inOnboarding) {
       router.replace("/onboarding");
-    } else if (user && isOnboarded && (inAuth || inOnboarding)) {
+      return;
+    }
+    if (user && isOnboarded && (inAuth || inOnboarding)) {
       router.replace("/(tabs)");
     }
-  }, [user, isLoading, isOnboarded, segments]);
+  }, [authLoadTimedOut, inAuth, inOnboarding, isLoading, isOnboarded, router, user]);
+
+  if (isLoading && !inAuth && !authLoadTimedOut) {
+    return <StartupFallback message="Loading your SNAPLife profile..." />;
+  }
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -144,7 +168,29 @@ function MissingClerkKey() {
   );
 }
 
+function StartupFallback({ message }: { message: string }) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#0D2530",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+      }}
+    >
+      <Text style={{ color: "#ffffff", fontSize: 28, fontWeight: "800", marginBottom: 10 }}>
+        SNAPLife
+      </Text>
+      <Text style={{ color: "#A9DDEA", textAlign: "center", lineHeight: 20 }}>
+        {message}
+      </Text>
+    </View>
+  );
+}
+
 function RootLayoutInner() {
+  const [fontLoadTimedOut, setFontLoadTimedOut] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     Inter_300Light: Montserrat_300Light,
     Inter_400Regular: Montserrat_400Regular,
@@ -154,12 +200,21 @@ function RootLayoutInner() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    const timeout = setTimeout(() => setFontLoadTimedOut(true), 5000);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  const fontsReady = fontsLoaded || Boolean(fontError) || fontLoadTimedOut;
+
+  useEffect(() => {
+    if (fontsReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsReady]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!fontsReady) {
+    return <StartupFallback message="Loading your bone health companion..." />;
+  }
 
   if (!CLERK_PUBLISHABLE_KEY) {
     return (
@@ -170,39 +225,38 @@ function RootLayoutInner() {
   }
 
   return (
-    <ClerkProvider
-      publishableKey={CLERK_PUBLISHABLE_KEY}
-      tokenCache={tokenCache}
-    >
-      <ClerkLoaded>
-        <SafeAreaProvider>
-          <ErrorBoundary>
-            <QueryClientProvider client={queryClient}>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <KeyboardProvider>
-                  <AuthProvider>
-                    <SubscriptionProvider>
-                      <HealthProvider>
-                        <NutritionProvider>
-                          <GamificationProvider>
-                            <WellbeingProvider>
-                              <RootLayoutNav />
-                              <CookieNotice />
-                              <StagingBanner />
-                              <AdminReviewPanel />
-                            </WellbeingProvider>
-                          </GamificationProvider>
-                        </NutritionProvider>
-                      </HealthProvider>
-                    </SubscriptionProvider>
-                  </AuthProvider>
-                </KeyboardProvider>
-              </GestureHandlerRootView>
-            </QueryClientProvider>
-          </ErrorBoundary>
-        </SafeAreaProvider>
-      </ClerkLoaded>
-    </ClerkProvider>
+    <SafeAreaProvider>
+      <ErrorBoundary>
+        <StatusBar style="light" backgroundColor="#0D2530" />
+        <ClerkProvider
+          publishableKey={CLERK_PUBLISHABLE_KEY}
+          tokenCache={tokenCache}
+        >
+          <QueryClientProvider client={queryClient}>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <KeyboardProvider>
+                <AuthProvider>
+                  <SubscriptionProvider>
+                    <HealthProvider>
+                      <NutritionProvider>
+                        <GamificationProvider>
+                          <WellbeingProvider>
+                            <RootLayoutNav />
+                            <CookieNotice />
+                            <StagingBanner />
+                            <AdminReviewPanel />
+                          </WellbeingProvider>
+                        </GamificationProvider>
+                      </NutritionProvider>
+                    </HealthProvider>
+                  </SubscriptionProvider>
+                </AuthProvider>
+              </KeyboardProvider>
+            </GestureHandlerRootView>
+          </QueryClientProvider>
+        </ClerkProvider>
+      </ErrorBoundary>
+    </SafeAreaProvider>
   );
 }
 

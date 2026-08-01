@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,6 +14,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -42,8 +44,13 @@ export default function RegisterScreen() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [stage, setStage] = useState<Stage>("details");
+  const signUpReady = Boolean(signUp);
 
   async function handleRegister() {
+    if (!signUpReady) {
+      setError("Account creation is still starting. Please wait a moment and try again.");
+      return;
+    }
     if (!name.trim() || !email.trim() || !password.trim()) {
       setError("Please fill in all fields");
       return;
@@ -83,6 +90,10 @@ export default function RegisterScreen() {
   }
 
   async function handleVerify() {
+    if (!signUpReady) {
+      setError("Verification is still starting. Please wait a moment and try again.");
+      return;
+    }
     if (code.trim().length === 0) {
       setError("Enter the 6-digit code from your email");
       return;
@@ -132,6 +143,10 @@ export default function RegisterScreen() {
   }
 
   async function handleResendCode() {
+    if (!signUpReady) {
+      setError("Verification is still starting. Please wait a moment and try again.");
+      return;
+    }
     setError("");
     try {
       const result = await signUp.verifications.sendEmailCode();
@@ -156,7 +171,7 @@ export default function RegisterScreen() {
       behavior={Platform.OS === "ios" ? "padding" : Platform.OS === "android" ? "height" : undefined}
     >
       <ScrollView
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
@@ -240,6 +255,8 @@ export default function RegisterScreen() {
                     onChangeText={setPassword}
                     secureTextEntry={!showPw}
                     autoComplete="new-password"
+                    returnKeyType="done"
+                    onSubmitEditing={handleRegister}
                   />
                   <Pressable onPress={() => setShowPw((v) => !v)} style={styles.eyeBtn}>
                     <Feather name={showPw ? "eye-off" : "eye"} size={18} color={colors.mutedForeground} />
@@ -256,15 +273,18 @@ export default function RegisterScreen() {
                 <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text>
               )}
 
-              <Pressable
+              <TouchableOpacity
+                activeOpacity={0.8}
                 style={[styles.registerBtn, { backgroundColor: colors.accent, opacity: isLoading ? 0.75 : 1 }]}
+                onPressIn={Keyboard.dismiss}
                 onPress={handleRegister}
                 disabled={isLoading}
+                hitSlop={8}
               >
                 <Text style={styles.registerBtnText}>
                   {isLoading ? "Creating account…" : "Create Free Account"}
                 </Text>
-              </Pressable>
+              </TouchableOpacity>
 
               <Text style={[styles.terms, { color: colors.mutedForeground }]}>
                 By creating an account you agree to our{" "}
@@ -298,6 +318,8 @@ export default function RegisterScreen() {
                   keyboardType="number-pad"
                   autoComplete="one-time-code"
                   maxLength={6}
+                  returnKeyType="done"
+                  onSubmitEditing={handleVerify}
                 />
                 {errors.fields.code && (
                   <Text style={[styles.fieldError, { color: colors.destructive }]}>
@@ -310,15 +332,18 @@ export default function RegisterScreen() {
                 <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text>
               )}
 
-              <Pressable
+              <TouchableOpacity
+                activeOpacity={0.8}
                 style={[styles.registerBtn, { backgroundColor: colors.accent, opacity: isLoading ? 0.75 : 1 }]}
+                onPressIn={Keyboard.dismiss}
                 onPress={handleVerify}
                 disabled={isLoading}
+                hitSlop={8}
               >
                 <Text style={styles.registerBtnText}>
                   {isLoading ? "Verifying…" : "Verify & Continue"}
                 </Text>
-              </Pressable>
+              </TouchableOpacity>
 
               <Pressable style={styles.forgotBtn} onPress={handleResendCode} disabled={isLoading}>
                 <Text style={[styles.forgotText, { color: colors.primary }]}>Resend code</Text>
@@ -467,6 +492,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: 4,
+    zIndex: 10,
+    elevation: 4,
   },
   registerBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
   forgotBtn: { alignItems: "center", paddingVertical: 4 },

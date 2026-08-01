@@ -1,7 +1,8 @@
 {
   "cli": {
     "version": ">= 16.0.0",
-    "promptToConfigurePushNotifications": false
+    "appVersionSource": "local",
+    "promptToConfigurePushNotifications": true
   },
   "build": {
     "development": {
@@ -10,7 +11,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_API_URL": "http://localhost:5050",
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZW5nYWdpbmctc2VhaG9yc2UtNTkuY2xlcmsuYWNjb3VudHMuZGV2JA"
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuc25hcGxpZmUuY28udWsk"
       }
     },
     "preview": {
@@ -21,7 +22,7 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://snap-life-api.onrender.com",
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZW5nYWdpbmctc2VhaG9yc2UtNTkuY2xlcmsuYWNjb3VudHMuZGV2JA",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuc25hcGxpZmUuY28udWsk",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_mwBZTxsGGmiudnZsGYAiRoEzdfZ",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "goog_nlLeoaOHPDicPFZhtMuFuFCZEgC"
       }
@@ -34,10 +35,23 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://snap-life-api.onrender.com",
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZW5nYWdpbmctc2VhaG9yc2UtNTkuY2xlcmsuYWNjb3VudHMuZGV2JA",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuc25hcGxpZmUuY28udWsk",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_mwBZTxsGGmiudnZsGYAiRoEzdfZ",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "goog_nlLeoaOHPDicPFZhtMuFuFCZEgC",
         "SNAP_LIFE_ENV": "staging"
+      },
+      "ios": {
+        "simulator": false
+      }
+    },
+    "testflight": {
+      "node": "22.16.0",
+      "distribution": "store",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://snap-life-api.onrender.com",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuc25hcGxpZmUuY28udWsk",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_mwBZTxsGGmiudnZsGYAiRoEzdfZ",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "goog_nlLeoaOHPDicPFZhtMuFuFCZEgC"
       },
       "ios": {
         "simulator": false
@@ -60,9 +74,9 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "your@apple.id",
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "YOUR_APPLE_TEAM_ID"
+        "appleId": "saafsd.app@gmail.com",
+        "ascAppId": "6795775774",
+        "appleTeamId": "59Z5G8QUG2"
       },
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",

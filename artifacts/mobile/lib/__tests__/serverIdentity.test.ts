@@ -73,7 +73,11 @@ describe("fetchAppIdentity", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const out = await fetchAppIdentity("clerk-jwt");
-    expect(out).toEqual({ appUserId: "app-1", isAdmin: false });
+    expect(out).toEqual({
+      appUserId: "app-1",
+      isAdmin: false,
+      isTester: false,
+    });
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/auth/me",
       expect.objectContaining({

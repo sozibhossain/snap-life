@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "SNAPLifeApp",
-    "slug": "snap-life",
+    "name": "SNAPLife",
+    "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,8 +15,12 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.snaplife.app",
-      "buildNumber": "1"
+      "bundleIdentifier": "com.snaplife.ltd",
+      "buildNumber": "9",
+      "infoPlist": {
+        "CFBundleDisplayName": "SNAPLife",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.snaplife.app",
@@ -51,8 +55,26 @@
       "expo-web-browser",
       "expo-audio",
       [
+        "expo-notifications",
+        {
+          "mode": "production"
+        }
+      ],
+      [
         "expo-build-properties",
         {
+          "ios": {
+            "extraPods": [
+              {
+                "name": "GoogleUtilities",
+                "modular_headers": true
+              },
+              {
+                "name": "RecaptchaInterop",
+                "modular_headers": true
+              }
+            ]
+          },
           "android": {
             "packagingOptions": {
               "exclude": [

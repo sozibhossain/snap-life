@@ -318,8 +318,7 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
+  // Keep TestFlight builds on the proven tab renderer. The iOS native-tabs
+  // API is still unstable and can render a blank surface on some devices.
   return <ClassicTabLayout />;
 }

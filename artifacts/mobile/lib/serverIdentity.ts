@@ -38,6 +38,20 @@ export function getApiBaseUrl(): string {
   return domain.startsWith("http") ? domain : `https://${domain}`;
 }
 
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  timeoutMs = 5000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function fetchAppIdentity(
   clerkSessionToken: string | null,
 ): Promise<AppIdentity | null> {
@@ -45,7 +59,7 @@ export async function fetchAppIdentity(
   const base = resolveApiBase();
   if (base === null) return null;
   try {
-    const r = await fetch(`${base}/api/auth/me`, {
+    const r = await fetchWithTimeout(`${base}/api/auth/me`, {
       method: "GET",
       headers: { Authorization: `Bearer ${clerkSessionToken}` },
     });
@@ -72,7 +86,7 @@ export async function postAuthLink(
     return { ok: false, status: 0, error: "no_api_base_url" };
   }
   try {
-    const r = await fetch(`${base}/api/auth/link`, {
+    const r = await fetchWithTimeout(`${base}/api/auth/link`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

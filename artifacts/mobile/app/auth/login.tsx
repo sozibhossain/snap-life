@@ -1,11 +1,12 @@
 import { Feather } from "@expo/vector-icons";
-import { useSignIn } from "@clerk/expo/legacy";
+import { useSignIn } from "@clerk/expo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,6 +14,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -31,36 +33,55 @@ export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { signIn, setActive, isLoaded } = useSignIn();
+  const { signIn, fetchStatus } = useSignIn();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const signInReady = Boolean(signIn);
 
 
   async function handleLogin() {
-    if (!isLoaded) return;
+    if (!signInReady) {
+      setError("Sign in is still starting. Please wait a moment and try again.");
+      return;
+    }
     if (!email.trim() || !password.trim()) {
       setError("Please enter your email and password");
       return;
     }
     setError("");
-    setIsLoading(true);
     try {
       await AsyncStorage.setItem(
         "@snaplife/rememberMe/v1",
         rememberMe ? "true" : "false",
       );
-      const result = await signIn.create({
+      const created = await signIn.password({
         identifier: email.trim(),
         password,
       });
 
-      if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
+      if (created.error) {
+        setError(
+          (created.error as { message?: string })?.message ??
+            "Sign in failed. Please check your email and password.",
+        );
+        return;
+      }
+
+      if (signIn.status === "complete") {
+        const finalized = await signIn.finalize({
+          // The root navigator handles redirecting once the session is active.
+          navigate: () => {},
+        });
+        if (finalized.error) {
+          setError(
+            (finalized.error as { message?: string })?.message ??
+              "Sign in could not be completed. Please try again.",
+          );
+        }
       } else {
         setError("Sign in could not be completed. Please try again.");
       }
@@ -69,11 +90,10 @@ export default function LoginScreen() {
         ?? (e as Error)?.message
         ?? "Something went wrong. Please try again in a moment.";
       setError(msg);
-    } finally {
-      setIsLoading(false);
     }
   }
 
+  const isLoading = fetchStatus === "fetching";
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -83,7 +103,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : Platform.OS === "android" ? "height" : undefined}
     >
       <ScrollView
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
@@ -148,6 +168,8 @@ export default function LoginScreen() {
                   onChangeText={setPassword}
                   secureTextEntry={!showPw}
                   autoComplete="password"
+                  returnKeyType="done"
+                  onSubmitEditing={handleLogin}
                 />
                 <Pressable onPress={() => setShowPw((v) => !v)} style={styles.eyeBtn}>
                   <Feather name={showPw ? "eye-off" : "eye"} size={18} color={colors.mutedForeground} />
@@ -181,15 +203,18 @@ export default function LoginScreen() {
               <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text>
             )}
 
-            <Pressable
+            <TouchableOpacity
+              activeOpacity={0.8}
               style={[styles.loginBtn, { backgroundColor: colors.primary, opacity: isLoading ? 0.75 : 1 }]}
+              onPressIn={Keyboard.dismiss}
               onPress={handleLogin}
               disabled={isLoading}
+              hitSlop={8}
             >
               <Text style={styles.loginBtnText}>
                 {isLoading ? "Signing in…" : "Sign In"}
               </Text>
-            </Pressable>
+            </TouchableOpacity>
 
             <Pressable
               style={styles.forgotBtn}
