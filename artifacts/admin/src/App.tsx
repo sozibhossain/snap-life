@@ -24,10 +24,17 @@ import { AdminGate } from "@/components/AdminGate";
 const isLocalHost =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1";
-const clerkPubKey = isLocalHost
-  ? import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-  : publishableKeyFromHost(window.location.hostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
-const clerkProxyUrl = isLocalHost ? undefined : import.meta.env.VITE_CLERK_PROXY_URL;
+const isIpHost = /^\d{1,3}(?:\.\d{1,3}){3}$/.test(window.location.hostname);
+const clerkProxyEnv = import.meta.env.VITE_CLERK_PROXY_URL;
+const useClerkProxy =
+  !isLocalHost && !isIpHost && typeof clerkProxyEnv === "string" && clerkProxyEnv.length > 0;
+const clerkPubKey = useClerkProxy
+  ? publishableKeyFromHost(
+      window.location.hostname,
+      import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+    )
+  : import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const clerkProxyUrl = useClerkProxy ? clerkProxyEnv : undefined;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const apiBaseUrl =
   import.meta.env.VITE_API_URL ?? import.meta.env.VITE_API_UR ?? null;
