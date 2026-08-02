@@ -49,7 +49,11 @@ export default function LoginScreen() {
   async function finalizeSignIn() {
     if (!signIn) return;
     setDebugMessage("Finalizing Clerk session...");
-    const finalized = await signIn.finalize();
+    const finalized = await signIn.finalize({
+      // Keep navigation in Expo Router. Clerk only needs to activate the
+      // newly-created session; RootLayout redirects when auth state updates.
+      navigate: () => {},
+    });
     if (finalized.error) {
       setError(
         (finalized.error as { message?: string })?.message ??

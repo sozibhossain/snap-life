@@ -126,7 +126,10 @@ export default function RegisterScreen() {
             // Non-fatal — onboarding can still capture the name.
           }
         }
-        await signUp.finalize();
+        await signUp.finalize({
+          // Clerk activates the session; RootLayout owns app navigation.
+          navigate: () => {},
+        });
       } else {
         setError("Sign-up could not be completed. Please try again.");
       }
