@@ -26,7 +26,18 @@ const ALLOWED_KINDS = new Set<string>([
   "bone_buddy_opened",
   "bone_buddy_message_sent",
   "dexa_logged",
+  "frax_logged",
+  "activity_logged",
+  "nutrition_logged",
+  "meal_plan_completed",
   "supplement_taken",
+  "medication_taken",
+  "lesson_completed",
+  "breathing_session_completed",
+  "meditation_session_completed",
+  "community_tab_opened",
+  "coaching_booking_requested",
+  "expert_support_requested",
   // Recommendation lifecycle — powers the Premium-only adaptive
   // engagement profile (see lib/engagementProfile.ts). Payload should
   // include { surface, recId, recKind } so we can group by surface kind.

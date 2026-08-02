@@ -300,6 +300,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hydratedClerkIdRef = useRef<string | null>(null);
   const hydratingClerkIdRef = useRef<string | null>(null);
 
+  const hydrateFallbackFromClerk = useCallback(async () => {
+    if (!clerkUserId) return;
+    let storedProfile: StoredProfile | null = null;
+    let onboarded = false;
+    try {
+      const [profileRaw, onboardedRaw] = await Promise.all([
+        AsyncStorage.getItem(profileKey(clerkUserId)),
+        AsyncStorage.getItem(onboardedKey(clerkUserId)),
+      ]);
+      if (profileRaw) {
+        storedProfile = JSON.parse(profileRaw) as StoredProfile;
+      }
+      onboarded = onboardedRaw === "true";
+    } catch {
+      storedProfile = null;
+      onboarded = false;
+    }
+
+    const fallback = buildUser({
+      appUserId: clerkUserId,
+      clerkName,
+      clerkEmail,
+      profile: storedProfile,
+    });
+    setUser(fallback);
+    setIsOnboarded(onboarded);
+    setIsAdmin(false);
+    setIsTester(false);
+    setIsIdentityResolved(false);
+    hydratedClerkIdRef.current = clerkUserId;
+  }, [clerkEmail, clerkName, clerkUserId]);
+
   useEffect(() => {
     if (!clerkLoaded || rememberMeChecked) return;
     let cancelled = false;
@@ -561,6 +593,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         hydratedClerkIdRef.current = clerkUserId;
       } catch (err) {
         console.warn("[auth] hydrate failed", err);
+        await hydrateFallbackFromClerk();
       } finally {
         if (hydratingClerkIdRef.current === clerkUserId) {
           hydratingClerkIdRef.current = null;
@@ -619,6 +652,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clerkEmail,
     getToken,
     rememberMeChecked,
+    hydrateFallbackFromClerk,
   ]);
 
   useEffect(() => {
@@ -627,10 +661,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     const timeout = setTimeout(() => {
       console.warn("[auth] profile hydrate timed out; continuing to unblock UI");
+      void hydrateFallbackFromClerk();
       setProfileLoaded(true);
     }, PROFILE_LOAD_TIMEOUT_MS);
     return () => clearTimeout(timeout);
-  }, [clerkLoaded, rememberMeChecked, isSignedIn, profileLoaded]);
+  }, [
+    clerkLoaded,
+    rememberMeChecked,
+    isSignedIn,
+    profileLoaded,
+    hydrateFallbackFromClerk,
+  ]);
 
   const persistProfile = useCallback(
     async (next: User) => {

@@ -10,13 +10,13 @@
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash.png",
-      "resizeMode": "cover",
+      "resizeMode": "contain",
       "backgroundColor": "#0f172a"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.snaplife.ltd",
-      "buildNumber": "9",
+      "buildNumber": "10",
       "infoPlist": {
         "CFBundleDisplayName": "SNAPLife",
         "ITSAppUsesNonExemptEncryption": false

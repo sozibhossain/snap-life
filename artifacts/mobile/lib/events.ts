@@ -25,7 +25,18 @@ const ALLOWED_KINDS = [
   "bone_buddy_opened",
   "bone_buddy_message_sent",
   "dexa_logged",
+  "frax_logged",
+  "activity_logged",
+  "nutrition_logged",
+  "meal_plan_completed",
   "supplement_taken",
+  "medication_taken",
+  "lesson_completed",
+  "breathing_session_completed",
+  "meditation_session_completed",
+  "community_tab_opened",
+  "coaching_booking_requested",
+  "expert_support_requested",
   // Recommendation lifecycle — powers the Premium-only adaptive
   // engagement profile. Payload conventions:
   //   { surface: string, recId: string, recKind: string }

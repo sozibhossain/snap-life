@@ -18,6 +18,7 @@ import {
   runNutritionXPReconciliation,
 } from "@/lib/nutritionStreak";
 import { enqueueSync, SyncPaths } from "@/lib/syncClient";
+import { logInteractionEvent } from "@/lib/events";
 import { calcFrax, type FraxInputs } from "@/lib/frax";
 export { calcFrax, type FraxInputs };
 
@@ -331,6 +332,16 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
           : Date.now(),
       },
     });
+    logInteractionEvent({
+      appUserId: userId,
+      kind: "dexa_logged",
+      payload: {
+        scanId: newScan.id,
+        date: newScan.date,
+        tScore: worstTScore(newScan),
+        site: newScan.site,
+      },
+    });
   }
 
   async function addFraxResult(result: Omit<FraxResult, "id">) {
@@ -351,6 +362,16 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         takenAtMs: newResult.date
           ? new Date(newResult.date).getTime() || Date.now()
           : Date.now(),
+      },
+    });
+    logInteractionEvent({
+      appUserId: userId,
+      kind: "frax_logged",
+      payload: {
+        resultId: newResult.id,
+        date: newResult.date,
+        majorFractureRisk: newResult.majorFractureRisk,
+        hipFractureRisk: newResult.hipFractureRisk,
       },
     });
   }
@@ -384,6 +405,15 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         path: SyncPaths.activityDay(dayLog.date),
         body: { data: dayLog, updatedAtMs: Date.now() },
       });
+      logInteractionEvent({
+        appUserId: userId,
+        kind: "activity_logged",
+        payload: {
+          date: dayLog.date,
+          steps: dayLog.steps,
+          activeMinutes: dayLog.activeMinutes,
+        },
+      });
     }
   }
 
@@ -403,6 +433,19 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         path: SyncPaths.nutritionDay(dayLog.date),
         body: { data: dayLog, updatedAtMs: Date.now() },
       });
+      if (hasNonZeroTotals(dayLog)) {
+        logInteractionEvent({
+          appUserId: userId,
+          kind: "nutrition_logged",
+          payload: {
+            date: dayLog.date,
+            source: dayLog.source,
+            calcium: dayLog.calcium,
+            vitaminD: dayLog.vitaminD,
+            protein: dayLog.protein,
+          },
+        });
+      }
     }
   }
 
@@ -509,6 +552,17 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
     } else {
       await persistNutrition([nextLog, ...nutritionLogs]);
     }
+    if (nextLog.mealsCompleted?.[mealType]) {
+      logInteractionEvent({
+        appUserId: userId,
+        kind: "meal_plan_completed",
+        payload: {
+          date: today,
+          mealType,
+          portionMultiplier,
+        },
+      });
+    }
   }
 
   async function markSupplementTaken(id: string) {
@@ -535,6 +589,18 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       path: SyncPaths.supplements(),
       body: { state: { supplements: updated }, updatedAtMs: Date.now() },
     });
+    const takenItem = updated.find((s) => s.id === id);
+    if (takenItem) {
+      logInteractionEvent({
+        appUserId: userId,
+        kind: takenItem.category === "medication" ? "medication_taken" : "supplement_taken",
+        payload: {
+          id: takenItem.id,
+          name: takenItem.name,
+          category: takenItem.category,
+        },
+      });
+    }
   }
 
   async function addSupplement(item: Omit<Supplement, "id" | "taken" | "takenAt">) {

@@ -1041,7 +1041,7 @@ describe("POST /revenuecat/webhook — BILLING_ISSUE grace window", () => {
       isInTrial: false,
       originalPurchaseAt: purchaseAt,
       latestPurchaseAt: purchaseAt,
-      expiresAt: new Date("2026-05-15T00:00:00.000Z"),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       unsubscribeDetectedAt: null,
       cancelledAt: null,
       rawCustomerInfo: { source: "webhook" },

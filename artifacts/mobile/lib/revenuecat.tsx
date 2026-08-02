@@ -34,6 +34,7 @@ export const PREMIUM_ENTITLEMENT_IDENTIFIER = "snap_premium";
 // required upfront; first charge occurs after 30 days unless cancelled.
 export const SNAP_PLUS_PACKAGE_IDS = {
   monthly: "$rc_monthly",
+  founderPremium: "founder_premium",
   premium: "premium",
 } as const;
 
@@ -236,11 +237,11 @@ function isInStoreTrial(ent?: PurchasesEntitlementInfo): boolean {
 }
 
 /**
- * In development (`__DEV__`) every subscription gate is bypassed so the
- * full app is reviewable without a real RevenueCat entitlement. This flag
- * has no effect in production builds.
+ * Optional development override for quickly reviewing premium-only screens.
+ * Keep this off while testing RevenueCat / store purchases, otherwise every
+ * account looks subscribed and the paywall plan cards are hidden.
  */
-const DEV_UNLOCK_ALL = __DEV__;
+const DEV_UNLOCK_ALL = __DEV__ && process.env.EXPO_PUBLIC_DEV_UNLOCK_ALL === "true";
 
 const DEV_SUBSCRIPTION: SubscriptionContextValue = {
   isSubscribed: true,

@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { enqueueSync, SyncPaths } from "@/lib/syncClient";
+import { logInteractionEvent } from "@/lib/events";
 
 export type Mood = "calm" | "energised" | "less_stressed" | "focused" | "still_tense";
 
@@ -198,6 +199,20 @@ export function WellbeingProvider({ children }: { children: React.ReactNode }) {
           entry,
           completedAtMs: entry.completedAt,
         },
+      });
+      logInteractionEvent({
+        appUserId: userId,
+        kind:
+          entry.kind === "breathing"
+            ? "breathing_session_completed"
+            : "meditation_session_completed",
+        payload: {
+          sessionId: entry.sessionId,
+          sessionName: entry.sessionName,
+          mood: entry.mood,
+          durationSec: entry.durationSec,
+        },
+        occurredAtMs: entry.completedAt,
       });
       return entry;
     },

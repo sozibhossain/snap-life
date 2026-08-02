@@ -27,6 +27,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useGamification } from "@/context/GamificationContext";
 import { LessonCompleteModal } from "@/components/LessonCompleteModal";
 import { useColors } from "@/hooks/useColors";
+import { logInteractionEvent } from "@/lib/events";
 import {
   LESSONS,
   EMPTY_PROGRESS,
@@ -72,6 +73,14 @@ export default function LessonScreen() {
 
   const isCompleted = progress.completedIds.includes(lesson.id);
 
+  function goBackOrHub() {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/(tabs)/learn" as never);
+  }
+
   async function handleComplete() {
     if (completing || isCompleted) return;
     setCompleting(true);
@@ -79,6 +88,17 @@ export default function LessonScreen() {
       const updated = await markLessonComplete(userId, lesson!.id);
       await addXP(lesson!.xpReward);
       setProgress(updated);
+      logInteractionEvent({
+        appUserId: userId,
+        kind: "lesson_completed",
+        payload: {
+          lessonId: lesson!.id,
+          lessonIndex: lesson!.index,
+          title: lesson!.title,
+          pathway: lesson!.pathway,
+          xpReward: lesson!.xpReward,
+        },
+      });
       setShowModal(true);
     } finally {
       setCompleting(false);
@@ -104,8 +124,9 @@ export default function LessonScreen() {
         <View style={[styles.hDeco2, { backgroundColor: accentHex + "08" }]} />
 
         {/* Back */}
-        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={10}>
+        <Pressable onPress={goBackOrHub} style={styles.backBtn} hitSlop={10}>
           <Feather name="arrow-left" size={22} color="#fff" />
+          <Text style={styles.backText}>Back</Text>
         </Pressable>
 
         {/* Pathway + lesson number */}
@@ -254,24 +275,44 @@ export default function LessonScreen() {
                 <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
               </Pressable>
             )}
+            <Pressable
+              style={[styles.hubBtn, { borderColor: colors.border }]}
+              onPress={() => router.replace("/(tabs)/learn" as never)}
+            >
+              <Feather name="book-open" size={15} color={colors.mutedForeground} />
+              <Text style={[styles.hubBtnText, { color: colors.mutedForeground }]}>
+                Learning Hub
+              </Text>
+            </Pressable>
           </>
         ) : (
-          <Pressable
-            style={[styles.completeBtn, { backgroundColor: colors.navy }]}
-            onPress={handleComplete}
-            disabled={completing}
-          >
-            {completing ? (
-              <Text style={styles.completeBtnText}>Saving…</Text>
-            ) : (
-              <>
-                <Feather name="check" size={18} color="#fff" />
-                <Text style={styles.completeBtnText}>
-                  Mark as complete · +{lesson.xpReward} XP
-                </Text>
-              </>
-            )}
-          </Pressable>
+          <>
+            <Pressable
+              style={[styles.completeBtn, { backgroundColor: colors.navy }]}
+              onPress={handleComplete}
+              disabled={completing}
+            >
+              {completing ? (
+                <Text style={styles.completeBtnText}>Saving…</Text>
+              ) : (
+                <>
+                  <Feather name="check" size={18} color="#fff" />
+                  <Text style={styles.completeBtnText}>
+                    Mark as complete · +{lesson.xpReward} XP
+                  </Text>
+                </>
+              )}
+            </Pressable>
+            <Pressable
+              style={[styles.hubBtn, { borderColor: colors.border }]}
+              onPress={() => router.replace("/(tabs)/learn" as never)}
+            >
+              <Feather name="book-open" size={15} color={colors.mutedForeground} />
+              <Text style={[styles.hubBtnText, { color: colors.mutedForeground }]}>
+                Learning Hub
+              </Text>
+            </Pressable>
+          </>
         )}
       </View>
 
@@ -298,7 +339,16 @@ const styles = StyleSheet.create({
   },
   hDeco1: { position: "absolute", width: 220, height: 220, borderRadius: 110, top: -70, right: -50 },
   hDeco2: { position: "absolute", width: 130, height: 130, borderRadius: 65, bottom: -30, right: 50 },
-  backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  backBtn: {
+    minWidth: 76,
+    height: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 6,
+    marginBottom: 4,
+  },
+  backText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
   headerMeta: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%" },
   pathwayPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
   pathwayPillText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
@@ -343,6 +393,8 @@ const styles = StyleSheet.create({
   nextBtn: { flexDirection: "row", alignItems: "center", paddingVertical: 11, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, gap: 12 },
   nextBtnLabel: { fontSize: 10, fontFamily: "Inter_500Medium", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 },
   nextBtnTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  hubBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 11, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1 },
+  hubBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   completeBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 16, borderRadius: 14 },
   completeBtnText: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#fff" },
 });

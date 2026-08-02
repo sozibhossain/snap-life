@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { resolveApiBase } from "@/lib/serverIdentity";
+import { logInteractionEvent } from "@/lib/events";
 
 // ─── Consultant data ──────────────────────────────────────────────────────────
 // To add a new consultant: add one entry here. The API mirrors this in
@@ -111,8 +112,12 @@ function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalP
     setSubmitting(true);
     setSendError(null);
     try {
-      const base = resolveApiBase() ?? "";
-      const res = await fetch(`${base}/api/expert-support/request`, {
+      const base = resolveApiBase();
+      if (!base && Platform.OS !== "web") {
+        throw new Error("missing api base");
+      }
+      const apiBase = base ?? "";
+      const res = await fetch(`${apiBase}/api/expert-support/request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -142,6 +147,14 @@ function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalP
             : "Something went wrong. Please try again or contact teamsnap@snaplife.co.uk.",
         );
       } else {
+        logInteractionEvent({
+          appUserId: user?.id,
+          kind: "expert_support_requested",
+          payload: {
+            consultantId,
+            consultantName: selectedConsultant.name,
+          },
+        });
         setSubmitted(true);
       }
     } catch {

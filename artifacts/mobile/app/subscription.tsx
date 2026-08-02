@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -34,7 +34,22 @@ import { BillingIssueBanner } from "@/components/BillingIssueBanner";
 // Payment details are required upfront; no charge until trial ends.
 // Annual plans removed — monthly only.
 // Default selection is Plus ("no forced upgrade").
-type PlanKey = "premium" | "plus_monthly";
+type PlanKey = "founder_premium" | "premium" | "plus_monthly";
+
+const PAYWALL_SCREENSHOT_PRICES =
+  __DEV__ || process.env.EXPO_PUBLIC_PAYWALL_SCREENSHOT_PRICES === "true";
+
+function expectedPlanPrice(plan: PlanKey): string {
+  if (plan === "founder_premium") return "£9.99";
+  if (plan === "premium") return "£14.99";
+  return "£6.99";
+}
+
+function displayPlanPrice(plan: PlanKey, pkg?: PurchasesPackage): string {
+  return PAYWALL_SCREENSHOT_PRICES
+    ? expectedPlanPrice(plan)
+    : pkg?.product.priceString ?? expectedPlanPrice(plan);
+}
 
 // Comparison table — drives the spec's Plus-vs-Premium feature grid. Each
 // row marks Plus and Premium independently. `tone` controls colour:
@@ -75,6 +90,22 @@ function formatExpiry(iso?: string | null, timezone?: string | null) {
   }
 }
 
+function isFounderProductId(productId?: string | null): boolean {
+  return !!productId && productId.toLowerCase().includes("founder");
+}
+
+function activeEntitlementProductId(entitlement: unknown): string | null {
+  const ent = entitlement as
+    | {
+        productIdentifier?: string;
+        productId?: string;
+        product?: { identifier?: string };
+      }
+    | null
+    | undefined;
+  return ent?.productIdentifier ?? ent?.productId ?? ent?.product?.identifier ?? null;
+}
+
 export default function SubscriptionScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -105,6 +136,10 @@ export default function SubscriptionScreen() {
 
   // Resolve the two monthly plan packages from the current RevenueCat offering.
   // Annual plans have been removed — only monthly packages are shown.
+  const founderPkg = useMemo(
+    () => findPackage(offering, SNAP_PLUS_PACKAGE_IDS.founderPremium),
+    [offering],
+  );
   const premiumPkg = useMemo(
     () => findPackage(offering, SNAP_PLUS_PACKAGE_IDS.premium),
     [offering],
@@ -114,22 +149,40 @@ export default function SubscriptionScreen() {
     [offering],
   );
 
-  // Default selection: Plus monthly ("no forced upgrade").
-  const [selected, setSelected] = useState<PlanKey>("plus_monthly");
+  // Default selection: Founder Premium when it exists in the current offering.
+  const [selected, setSelected] = useState<PlanKey>("founder_premium");
+
+  useEffect(() => {
+    if (selected !== "founder_premium") return;
+    if (isLoading || founderPkg) return;
+    if (premiumPkg) {
+      setSelected("premium");
+      return;
+    }
+    if (monthlyPkg) setSelected("plus_monthly");
+  }, [selected, isLoading, founderPkg, premiumPkg, monthlyPkg]);
 
   const [confirmPkg, setConfirmPkg] = useState<PurchasesPackage | null>(null);
   const [successOpen, setSuccessOpen] = useState(false);
 
-  const selectedPkg = selected === "premium" ? premiumPkg : monthlyPkg;
-  const selectedPriceLabel = selectedPkg?.product.priceString ?? "—";
-
+  const selectedPkg =
+    selected === "founder_premium"
+      ? founderPkg
+      : selected === "premium"
+      ? premiumPkg
+      : monthlyPkg;
   // Both plans include a 1-month free trial (RC IAP introductory offer).
   // Payment details are required upfront by the App Store / Google Play;
   // no charge until the 30-day trial period ends.
-  const selectedIsPremium = selected === "premium";
+  const selectedIsPremium = selected === "premium" || selected === "founder_premium";
   const showTrialCopy = true;
   const trialLabel = "1 month free";
-  const planFriendlyName = selectedIsPremium ? "SNAP Premium" : "SNAP Plus";
+  const planFriendlyName =
+    selected === "founder_premium"
+      ? "Founder Premium"
+      : selected === "premium"
+      ? "SNAP Premium"
+      : "SNAP Plus";
 
   // First payment date displayed in the confirm modal — 30 days from today.
   const firstPaymentDate = useMemo(() => {
@@ -147,21 +200,28 @@ export default function SubscriptionScreen() {
     () => formatExpiry(trialEndsAt, user?.timezone),
     [trialEndsAt, user?.timezone],
   );
+  const activeProductId = activeEntitlementProductId(entitlement);
 
   // Billing amount for an active subscriber derived from live RC package prices.
   const billingAmount = useMemo(() => {
     if (!isSubscribed) return null;
-    if (tier === "premium") return premiumPkg?.product.priceString ?? "£14.99";
-    if (tier === "plus") return monthlyPkg?.product.priceString ?? "£6.99";
+    if (tier === "premium") {
+      return isFounderProductId(activeProductId)
+        ? displayPlanPrice("founder_premium", founderPkg)
+        : displayPlanPrice("premium", premiumPkg);
+    }
+    if (tier === "plus") return displayPlanPrice("plus_monthly", monthlyPkg);
     if (tier === "trial") {
       const onPremiumTrial =
         !!customerInfo?.entitlements?.active?.[PREMIUM_ENTITLEMENT_IDENTIFIER];
       return onPremiumTrial
-        ? (premiumPkg?.product.priceString ?? "£14.99")
-        : (monthlyPkg?.product.priceString ?? "£6.99");
+        ? (isFounderProductId(activeProductId)
+            ? displayPlanPrice("founder_premium", founderPkg)
+            : displayPlanPrice("premium", premiumPkg))
+        : displayPlanPrice("plus_monthly", monthlyPkg);
     }
     return null;
-  }, [tier, isSubscribed, premiumPkg, monthlyPkg, customerInfo]);
+  }, [tier, isSubscribed, activeProductId, founderPkg, premiumPkg, monthlyPkg, customerInfo]);
 
   // Billing platform label (used in info rows and manage note).
   const billingPlatform =
@@ -170,6 +230,11 @@ export default function SubscriptionScreen() {
       : Platform.OS === "android"
       ? "Google Play"
       : "your app store";
+  const upgradePremiumPkg = founderPkg ?? premiumPkg;
+  const upgradePremiumPlan: PlanKey = founderPkg ? "founder_premium" : "premium";
+  const upgradePremiumName = founderPkg ? "Founder Premium" : "SNAP Premium";
+  const upgradePremiumPrice =
+    displayPlanPrice(upgradePremiumPlan, upgradePremiumPkg);
 
   function startCheckout() {
     if (!selectedPkg) return;
@@ -369,7 +434,7 @@ export default function SubscriptionScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.upgradeTitle, { color: colors.foreground }]}>
-                      {tier === "trial" ? "Choosing your plan?" : "Upgrade to SNAP Premium"}
+                      {tier === "trial" ? "Choosing your plan?" : `Upgrade to ${upgradePremiumName}`}
                     </Text>
                     <Text style={[styles.upgradeSub, { color: colors.mutedForeground }]}>
                       {tier === "trial"
@@ -395,26 +460,26 @@ export default function SubscriptionScreen() {
                     styles.upgradeCta,
                     {
                       backgroundColor: colors.accent,
-                      opacity: !premiumPkg || isPurchasing ? 0.6 : 1,
+                      opacity: !upgradePremiumPkg || isPurchasing ? 0.6 : 1,
                     },
                   ]}
                   onPress={
-                    premiumPkg
+                    upgradePremiumPkg
                       ? () => {
-                          setSelected("premium");
-                          setConfirmPkg(premiumPkg);
+                          setSelected(upgradePremiumPlan);
+                          setConfirmPkg(upgradePremiumPkg);
                         }
                       : undefined
                   }
-                  disabled={!premiumPkg || isPurchasing}
+                  disabled={!upgradePremiumPkg || isPurchasing}
                 >
                   {isPurchasing ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <Text style={styles.upgradeCtaText}>
                       {tier === "trial"
-                        ? `Go Premium — ${premiumPkg?.product.priceString ?? "£14.99"}/mo after trial`
-                        : `Upgrade — ${premiumPkg?.product.priceString ?? "£14.99"}/mo`}
+                        ? `Go ${upgradePremiumName} — ${upgradePremiumPrice}/mo after trial`
+                        : `Upgrade — ${upgradePremiumPrice}/mo`}
                     </Text>
                   )}
                 </Pressable>
@@ -470,6 +535,21 @@ export default function SubscriptionScreen() {
               Both plans include a 1-month free trial. Annual plans removed. */}
         {!isSubscribed && (
           <View style={{ gap: 12 }}>
+            {/* FOUNDER PREMIUM - full Premium access at founding member price */}
+            <PlanCard
+              variant="premium"
+              selected={selected === "founder_premium"}
+              onPress={() => setSelected("founder_premium")}
+              disabled={!founderPkg && !isLoading}
+              loading={isLoading && !founderPkg}
+              colors={colors}
+              title="Founder Premium"
+              priceMain={displayPlanPrice("founder_premium", founderPkg)}
+              priceSub="/month after free trial"
+              note="Full Premium access at founding member pricing"
+              badge="FOUNDERS"
+            />
+
             {/* PREMIUM — full-featured plan */}
             <PlanCard
               variant="premium"
@@ -478,7 +558,7 @@ export default function SubscriptionScreen() {
               loading={isLoading && !premiumPkg}
               colors={colors}
               title="SNAP Premium"
-              priceMain={premiumPkg?.product.priceString ?? "£14.99"}
+              priceMain={displayPlanPrice("premium", premiumPkg)}
               priceSub="/month after free trial"
               note="Everything in Plus — personalised AI coaching, guided programs, advanced insights"
               badge="MOST POPULAR"
@@ -492,7 +572,7 @@ export default function SubscriptionScreen() {
               loading={isLoading && !monthlyPkg}
               colors={colors}
               title="SNAP Plus"
-              priceMain={monthlyPkg?.product.priceString ?? "£6.99"}
+              priceMain={displayPlanPrice("plus_monthly", monthlyPkg)}
               priceSub="/month after free trial"
               note="Essential daily tools — breathing basics, check-ins and core meal plans"
             />
@@ -664,7 +744,7 @@ export default function SubscriptionScreen() {
                 style={[
                   styles.modalBtnPrimary,
                   {
-                    backgroundColor: selected === "premium" ? colors.accent : colors.primary,
+                    backgroundColor: selectedIsPremium ? colors.accent : colors.primary,
                     opacity: isPurchasing ? 0.6 : 1,
                   },
                 ]}

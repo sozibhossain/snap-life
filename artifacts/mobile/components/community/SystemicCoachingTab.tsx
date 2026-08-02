@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { resolveApiBase } from "@/lib/serverIdentity";
+import { logInteractionEvent } from "@/lib/events";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -151,8 +152,12 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
     setSubmitting(true);
     setSendError(null);
     try {
-      const base = resolveApiBase() ?? "";
-      const res = await fetch(`${base}/api/coaching/booking`, {
+      const base = resolveApiBase();
+      if (!base && Platform.OS !== "web") {
+        throw new Error("missing api base");
+      }
+      const apiBase = base ?? "";
+      const res = await fetch(`${apiBase}/api/coaching/booking`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -166,6 +171,14 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
       if (!res.ok) {
         setSendError("Something went wrong. Please try again or email teamsnap@snaplife.co.uk directly.");
       } else {
+        logInteractionEvent({
+          appUserId: user?.id,
+          kind: "coaching_booking_requested",
+          payload: {
+            sessionId: session.id,
+            sessionLabel: session.label,
+          },
+        });
         setSubmitted(true);
       }
     } catch {

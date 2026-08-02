@@ -918,7 +918,7 @@ describe("GET /admin/metrics/subscriptions", () => {
         isActive: true,
         isInTrial: false,
         willRenew: false,
-        productId: "snaplife_premium_yearly",
+        productId: "snaplife_premium_monthly",
         periodType: "normal",
         store: "play_store",
         expiresAt: null,
@@ -987,7 +987,7 @@ describe("GET /admin/metrics/subscriptions", () => {
 
     // MRR: u1 plus monthly (999) + u2 premium yearly (19999/12) +
     // u3 trial (excluded).
-    expect(body.approxMrrCents).toBe(999 + Math.round(19999 / 12));
+    expect(body.approxMrrCents).toBe(699 + 1499);
 
     // baseline = active(3) + churn(2) = 5 → churn = 2/5 = 0.4
     expect(body.churnRate30d).toBeCloseTo(0.4, 5);
@@ -1071,7 +1071,7 @@ describe("GET /admin/metrics/subscriptions", () => {
         isActive: true,
         isInTrial: false,
         willRenew: true,
-        productId: "snaplife_premium_yearly",
+        productId: "snaplife_founder_premium_monthly",
         periodType: "normal",
         store: "play_store",
         expiresAt: null,
@@ -1102,7 +1102,7 @@ describe("GET /admin/metrics/subscriptions", () => {
     };
 
     // u1 + u2 plus monthly = 2 × 999; u4 premium yearly = 19999/12 ≈ 1666.
-    const expectedMrr = 999 + 999 + Math.round(19999 / 12);
+    const expectedMrr = 699 + 699 + 999;
     expect(body.approxMrrCents).toBe(expectedMrr);
     expect(body.approxArrCents).toBe(expectedMrr * 12);
 
@@ -1123,12 +1123,12 @@ describe("GET /admin/metrics/subscriptions", () => {
     expect(byProduct["snaplife_plus_monthly"]).toMatchObject({
       tier: "plus",
       activeCount: 2,
-      monthlyCents: 999 * 2,
+      monthlyCents: 699 * 2,
     });
-    expect(byProduct["snaplife_premium_yearly"]).toMatchObject({
+    expect(byProduct["snaplife_founder_premium_monthly"]).toMatchObject({
       tier: "premium",
       activeCount: 1,
-      monthlyCents: Math.round(19999 / 12),
+      monthlyCents: 999,
     });
     // Trial seat must NOT contribute to revenueByProduct.
     expect(byProduct["snaplife_plus_monthly"]?.activeCount).toBe(2);

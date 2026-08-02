@@ -30,16 +30,14 @@ const PROJECT_NAME = "SNAP Life";
 
 // Bundle / package matches artifacts/mobile/app.json
 const APP_STORE_APP_NAME = "SNAP Life iOS";
-const APP_STORE_BUNDLE_ID = "com.snaplife.app";
+const APP_STORE_BUNDLE_ID = "com.snaplife.ltd";
 const PLAY_STORE_APP_NAME = "SNAP Life Android";
 const PLAY_STORE_PACKAGE_NAME = "com.snaplife.app";
 
 // Two entitlements:
-//   snap_plus    -> legacy paid tier (£9.99/mo, £95.88/yr) — kept for existing
-//                   subscribers and as a lower-cost option.
-//   snap_premium -> new headline tier (£19.99/mo with 7-day free trial) — full
-//                   access. Per the SNAP Life product brief, this is the tier
-//                   that users see post-trial as the upgrade path.
+//   snap_plus    -> SNAP Plus monthly (£6.99/mo)
+//   snap_premium -> Premium access. Granted by both Founder Premium (£9.99/mo)
+//                   and SNAP Premium (£14.99/mo).
 const PLUS_ENTITLEMENT_IDENTIFIER = "snap_plus";
 const PLUS_ENTITLEMENT_DISPLAY_NAME = "SNAP Plus";
 const PREMIUM_ENTITLEMENT_IDENTIFIER = "snap_premium";
@@ -61,36 +59,36 @@ interface PlanSpec {
   entitlement: "plus" | "premium";
 }
 
-// Three SKUs in the offering:
-//   $rc_annual  -> SNAP Plus Annual   (£95.88/yr)  -> snap_plus
-//   $rc_monthly -> SNAP Plus Monthly  (£9.99/mo)   -> snap_plus
-//   premium     -> SNAP Premium       (£19.99/mo, 7-day trial) -> snap_premium
-// Test store needs USD/EUR equivalents for previewing on web.
+// Three monthly packages in the offering:
+//   $rc_monthly     -> SNAP Plus (£6.99/mo)       -> snap_plus
+//   founder_premium -> Founder Premium (£9.99/mo) -> snap_premium
+//   premium         -> SNAP Premium (£14.99/mo)   -> snap_premium
+// Introductory trials are configured in App Store Connect / Google Play.
 const PLANS: PlanSpec[] = [
   {
-    productIdentifier: "snap_plus_annual",
-    playStoreProductIdentifier: "snap_plus_annual:annual",
-    displayName: "SNAP Plus Annual",
-    userFacingTitle: "SNAP Plus — Annual",
-    duration: "P1Y",
-    packageIdentifier: "$rc_annual",
-    packageDisplayName: "Annual",
+    productIdentifier: "snaplife_plus_monthly",
+    playStoreProductIdentifier: "snaplife_plus_monthly:monthly",
+    displayName: "SNAP Plus Monthly",
+    userFacingTitle: "SNAP Plus - Monthly",
+    duration: "P1M",
+    packageIdentifier: "$rc_monthly",
+    packageDisplayName: "Plus Monthly",
     entitlement: "plus",
     prices: [
-      { amount_micros: 95880000, currency: "GBP" }, // £95.88 / yr (£7.99/mo x12)
-      { amount_micros: 99990000, currency: "USD" },
-      { amount_micros: 99990000, currency: "EUR" },
+      { amount_micros: 6990000, currency: "GBP" },
+      { amount_micros: 6990000, currency: "USD" },
+      { amount_micros: 6990000, currency: "EUR" },
     ],
   },
   {
-    productIdentifier: "snap_plus_monthly",
-    playStoreProductIdentifier: "snap_plus_monthly:monthly",
-    displayName: "SNAP Plus Monthly",
-    userFacingTitle: "SNAP Plus — Monthly",
+    productIdentifier: "snaplife_founder_premium_monthly",
+    playStoreProductIdentifier: "snaplife_founder_premium_monthly:monthly",
+    displayName: "Founder Premium Monthly",
+    userFacingTitle: "Founder Premium - Monthly",
     duration: "P1M",
-    packageIdentifier: "$rc_monthly",
-    packageDisplayName: "Monthly",
-    entitlement: "plus",
+    packageIdentifier: "founder_premium",
+    packageDisplayName: "Founder Premium",
+    entitlement: "premium",
     prices: [
       { amount_micros: 9990000, currency: "GBP" },
       { amount_micros: 9990000, currency: "USD" },
@@ -98,18 +96,18 @@ const PLANS: PlanSpec[] = [
     ],
   },
   {
-    productIdentifier: "snap_premium_monthly",
-    playStoreProductIdentifier: "snap_premium_monthly:monthly",
+    productIdentifier: "snaplife_premium_monthly",
+    playStoreProductIdentifier: "snaplife_premium_monthly:monthly",
     displayName: "SNAP Premium Monthly",
-    userFacingTitle: "SNAP Premium — Monthly",
+    userFacingTitle: "SNAP Premium - Monthly",
     duration: "P1M",
     packageIdentifier: "premium",
-    packageDisplayName: "Premium (Monthly)",
+    packageDisplayName: "Premium Monthly",
     entitlement: "premium",
     prices: [
-      { amount_micros: 19990000, currency: "GBP" },
-      { amount_micros: 19990000, currency: "USD" },
-      { amount_micros: 19990000, currency: "EUR" },
+      { amount_micros: 14990000, currency: "GBP" },
+      { amount_micros: 14990000, currency: "USD" },
+      { amount_micros: 14990000, currency: "EUR" },
     ],
   },
 ];

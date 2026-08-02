@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Platform,
   Pressable,
@@ -19,6 +19,7 @@ import { ReferFriendCard } from "@/components/ReferFriendCard";
 import { useGamification } from "@/context/GamificationContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { logInteractionEvent } from "@/lib/events";
 
 const TABS = ["Leaderboard", "Progress", "Coaching", "Experts"];
 
@@ -39,6 +40,16 @@ export default function CommunityScreen() {
 
   const otherUsers = leaderboard.filter((e) => !e.isCurrentUser);
   const myEntry = leaderboard.find((e) => e.isCurrentUser);
+
+  useEffect(() => {
+    logInteractionEvent({
+      appUserId: user?.id,
+      kind: "community_tab_opened",
+      payload: {
+        tab: TABS[activeTab] ?? "Unknown",
+      },
+    });
+  }, [activeTab, user?.id]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

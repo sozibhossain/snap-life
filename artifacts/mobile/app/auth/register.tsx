@@ -126,11 +126,7 @@ export default function RegisterScreen() {
             // Non-fatal — onboarding can still capture the name.
           }
         }
-        await signUp.finalize({
-          // The root navigator handles redirecting newly-signed-in users
-          // to onboarding once the Clerk session becomes active.
-          navigate: () => {},
-        });
+        await signUp.finalize();
       } else {
         setError("Sign-up could not be completed. Please try again.");
       }

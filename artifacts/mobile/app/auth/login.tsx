@@ -37,11 +37,29 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
+  const [debugMessage, setDebugMessage] = useState("");
+  const [isVerifyingClient, setIsVerifyingClient] = useState(false);
   const signInReady = Boolean(signIn);
 
+
+  async function finalizeSignIn() {
+    if (!signIn) return;
+    setDebugMessage("Finalizing Clerk session...");
+    const finalized = await signIn.finalize();
+    if (finalized.error) {
+      setError(
+        (finalized.error as { message?: string })?.message ??
+          "Sign in could not be completed. Please try again.",
+      );
+      setDebugMessage("Clerk finalize failed.");
+      return;
+    }
+    setDebugMessage("Clerk sign-in complete. Loading profile...");
+  }
 
   async function handleLogin() {
     if (!signInReady) {
@@ -53,38 +71,112 @@ export default function LoginScreen() {
       return;
     }
     setError("");
+    setDebugMessage("Submitting email/password to Clerk...");
     try {
       await AsyncStorage.setItem(
         "@snaplife/rememberMe/v1",
         rememberMe ? "true" : "false",
       );
       const created = await signIn.password({
-        identifier: email.trim(),
+        emailAddress: email.trim(),
         password,
       });
+      setDebugMessage(`Clerk response received. Status: ${signIn.status ?? "unknown"}`);
 
       if (created.error) {
         setError(
           (created.error as { message?: string })?.message ??
             "Sign in failed. Please check your email and password.",
         );
+        setDebugMessage("Clerk password sign-in returned an error.");
         return;
       }
 
       if (signIn.status === "complete") {
-        const finalized = await signIn.finalize({
-          // The root navigator handles redirecting once the session is active.
-          navigate: () => {},
-        });
-        if (finalized.error) {
-          setError(
-            (finalized.error as { message?: string })?.message ??
-              "Sign in could not be completed. Please try again.",
-          );
+        await finalizeSignIn();
+      } else if (signIn.status === "needs_client_trust") {
+        setDebugMessage("Clerk requires email verification code.");
+        const emailCodeFactor = signIn.supportedSecondFactors.find(
+          (factor) => factor.strategy === "email_code",
+        );
+        if (emailCodeFactor) {
+          const sent = await signIn.mfa.sendEmailCode();
+          if (sent.error) {
+            setError(
+              (sent.error as { message?: string })?.message ??
+                "Could not send the verification code. Please try again.",
+            );
+            return;
+          }
+          setCode("");
+          setIsVerifyingClient(true);
+          setError("We sent a verification code to your email.");
+        } else {
+          setError("This sign in requires an extra verification step that is not available.");
+          setDebugMessage("No email_code second factor available.");
         }
       } else {
         setError("Sign in could not be completed. Please try again.");
+        setDebugMessage(`Unexpected Clerk status: ${signIn.status ?? "unknown"}`);
       }
+    } catch (e: unknown) {
+      const msg = (e as { errors?: { message?: string }[] })?.errors?.[0]?.message
+        ?? (e as Error)?.message
+        ?? "Something went wrong. Please try again in a moment.";
+      setError(msg);
+      setDebugMessage("Sign-in request threw an exception.");
+    }
+  }
+
+  async function handleVerifyClientTrust() {
+    if (!signInReady) {
+      setError("Sign in is still starting. Please wait a moment and try again.");
+      return;
+    }
+    if (!code.trim()) {
+      setError("Please enter the verification code from your email.");
+      return;
+    }
+    setError("");
+    setDebugMessage("Verifying email code with Clerk...");
+    try {
+      const verified = await signIn.mfa.verifyEmailCode({ code: code.trim() });
+      if (verified.error) {
+        setError(
+          (verified.error as { message?: string })?.message ??
+            "Verification failed. Please check the code and try again.",
+        );
+        setDebugMessage("Clerk code verification returned an error.");
+        return;
+      }
+      if (signIn.status === "complete") {
+        await finalizeSignIn();
+      } else {
+        setError("Verification could not be completed. Please try again.");
+        setDebugMessage(`Unexpected Clerk verification status: ${signIn.status ?? "unknown"}`);
+      }
+    } catch (e: unknown) {
+      const msg = (e as { errors?: { message?: string }[] })?.errors?.[0]?.message
+        ?? (e as Error)?.message
+        ?? "Something went wrong. Please try again in a moment.";
+      setError(msg);
+      setDebugMessage("Code verification threw an exception.");
+    }
+  }
+
+  async function handleResendClientTrustCode() {
+    if (!signInReady) return;
+    setError("");
+    try {
+      const sent = await signIn.mfa.sendEmailCode();
+      if (sent.error) {
+        setError(
+          (sent.error as { message?: string })?.message ??
+            "Could not send a new code. Please try again.",
+        );
+        return;
+      }
+      setError("We sent a new verification code to your email.");
     } catch (e: unknown) {
       const msg = (e as { errors?: { message?: string }[] })?.errors?.[0]?.message
         ?? (e as Error)?.message
@@ -143,6 +235,63 @@ export default function LoginScreen() {
           </Text>
 
           <View style={styles.fields}>
+            {isVerifyingClient ? (
+              <>
+                <View>
+                  <Text style={[styles.label, { color: colors.foreground }]}>Verification code</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
+                    placeholder="Enter email code"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={code}
+                    onChangeText={setCode}
+                    keyboardType="number-pad"
+                    autoComplete="one-time-code"
+                    returnKeyType="done"
+                    onSubmitEditing={handleVerifyClientTrust}
+                  />
+                </View>
+
+                {error.length > 0 && (
+                  <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text>
+                )}
+                {debugMessage.length > 0 && (
+                  <Text style={[styles.debug, { color: colors.mutedForeground }]}>
+                    {debugMessage}
+                  </Text>
+                )}
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.loginBtn, { backgroundColor: colors.primary, opacity: isLoading ? 0.75 : 1 }]}
+                  onPressIn={Keyboard.dismiss}
+                  onPress={handleVerifyClientTrust}
+                  disabled={isLoading}
+                  hitSlop={8}
+                >
+                  <Text style={styles.loginBtnText}>
+                    {isLoading ? "Verifying…" : "Verify & Sign In"}
+                  </Text>
+                </TouchableOpacity>
+
+                <Pressable style={styles.forgotBtn} onPress={handleResendClientTrustCode}>
+                  <Text style={[styles.forgotText, { color: colors.primary }]}>Resend code</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.forgotBtn}
+                  onPress={() => {
+                    signIn?.reset();
+                    setIsVerifyingClient(false);
+                    setCode("");
+                    setError("");
+                  }}
+                >
+                  <Text style={[styles.forgotText, { color: colors.mutedForeground }]}>Use a different email</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
             <View>
               <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
               <TextInput
@@ -202,6 +351,11 @@ export default function LoginScreen() {
             {error.length > 0 && (
               <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text>
             )}
+            {debugMessage.length > 0 && (
+              <Text style={[styles.debug, { color: colors.mutedForeground }]}>
+                {debugMessage}
+              </Text>
+            )}
 
             <TouchableOpacity
               activeOpacity={0.8}
@@ -222,6 +376,8 @@ export default function LoginScreen() {
             >
               <Text style={[styles.forgotText, { color: colors.primary }]}>Forgot password?</Text>
             </Pressable>
+              </>
+            )}
           </View>
         </View>
 
@@ -365,6 +521,7 @@ const styles = StyleSheet.create({
   },
   rememberText: { fontSize: 14, fontFamily: "Inter_500Medium" },
   error: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
+  debug: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 16 },
   loginBtn: {
     height: 50,
     borderRadius: 12,

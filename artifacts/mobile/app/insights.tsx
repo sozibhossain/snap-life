@@ -12,7 +12,7 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Platform,
   Pressable,
@@ -28,6 +28,7 @@ import { useWellbeing } from "@/context/WellbeingContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumGate } from "@/components/PremiumGate";
 import { useSubscription } from "@/lib/revenuecat";
+import { fetchWeeklyEventCounts } from "@/lib/events";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -404,12 +405,28 @@ const pt = StyleSheet.create({
 
 function ConsistencyCard() {
   const colors = useColors();
+  const { user } = useAuth();
   const { activityLogs, nutritionLogs, supplements, todayActivity, nutritionStreak } = useHealth();
   const { entries: wellbeingEntries, currentStreak: wellbeingStreak } = useWellbeing();
+  const [weeklyEvents, setWeeklyEvents] = useState<Record<string, number>>({});
 
   const DAYS = 7;
   const dayISOs   = useMemo(() => getLastNDateISOs(DAYS),   []);
   const dayLabels = useMemo(() => getLastNDayLabels(DAYS),  []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) {
+      setWeeklyEvents({});
+      return;
+    }
+    fetchWeeklyEventCounts(user.id).then((counts) => {
+      if (!cancelled) setWeeklyEvents(counts);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const activitySet  = useMemo(() => new Set(activityLogs.map((l) => l.date)),  [activityLogs]);
   const nutritionSet = useMemo(() => new Set(nutritionLogs.map((l) => l.date)), [nutritionLogs]);
@@ -434,16 +451,33 @@ function ConsistencyCard() {
   const totalSupps = supplements.length;
   const stepsToday = todayActivity?.steps ?? 0;
   const stepsPct   = Math.min(1, stepsToday / 8000);
+  const countChecks = (count: number) => {
+    const active = Math.min(DAYS, Math.max(0, Math.round(count)));
+    return dayISOs.map((_, i) => i >= DAYS - active);
+  };
+  const learningCount = weeklyEvents.lesson_completed ?? 0;
+  const boneBuddyCount =
+    (weeklyEvents.bone_buddy_message_sent ?? 0) + (weeklyEvents.bone_buddy_opened ?? 0);
+  const communityCount =
+    (weeklyEvents.community_tab_opened ?? 0) + (weeklyEvents.coaching_booking_requested ?? 0);
 
   const rows: Array<{ label: string; color: string; checks: boolean[] }> = [
     { label: "Nutrition", color: colors.xpGold,  checks: dayISOs.map((d) => nutritionSet.has(d)) },
     { label: "Activity",  color: colors.primary,  checks: dayISOs.map((d) => activitySet.has(d))  },
     { label: "Breathing", color: "#22d3ee",        checks: dayISOs.map((d) => breathingSet.has(d)) },
     { label: "Meditate",  color: "#a78bfa",        checks: dayISOs.map((d) => meditationSet.has(d)) },
+    { label: "Learning",  color: colors.accent,    checks: countChecks(learningCount) },
+    { label: "Buddy",     color: colors.success,   checks: countChecks(boneBuddyCount) },
+    { label: "Community", color: "#fb7185",        checks: countChecks(communityCount) },
   ];
 
   const hasAnyData =
-    activityLogs.length > 0 || nutritionLogs.length > 0 || wellbeingEntries.length > 0;
+    activityLogs.length > 0 ||
+    nutritionLogs.length > 0 ||
+    wellbeingEntries.length > 0 ||
+    learningCount > 0 ||
+    boneBuddyCount > 0 ||
+    communityCount > 0;
   if (!hasAnyData) return null;
 
   return (
@@ -518,7 +552,7 @@ const cc = StyleSheet.create({
   labelRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   dayLabel: { flex: 1, fontSize: 9, fontFamily: "Inter_600SemiBold", textAlign: "center" },
   dataRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  rowTag: { width: 56, fontSize: 10, fontFamily: "Inter_500Medium" },
+  rowTag: { width: 76, fontSize: 10, fontFamily: "Inter_500Medium" },
   dot: { flex: 1, aspectRatio: 1, borderRadius: 100, borderWidth: 1, maxWidth: 28 },
   statsRow: { flexDirection: "row", gap: 16, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
   statCell: { flex: 1, gap: 3 },

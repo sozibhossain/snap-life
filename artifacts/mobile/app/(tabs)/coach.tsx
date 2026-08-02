@@ -9,6 +9,7 @@ import { logInteractionEvent } from "@/lib/events";
 import { useSubscription } from "@/lib/revenuecat";
 import { useSpeechVoice } from "@/lib/useSpeechVoice";
 import { authHeader } from "@/lib/userToken";
+import { getApiBaseUrl } from "@/lib/serverIdentity";
 import { summariseWeekSources, todayLocalISO } from "@/lib/weeklySnap";
 import {
   FlatList,
@@ -234,6 +235,11 @@ export default function CoachScreen() {
       if (!uid) return;
       const today = todayLocalISO();
       void markCoachOpenedToday(uid);
+      logInteractionEvent({
+        appUserId: uid,
+        kind: "bone_buddy_opened",
+        payload: { surface: "coach_tab" },
+      });
 
       const dayKey = `${uid}:${today}`;
 
@@ -419,14 +425,19 @@ export default function CoachScreen() {
   }
 
   function getApiBase() {
-    // Match resolveApiBase(): an explicit EXPO_PUBLIC_API_URL wins so the app
-    // works off-Replit (native device / local dev / production), where
-    // EXPO_PUBLIC_DOMAIN is not set. Falls back to the Replit dev domain.
-    const override = process.env.EXPO_PUBLIC_API_URL;
-    if (override) return override.replace(/\/$/, "");
-    const domain = process.env.EXPO_PUBLIC_DOMAIN;
-    if (!domain) return "";
-    return domain.startsWith("http") ? domain : `https://${domain}`;
+    return getApiBaseUrl();
+  }
+
+  function getBoneBuddyUrl(): string | null {
+    const base = getApiBaseUrl();
+    if (!base && Platform.OS !== "web") return null;
+    return `${base}/api/chat/bone-buddy`;
+  }
+
+  function getBoneBuddyUrlOrThrow(): string {
+    const url = getBoneBuddyUrl();
+    if (!url) throw new Error("missing api base");
+    return url;
   }
 
   /**
@@ -631,7 +642,7 @@ export default function CoachScreen() {
       // auth and only uses the token to look up the user for adaptive
       // tone. Chat itself works without it.
       const auth = user?.id ? await authHeader(user.id) : { Authorization: "" };
-      const response = await fetch(`${getApiBase()}/api/chat/bone-buddy`, {
+      const response = await fetch(getBoneBuddyUrlOrThrow(), {
         method: "POST",
         headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify({
@@ -746,7 +757,7 @@ export default function CoachScreen() {
     setStreamingContent("");
     try {
       const auth = user?.id ? await authHeader(user.id) : { Authorization: "" };
-      const response = await fetch(`${getApiBase()}/api/chat/bone-buddy`, {
+      const response = await fetch(getBoneBuddyUrlOrThrow(), {
         method: "POST",
         headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify({
@@ -835,7 +846,7 @@ export default function CoachScreen() {
     setStreamingContent("");
     try {
       const auth = user?.id ? await authHeader(user.id) : { Authorization: "" };
-      const response = await fetch(`${getApiBase()}/api/chat/bone-buddy`, {
+      const response = await fetch(getBoneBuddyUrlOrThrow(), {
         method: "POST",
         headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify({
@@ -940,12 +951,23 @@ export default function CoachScreen() {
 
     const currentMessages = [...messages, userMsg];
     setMessages(currentMessages);
+    if (user?.id) {
+      logInteractionEvent({
+        appUserId: user.id,
+        kind: "bone_buddy_message_sent",
+        payload: {
+          surface: "coach_tab",
+          source: text ? "quick_reply" : "composer",
+          length: msgText.length,
+        },
+      });
+    }
     setIsSending(true);
     setStreamingContent("...");
 
     try {
       const auth = user?.id ? await authHeader(user.id) : { Authorization: "" };
-      const response = await fetch(`${getApiBase()}/api/chat/bone-buddy`, {
+      const response = await fetch(getBoneBuddyUrlOrThrow(), {
         method: "POST",
         headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify({

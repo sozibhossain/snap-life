@@ -207,8 +207,16 @@ export default function BreathingStudioScreen() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fadeRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const playRetryRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stateRef = useRef({ phaseIdx: 0, timeLeft: 0 });
   const orbTargetRef = useRef(0);
+
+  function clearPlayRetry() {
+    if (playRetryRef.current) {
+      clearInterval(playRetryRef.current);
+      playRetryRef.current = null;
+    }
+  }
 
   // ─── Voice — wellness persona (female en-GB, calm/measured). ───────────
   // useSpeechVoice handles voice selection, quality prioritisation, and
@@ -261,12 +269,12 @@ export default function BreathingStudioScreen() {
   }, [player, activeState]);
 
   const targetVolume = useMemo(() => {
-    if (!soundOn) return 0;
+    if (!soundOn || !audioSource) return 0;
     return [0.15, 0.3, 0.45, MAX_VOLUME][volumeStep];
-  }, [soundOn, volumeStep]);
+  }, [soundOn, audioSource, volumeStep]);
 
   const fadeTo = (to: number, onDone?: () => void) => {
-    if (!player) {
+    if (!player || !audioSource) {
       onDone?.();
       return;
     }
@@ -296,9 +304,9 @@ export default function BreathingStudioScreen() {
   };
 
   useEffect(() => {
-    if (stage !== "active" || !player) return;
+    if (stage !== "active" || !player || !audioSource) return;
     fadeTo(targetVolume);
-  }, [targetVolume, stage]);
+  }, [targetVolume, stage, audioSource, player]);
 
   // ─── Session lifecycle ───
 
@@ -338,7 +346,7 @@ export default function BreathingStudioScreen() {
 
   // Audio + interval lifecycle for the active session.
   useEffect(() => {
-    if (stage !== "active" || !activeState || !player) return;
+    if (stage !== "active" || !activeState || !player || !audioSource) return;
 
     try {
       player.volume = 0;
@@ -348,6 +356,27 @@ export default function BreathingStudioScreen() {
     }
     fadeTo(targetVolume);
 
+    clearPlayRetry();
+    let attempts = 0;
+    playRetryRef.current = setInterval(() => {
+      attempts += 1;
+      let playing = false;
+      try {
+        playing = Boolean((player as { playing?: boolean }).playing);
+      } catch {
+        playing = false;
+      }
+      if (playing || attempts >= 10) {
+        clearPlayRetry();
+        return;
+      }
+      try {
+        player.play();
+      } catch {
+        // keep trying while the remote source finishes loading
+      }
+    }, 250);
+
     intervalRef.current = setInterval(() => tick(activeState), 1000);
     elapsedRef.current = setInterval(() => setElapsedSec((s) => s + 1), 1000);
 
@@ -355,9 +384,10 @@ export default function BreathingStudioScreen() {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (elapsedRef.current) clearInterval(elapsedRef.current);
       if (fadeRef.current) clearInterval(fadeRef.current);
+      clearPlayRetry();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage, activeState, player]);
+  }, [stage, activeState, player, audioSource]);
 
   function tick(session: BreathingState) {
     stateRef.current.timeLeft -= 1;
@@ -417,6 +447,7 @@ export default function BreathingStudioScreen() {
   }
 
   function hardStopAudio() {
+    clearPlayRetry();
     if (fadeRef.current) clearInterval(fadeRef.current);
     fadeRef.current = null;
     try {
@@ -436,6 +467,7 @@ export default function BreathingStudioScreen() {
     if (elapsedRef.current) clearInterval(elapsedRef.current);
     intervalRef.current = null;
     elapsedRef.current = null;
+    clearPlayRetry();
     fadeTo(0);
     setTimeout(hardStopAudio, FADE_MS + 50);
     Speech.stop().catch(() => {});
@@ -450,6 +482,7 @@ export default function BreathingStudioScreen() {
     if (elapsedRef.current) clearInterval(elapsedRef.current);
     intervalRef.current = null;
     elapsedRef.current = null;
+    clearPlayRetry();
     fadeTo(0);
     setTimeout(() => {
       hardStopAudio();
@@ -466,6 +499,7 @@ export default function BreathingStudioScreen() {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (elapsedRef.current) clearInterval(elapsedRef.current);
       if (fadeRef.current) clearInterval(fadeRef.current);
+      clearPlayRetry();
       try {
         player?.pause();
       } catch {

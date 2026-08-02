@@ -30,6 +30,10 @@ const PRODUCT_TABLE: Record<string, ProductInfo> = {
     tier: "plus",
     monthlyCents: 699,
   },
+  snaplife_founder_premium_monthly: {
+    tier: "premium",
+    monthlyCents: 999,
+  },
   snaplife_premium_monthly: {
     tier: "premium",
     monthlyCents: 1499,

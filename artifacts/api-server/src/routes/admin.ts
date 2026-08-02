@@ -310,6 +310,168 @@ router.get("/admin/metrics/engagement", async (req, res): Promise<void> => {
 });
 
 /* -------------------------------------------------------------------------- *
+ * GET /admin/metrics/community-insights
+ *
+ * Aggregate-only Community Insights foundation. This intentionally returns
+ * counts, buckets, and demand signals only; no raw messages or user rows are
+ * exposed from the admin API.
+ * -------------------------------------------------------------------------- */
+router.get("/admin/metrics/community-insights", async (req, res): Promise<void> => {
+  const u = await requireAdminUser(req, res);
+  if (!u) return;
+
+  try {
+    const now = Date.now();
+    const sevenDaysAgoMs = now - 7 * DAY_MS;
+    const thirtyDaysAgoMs = now - 30 * DAY_MS;
+    const sevenDaysAgoDate = new Date(sevenDaysAgoMs);
+    const thirtyDaysAgoDate = new Date(thirtyDaysAgoMs);
+
+    const events30d = await db
+      .select({
+        kind: interactionEventsTable.kind,
+        count: count(),
+        users: sql<number>`count(distinct ${interactionEventsTable.appUserId})`,
+      })
+      .from(interactionEventsTable)
+      .where(gte(interactionEventsTable.receivedAt, thirtyDaysAgoDate))
+      .groupBy(interactionEventsTable.kind);
+
+    const events7d = await db
+      .select({
+        kind: interactionEventsTable.kind,
+        count: count(),
+        users: sql<number>`count(distinct ${interactionEventsTable.appUserId})`,
+      })
+      .from(interactionEventsTable)
+      .where(gte(interactionEventsTable.receivedAt, sevenDaysAgoDate))
+      .groupBy(interactionEventsTable.kind);
+
+    const byKind30d = new Map(
+      events30d.map((r) => [
+        r.kind,
+        { count: Number(r.count), users: Number(r.users ?? 0) },
+      ]),
+    );
+    const byKind7d = new Map(
+      events7d.map((r) => [
+        r.kind,
+        { count: Number(r.count), users: Number(r.users ?? 0) },
+      ]),
+    );
+    const eventStats = (kind: string) => ({
+      count7d: byKind7d.get(kind)?.count ?? 0,
+      users7d: byKind7d.get(kind)?.users ?? 0,
+      count30d: byKind30d.get(kind)?.count ?? 0,
+      users30d: byKind30d.get(kind)?.users ?? 0,
+    });
+
+    const wellbeingMoodRows = await db
+      .select({
+        kind: sql<string>`coalesce(${wellbeingEntriesTable.entry}->>'kind', 'other')`,
+        mood: sql<string>`coalesce(${wellbeingEntriesTable.entry}->>'mood', 'unknown')`,
+        count: count(),
+      })
+      .from(wellbeingEntriesTable)
+      .where(gte(wellbeingEntriesTable.completedAtMs, sevenDaysAgoMs))
+      .groupBy(
+        sql`coalesce(${wellbeingEntriesTable.entry}->>'kind', 'other')`,
+        sql`coalesce(${wellbeingEntriesTable.entry}->>'mood', 'unknown')`,
+      );
+
+    const topLearningPathways = await db
+      .select({
+        pathway: sql<string>`coalesce(${interactionEventsTable.payload}->>'pathway', 'Unknown')`,
+        count: count(),
+      })
+      .from(interactionEventsTable)
+      .where(
+        and(
+          eq(interactionEventsTable.kind, "lesson_completed"),
+          gte(interactionEventsTable.receivedAt, thirtyDaysAgoDate),
+        ),
+      )
+      .groupBy(sql`coalesce(${interactionEventsTable.payload}->>'pathway', 'Unknown')`)
+      .orderBy(desc(count()))
+      .limit(10);
+
+    const coachingBySession = await db
+      .select({
+        sessionId: sql<string>`coalesce(${interactionEventsTable.payload}->>'sessionId', 'unknown')`,
+        count: count(),
+      })
+      .from(interactionEventsTable)
+      .where(
+        and(
+          eq(interactionEventsTable.kind, "coaching_booking_requested"),
+          gte(interactionEventsTable.receivedAt, thirtyDaysAgoDate),
+        ),
+      )
+      .groupBy(sql`coalesce(${interactionEventsTable.payload}->>'sessionId', 'unknown')`);
+
+    const expertByConsultant = await db
+      .select({
+        consultantId: sql<string>`coalesce(${interactionEventsTable.payload}->>'consultantId', 'unknown')`,
+        count: count(),
+      })
+      .from(interactionEventsTable)
+      .where(
+        and(
+          eq(interactionEventsTable.kind, "expert_support_requested"),
+          gte(interactionEventsTable.receivedAt, thirtyDaysAgoDate),
+        ),
+      )
+      .groupBy(sql`coalesce(${interactionEventsTable.payload}->>'consultantId', 'unknown')`);
+
+    res.json({
+      generatedAt: new Date(now).toISOString(),
+      windows: {
+        last7dStart: sevenDaysAgoDate.toISOString(),
+        last30dStart: thirtyDaysAgoDate.toISOString(),
+      },
+      community: {
+        opens: eventStats("community_tab_opened"),
+        coachingRequests: eventStats("coaching_booking_requested"),
+        expertSupportRequests: eventStats("expert_support_requested"),
+      },
+      productActivity: {
+        learning: eventStats("lesson_completed"),
+        boneBuddyMessages: eventStats("bone_buddy_message_sent"),
+        boneBuddyOpens: eventStats("bone_buddy_opened"),
+        breathing: eventStats("breathing_session_completed"),
+        meditation: eventStats("meditation_session_completed"),
+        nutrition: eventStats("nutrition_logged"),
+        mealPlan: eventStats("meal_plan_completed"),
+        supplements: eventStats("supplement_taken"),
+        medications: eventStats("medication_taken"),
+        dexa: eventStats("dexa_logged"),
+        frax: eventStats("frax_logged"),
+      },
+      wellbeingSupportNeeds7d: wellbeingMoodRows.map((r) => ({
+        kind: r.kind,
+        mood: r.mood,
+        count: Number(r.count),
+      })),
+      topLearningPathways30d: topLearningPathways.map((r) => ({
+        pathway: r.pathway,
+        count: Number(r.count),
+      })),
+      coachingDemand30d: coachingBySession.map((r) => ({
+        sessionId: r.sessionId,
+        count: Number(r.count),
+      })),
+      expertDemand30d: expertByConsultant.map((r) => ({
+        consultantId: r.consultantId,
+        count: Number(r.count),
+      })),
+    });
+  } catch (err) {
+    req.log?.error({ err }, "admin community insights metrics failed");
+    res.status(500).json({ error: "internal" });
+  }
+});
+
+/* -------------------------------------------------------------------------- *
  * GET /admin/metrics/subscriptions
  * -------------------------------------------------------------------------- */
 router.get("/admin/metrics/subscriptions", async (req, res): Promise<void> => {
