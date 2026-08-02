@@ -16,10 +16,13 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.snaplife.ltd",
-      "buildNumber": "10",
+      "buildNumber": "11",
       "infoPlist": {
         "CFBundleDisplayName": "SNAPLife",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       }
     },
     "android": {
