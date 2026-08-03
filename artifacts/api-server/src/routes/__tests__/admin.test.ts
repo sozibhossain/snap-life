@@ -103,6 +103,17 @@ interface AuditEventRow {
   createdAt: Date;
 }
 
+interface BoneBuddyChatMessageRow {
+  id: number;
+  requestId: string;
+  appUserId: string;
+  role: "user" | "assistant";
+  content: string;
+  promptKey: string;
+  promptVersion: number | null;
+  createdAt: Date;
+}
+
 type AuthMode = "unauth" | "nonAdmin" | "admin";
 
 const state = {
@@ -116,6 +127,7 @@ const state = {
   pushUserState: [] as PushUserStateRow[],
   userProfile: [] as Array<Record<string, unknown>>,
   auditEvents: [] as AuditEventRow[],
+  boneBuddyChatMessages: [] as BoneBuddyChatMessageRow[],
 };
 
 function reset() {
@@ -129,6 +141,7 @@ function reset() {
   state.pushUserState.length = 0;
   state.userProfile.length = 0;
   state.auditEvents.length = 0;
+  state.boneBuddyChatMessages.length = 0;
 }
 
 /* -------------------------------------------------------------------------- *
@@ -196,6 +209,7 @@ const TABLE_KEYS = {
   pushUserState: "pushUserState",
   userProfile: "userProfile",
   auditEvents: "auditEvents",
+  boneBuddyChatMessages: "boneBuddyChatMessages",
 } as const;
 
 function makeTableProxy(tableName: string): unknown {
@@ -219,6 +233,7 @@ const mealPlanDaysTable = makeTableProxy(TABLE_KEYS.mealPlanDays);
 const pushUserStateTable = makeTableProxy(TABLE_KEYS.pushUserState);
 const userProfileTable = makeTableProxy(TABLE_KEYS.userProfile);
 const auditEventsTable = makeTableProxy(TABLE_KEYS.auditEvents);
+const boneBuddyChatMessagesTable = makeTableProxy(TABLE_KEYS.boneBuddyChatMessages);
 
 interface Cond {
   kind: string;
@@ -245,6 +260,8 @@ function rowsFor(t: string): Array<Record<string, unknown>> {
       return state.userProfile;
     case TABLE_KEYS.auditEvents:
       return state.auditEvents as unknown as Array<Record<string, unknown>>;
+    case TABLE_KEYS.boneBuddyChatMessages:
+      return state.boneBuddyChatMessages as unknown as Array<Record<string, unknown>>;
     default:
       return [];
   }
@@ -509,6 +526,7 @@ vi.mock("@workspace/db", () => {
     pushUserStateTable,
     userProfileTable,
     auditEventsTable,
+    boneBuddyChatMessagesTable,
   };
 });
 
@@ -589,6 +607,7 @@ describe("admin gate", () => {
     "/admin/metrics/engagement",
     "/admin/metrics/subscriptions",
     "/admin/feedback",
+    "/admin/chats",
     "/admin/users/lookup?email=admin@snap.life",
   ];
 
@@ -1376,6 +1395,82 @@ describe("GET /admin/feedback", () => {
       id: 2,
       feedbackType: "testimonial",
       allowTestimonialUse: true,
+    });
+  });
+});
+
+describe("GET /admin/chats", () => {
+  it("returns newest Bone Buddy chat turns with user metadata and search", async () => {
+    state.users.push({
+      appUserId: "alice",
+      clerkUserId: "user_alice",
+      email: "alice@example.com",
+      displayName: "Alice",
+      isAdmin: false,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    state.boneBuddyChatMessages.push(
+      {
+        id: 1,
+        requestId: "req-1",
+        appUserId: "alice",
+        role: "user",
+        content: "Can you help me with calcium today?",
+        promptKey: "bone_buddy",
+        promptVersion: 7,
+        createdAt: new Date("2026-02-01T10:00:00.000Z"),
+      },
+      {
+        id: 2,
+        requestId: "req-1",
+        appUserId: "alice",
+        role: "assistant",
+        content: "A yoghurt with breakfast could be a simple start.",
+        promptKey: "bone_buddy",
+        promptVersion: 7,
+        createdAt: new Date("2026-02-01T10:00:03.000Z"),
+      },
+      {
+        id: 3,
+        requestId: "req-2",
+        appUserId: "bob",
+        role: "user",
+        content: "Unrelated question",
+        promptKey: "bone_buddy",
+        promptVersion: 7,
+        createdAt: new Date("2026-02-02T10:00:00.000Z"),
+      },
+    );
+
+    const r = await fetch(`${baseUrl}/admin/chats?search=calcium&limit=10`);
+    expect(r.status).toBe(200);
+    const body = (await r.json()) as {
+      total: number;
+      items: Array<{
+        id: number;
+        appUserId: string;
+        email: string | null;
+        displayName: string | null;
+        role: string;
+        content: string;
+        promptKey: string;
+        promptVersion: number | null;
+        createdAt: string;
+      }>;
+    };
+
+    expect(body.total).toBe(1);
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0]).toMatchObject({
+      id: 1,
+      appUserId: "alice",
+      email: "alice@example.com",
+      displayName: "Alice",
+      role: "user",
+      content: "Can you help me with calcium today?",
+      promptKey: "bone_buddy",
+      promptVersion: 7,
+      createdAt: "2026-02-01T10:00:00.000Z",
     });
   });
 });

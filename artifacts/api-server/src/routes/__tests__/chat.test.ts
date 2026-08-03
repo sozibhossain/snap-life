@@ -1,4 +1,30 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@workspace/db", () => ({
+  db: {
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: () => Promise.resolve([]),
+        }),
+      }),
+    }),
+    insert: () => ({
+      values: () => ({
+        onConflictDoNothing: () => Promise.resolve(),
+      }),
+    }),
+  },
+  boneBuddyChatMessagesTable: {},
+  subscribersTable: {},
+  systemPromptsTable: {
+    id: {},
+    key: {},
+    content: {},
+    isActive: {},
+  },
+  userTokensTable: {},
+}));
 
 import {
   evaluatePremiumEntitlement,

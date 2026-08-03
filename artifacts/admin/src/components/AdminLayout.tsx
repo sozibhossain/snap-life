@@ -5,6 +5,7 @@ import {
   ClipboardList,
   FlaskConical,
   LayoutDashboard,
+  MessageSquareText,
   Users,
   LogOut,
   Menu,
@@ -37,6 +38,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/users", label: "Users", icon: Users },
+  { path: "/chats", label: "Chats", icon: MessageSquareText },
   { path: "/audit", label: "Audit Log", icon: ClipboardList },
   { path: "/dev", label: "Dev & Testing", icon: FlaskConical },
   { path: "/settings", label: "Settings", icon: Settings },

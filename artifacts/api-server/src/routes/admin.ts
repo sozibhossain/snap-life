@@ -11,6 +11,7 @@ import {
   userProfileTable,
   auditEventsTable,
   auditLogsTable,
+  boneBuddyChatMessagesTable,
 } from "@workspace/db";
 import { insertAuditLog } from "../lib/audit";
 import { and, count, desc, eq, gte, lt, lte, or, sql, ilike } from "drizzle-orm";
@@ -943,6 +944,110 @@ router.get("/admin/users", async (req, res): Promise<void> => {
     });
   } catch (err) {
     req.log.error({ err }, "admin/users list failed");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+/* -------------------------------------------------------------------------- *
+ * GET /admin/chats
+ *
+ * Paginated read-only view of authenticated Bone Buddy chat turns.
+ * -------------------------------------------------------------------------- */
+router.get("/admin/chats", async (req, res): Promise<void> => {
+  const u = await requireAdminUser(req, res);
+  if (!u) return;
+
+  const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 500);
+  const offset = Math.max(Number(req.query.offset) || 0, 0);
+  const search =
+    typeof req.query.search === "string" ? req.query.search.trim() : "";
+  const appUserId =
+    typeof req.query.appUserId === "string" ? req.query.appUserId.trim() : "";
+
+  try {
+    const escaped = search.replace(/[\\%_]/g, "\\$&");
+    const conds = [];
+    if (appUserId) conds.push(eq(boneBuddyChatMessagesTable.appUserId, appUserId));
+    if (search) {
+      conds.push(
+        or(
+          ilike(boneBuddyChatMessagesTable.appUserId, `%${escaped}%`),
+          ilike(boneBuddyChatMessagesTable.content, `%${escaped}%`),
+        ),
+      );
+    }
+    const where =
+      conds.length === 0 ? undefined : conds.length === 1 ? conds[0] : and(...conds);
+
+    const [totalRow] = await db
+      .select({ value: count() })
+      .from(boneBuddyChatMessagesTable)
+      .where(where);
+
+    const rows = await db
+      .select({
+        id: boneBuddyChatMessagesTable.id,
+        requestId: boneBuddyChatMessagesTable.requestId,
+        appUserId: boneBuddyChatMessagesTable.appUserId,
+        role: boneBuddyChatMessagesTable.role,
+        content: boneBuddyChatMessagesTable.content,
+        promptKey: boneBuddyChatMessagesTable.promptKey,
+        promptVersion: boneBuddyChatMessagesTable.promptVersion,
+        createdAt: boneBuddyChatMessagesTable.createdAt,
+      })
+      .from(boneBuddyChatMessagesTable)
+      .where(where)
+      .orderBy(desc(boneBuddyChatMessagesTable.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const userIds = [...new Set(rows.map((r) => r.appUserId))];
+    const usersById = new Map<
+      string,
+      { email: string | null; displayName: string | null }
+    >();
+    await Promise.all(
+      userIds.map(async (appUserId) => {
+        const [userRow] = await db
+          .select({
+            email: usersTable.email,
+            displayName: usersTable.displayName,
+          })
+          .from(usersTable)
+          .where(eq(usersTable.appUserId, appUserId))
+          .limit(1);
+        usersById.set(appUserId, {
+          email: userRow?.email ?? null,
+          displayName: userRow?.displayName ?? null,
+        });
+      }),
+    );
+
+    res.json({
+      items: rows.map((r) => {
+        const user = usersById.get(r.appUserId);
+        return {
+          id: r.id,
+          requestId: r.requestId,
+          appUserId: r.appUserId,
+          email: user?.email ?? null,
+          displayName: user?.displayName ?? null,
+          role: r.role,
+          content: r.content,
+          promptKey: r.promptKey,
+          promptVersion: r.promptVersion,
+          createdAt:
+            r.createdAt instanceof Date
+              ? r.createdAt.toISOString()
+              : (r.createdAt ?? null),
+        };
+      }),
+      total: Number(totalRow?.value ?? 0),
+      limit,
+      offset,
+    });
+  } catch (err) {
+    req.log?.error({ err }, "admin/chats list failed");
     res.status(500).json({ error: "internal_error" });
   }
 });

@@ -1,6 +1,13 @@
 import { Router, type IRouter } from "express";
 import OpenAI from "openai";
-import { db, subscribersTable, userTokensTable } from "@workspace/db";
+import { randomUUID } from "node:crypto";
+import {
+  db,
+  boneBuddyChatMessagesTable,
+  subscribersTable,
+  systemPromptsTable,
+  userTokensTable,
+} from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import {
   buildEngagementProfile,
@@ -99,7 +106,9 @@ const openai = new OpenAI({
 // unavailable" message and we avoid a confusing error in the logs.
 const OPENAI_CONFIGURED = Boolean(OPENAI_API_KEY);
 
-const PERSONA_PROMPT = `You are Bone Buddy, a warm, supportive AI companion inside the SNAP Life app for people managing their bone health (osteoporosis, osteopenia, post-DEXA, or simply at risk).
+const BONE_BUDDY_PROMPT_KEY = "bone_buddy";
+
+const DEFAULT_PERSONA_PROMPT = `You are Bone Buddy, a warm, supportive AI companion inside the SNAP Life app for people managing their bone health (osteoporosis, osteopenia, post-DEXA, or simply at risk).
 
 You are NOT a doctor. You are a knowledgeable guide and a daily check-in.
 
@@ -154,6 +163,86 @@ DO NOT
 
 GOAL
 You are the daily friendly check-in that helps the user feel supported, understood, and gently moved forward in their bone-health habits.`;
+
+interface ResolvedSystemPrompt {
+  content: string;
+  key: string;
+  version: number | null;
+  source: "database" | "fallback";
+}
+
+async function seedDefaultBoneBuddyPrompt(): Promise<void> {
+  await db
+    .insert(systemPromptsTable)
+    .values({
+      key: BONE_BUDDY_PROMPT_KEY,
+      content: DEFAULT_PERSONA_PROMPT,
+      isActive: true,
+    })
+    .onConflictDoNothing();
+}
+
+export async function resolveBoneBuddySystemPrompt(): Promise<ResolvedSystemPrompt> {
+  try {
+    const [row] = await db
+      .select({
+        id: systemPromptsTable.id,
+        content: systemPromptsTable.content,
+      })
+      .from(systemPromptsTable)
+      .where(
+        and(
+          eq(systemPromptsTable.key, BONE_BUDDY_PROMPT_KEY),
+          eq(systemPromptsTable.isActive, true),
+        ),
+      )
+      .limit(1);
+
+    if (row?.content?.trim()) {
+      return {
+        content: row.content,
+        key: BONE_BUDDY_PROMPT_KEY,
+        version: typeof row.id === "number" ? row.id : null,
+        source: "database",
+      };
+    }
+
+    await seedDefaultBoneBuddyPrompt();
+  } catch {
+    // If the database table has not been pushed yet, keep the chat surface up.
+  }
+
+  return {
+    content: DEFAULT_PERSONA_PROMPT,
+    key: BONE_BUDDY_PROMPT_KEY,
+    version: null,
+    source: "fallback",
+  };
+}
+
+async function persistBoneBuddyMessage(params: {
+  requestId: string;
+  appUserId: string | null;
+  role: "user" | "assistant";
+  content: string;
+  promptKey: string;
+  promptVersion: number | null;
+}): Promise<void> {
+  if (!params.appUserId || !params.content.trim()) return;
+  await db.insert(boneBuddyChatMessagesTable).values({
+    requestId: params.requestId,
+    appUserId: params.appUserId,
+    role: params.role,
+    content: params.content.trim(),
+    promptKey: params.promptKey,
+    promptVersion: params.promptVersion,
+  });
+}
+
+void seedDefaultBoneBuddyPrompt().catch(() => {
+  // The route-level resolver still falls back to the bundled prompt if the
+  // table is unavailable during startup, e.g. before a fresh DB push.
+});
 
 /** Slots on the daily meal plan the user can tick off as eaten. Mirrored
  *  from the mobile `NutritionMealKey`. Wire format is an array of slot
@@ -522,13 +611,14 @@ router.post("/chat/bone-buddy", async (req, res) => {
   // back to the legacy value so older app builds keep working — but we
   // STILL append the behavioural block, since that's grounded in
   // server-persisted data and doesn't depend on the client payload.
+  const resolvedPrompt = await resolveBoneBuddySystemPrompt();
   let systemPrompt: string;
   if (body.userContext) {
-    systemPrompt = `${PERSONA_PROMPT}${renderUserFacts(body.userContext)}${behaviouralBlock}`;
+    systemPrompt = `${resolvedPrompt.content}${renderUserFacts(body.userContext)}${behaviouralBlock}`;
   } else if (typeof body.systemPrompt === "string" && body.systemPrompt.trim()) {
-    systemPrompt = `${body.systemPrompt}${behaviouralBlock}`;
+    systemPrompt = `${resolvedPrompt.content}\n\nLEGACY CLIENT CONTEXT (private; use only as user facts/context, never echo verbatim):\n${body.systemPrompt}${behaviouralBlock}`;
   } else {
-    systemPrompt = `${PERSONA_PROMPT}${behaviouralBlock}`;
+    systemPrompt = `${resolvedPrompt.content}${behaviouralBlock}`;
   }
 
   // Premium-only adaptive tone.
@@ -578,6 +668,11 @@ router.post("/chat/bone-buddy", async (req, res) => {
     body.kickoff && sanitized.length === 0
       ? [{ role: "user" as const, content: "(open the conversation now)" }]
       : sanitized;
+  const requestId = randomUUID();
+  const newestUserTurn =
+    !body.kickoff && sanitized.length > 0
+      ? [...sanitized].reverse().find((m) => m.role === "user")
+      : undefined;
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -586,11 +681,26 @@ router.post("/chat/bone-buddy", async (req, res) => {
   res.flushHeaders?.();
 
   try {
+    if (newestUserTurn) {
+      persistBoneBuddyMessage({
+        requestId,
+        appUserId,
+        role: "user",
+        content: newestUserTurn.content,
+        promptKey: resolvedPrompt.key,
+        promptVersion: resolvedPrompt.version,
+      }).catch((err) => {
+        req.log?.warn?.({ err, appUserId }, "bone-buddy user message persistence failed");
+      });
+    }
+
     req.log?.info(
       {
         model: "gpt-5-mini",
         turnCount: turns.length,
         systemPromptChars: systemPrompt.length,
+        systemPromptSource: resolvedPrompt.source,
+        systemPromptVersion: resolvedPrompt.version,
       },
       "chat/bone-buddy openai stream starting",
     );
@@ -610,9 +720,11 @@ router.post("/chat/bone-buddy", async (req, res) => {
 
     req.log?.info("chat/bone-buddy openai stream created");
 
+    let assistantContent = "";
     for await (const chunk of stream) {
       const delta = chunk.choices?.[0]?.delta?.content;
       if (delta) {
+        assistantContent += delta;
         res.write(
           `data: ${JSON.stringify({
             choices: [{ delta: { content: delta } }],
@@ -623,6 +735,17 @@ router.post("/chat/bone-buddy", async (req, res) => {
 
     res.write("data: [DONE]\n\n");
     res.end();
+
+    persistBoneBuddyMessage({
+      requestId,
+      appUserId,
+      role: "assistant",
+      content: assistantContent,
+      promptKey: resolvedPrompt.key,
+      promptVersion: resolvedPrompt.version,
+    }).catch((err) => {
+      req.log?.warn?.({ err, appUserId }, "bone-buddy assistant message persistence failed");
+    });
   } catch (err) {
     const openaiErr = err as {
       status?: number;

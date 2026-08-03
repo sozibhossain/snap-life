@@ -20,3 +20,5 @@ export * from "./referrals";
 export * from "./auditLogs";
 export * from "./auditEvents";
 export * from "./webPushSubscriptions";
+export * from "./systemPrompts";
+export * from "./boneBuddyChatMessages";

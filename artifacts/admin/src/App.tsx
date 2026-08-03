@@ -10,6 +10,7 @@ import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import Dashboard from "@/pages/dashboard";
 import Users from "@/pages/users";
+import Chats from "@/pages/chats";
 import AuditLog from "@/pages/audit";
 import DevPage from "@/pages/dev";
 import SettingsPage from "@/pages/settings";
@@ -142,6 +143,7 @@ function ClerkProviderWithRoutes() {
               <Redirect to="/" />
             </Route>
             <Route path="/users" component={() => <ProtectedRoute component={Users} />} />
+            <Route path="/chats" component={() => <ProtectedRoute component={Chats} />} />
             <Route path="/audit" component={() => <ProtectedRoute component={AuditLog} />} />
             <Route path="/dev" component={() => <ProtectedRoute component={DevPage} />} />
             <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
