@@ -1,8 +1,0 @@
-env: load .env
-env: export EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY EXPO_PUBLIC_API_URL EXPO_PUBLIC_REVENUECAT_TEST_API_KEY EXPO_PUBLIC_REVENUECAT_IOS_API_KEY EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY OPENAI_API_KEY
-Starting project at C:\sozib\app_developments\may-2026\SNAP-Life\SNAP-Life\artifacts\mobile
-React Compiler enabled
-Starting Metro Bundler
-warning: Bundler cache is empty, rebuilding (this may take a minute)
-Waiting on http://localhost:8081
-Logs for your project will appear below.
