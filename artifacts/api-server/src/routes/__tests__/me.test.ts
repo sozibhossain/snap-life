@@ -235,9 +235,6 @@ vi.mock("@workspace/db", () => {
   }
 
   const db = {
-    transaction<T>(callback: (tx: typeof db) => Promise<T>) {
-      return callback(db);
-    },
     select(shape?: unknown) {
       return {
         from(t: unknown) {
@@ -332,8 +329,15 @@ vi.mock("@workspace/db", () => {
     },
   };
 
+  const dbWithTransaction = {
+    ...db,
+    transaction<T>(callback: (tx: typeof db) => Promise<T>) {
+      return callback(db);
+    },
+  };
+
   return {
-    db,
+    db: dbWithTransaction,
     usersTable: proxies.users,
     userProfileTable: proxies.userProfile,
     nutritionLogsTable: proxies.nutritionLogs,
