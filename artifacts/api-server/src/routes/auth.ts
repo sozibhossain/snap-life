@@ -3,11 +3,62 @@ import { randomBytes } from "node:crypto";
 import { db, userTokensTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { claimsToProfile, clerkAuthOf, upsertClerkUser } from "../lib/auth";
+import { createPasswordOnlySignInTicket } from "../lib/passwordOnlySignIn";
 
 const router: IRouter = Router();
 
 const MAX_USER_ID_LEN = 200;
 const MAX_TOKEN_LEN = 200;
+const MAX_EMAIL_LEN = 320;
+const MAX_PASSWORD_LEN = 512;
+
+router.post("/auth/password-only-sign-in", async (req, res) => {
+  const body = req.body as { email?: unknown; password?: unknown } | undefined;
+  const email = body?.email;
+  const password = body?.password;
+  if (
+    typeof email !== "string" ||
+    email.length === 0 ||
+    email.length > MAX_EMAIL_LEN ||
+    typeof password !== "string" ||
+    password.length === 0 ||
+    password.length > MAX_PASSWORD_LEN
+  ) {
+    res.status(401).json({ error: "invalid_credentials" });
+    return;
+  }
+
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  if (!secretKey) {
+    req.log?.error("password-only sign-in unavailable: CLERK_SECRET_KEY not set");
+    res.status(503).json({ error: "sign_in_unavailable" });
+    return;
+  }
+
+  try {
+    const result = await createPasswordOnlySignInTicket(
+      email,
+      password,
+      secretKey,
+    );
+    res.setHeader("Cache-Control", "no-store");
+    if (!result.ok) {
+      if (result.reason === "rate_limited") {
+        res.status(429).json({ error: "rate_limited" });
+      } else if (result.reason === "invalid_credentials") {
+        res.status(401).json({ error: "invalid_credentials" });
+      } else {
+        req.log?.error("password-only sign-in: Clerk API failed");
+        res.status(502).json({ error: "sign_in_unavailable" });
+      }
+      return;
+    }
+    res.json({ ticket: result.ticket });
+  } catch (err) {
+    req.log?.error({ err }, "password-only sign-in failed");
+    res.status(502).json({ error: "sign_in_unavailable" });
+  }
+});
 
 router.post("/auth/bootstrap", async (req, res) => {
   const body = req.body as { appUserId?: unknown } | undefined;

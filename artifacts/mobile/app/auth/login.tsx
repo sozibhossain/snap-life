@@ -18,9 +18,12 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AuthMessage } from "@/components/AuthMessage";
 import { useColors } from "@/hooks/useColors";
+import { requestPasswordOnlySignInTicket } from "@/lib/serverIdentity";
 
 const SNAP_ICON = require("@/assets/images/snap-icon.png");
+const PASSWORD_ONLY_EMAIL = "rabby.raziul@gmail.com";
 
 const HERO_PILLS = [
   { icon: "message-circle" as const, label: "Bone Buddy AI" },
@@ -65,6 +68,37 @@ export default function LoginScreen() {
     setDebugMessage("Clerk sign-in complete. Loading profile...");
   }
 
+  async function startEmailSecondFactor() {
+    if (!signIn) return false;
+    const emailCodeFactor = signIn.supportedSecondFactors.find(
+      (factor) => factor.strategy === "email_code",
+    );
+    if (!emailCodeFactor) {
+      const strategies = signIn.supportedSecondFactors
+        .map((factor) => factor.strategy)
+        .join(", ");
+      setError("This sign in requires an extra verification step that is not available.");
+      setDebugMessage(
+        strategies
+          ? `No email_code second factor available. Supported: ${strategies}`
+          : "No supported second factors returned by Clerk.",
+      );
+      return false;
+    }
+    const sent = await signIn.mfa.sendEmailCode();
+    if (sent.error) {
+      setError(
+        (sent.error as { message?: string })?.message ??
+          "Could not send the verification code. Please try again.",
+      );
+      return false;
+    }
+    setCode("");
+    setIsVerifyingClient(true);
+    setError("We sent a verification code to your email.");
+    return true;
+  }
+
   async function handleLogin() {
     if (!signInReady) {
       setError("Sign in is still starting. Please wait a moment and try again.");
@@ -75,14 +109,54 @@ export default function LoginScreen() {
       return;
     }
     setError("");
-    setDebugMessage("Submitting email/password to Clerk...");
+    const normalizedEmail = email.trim().toLowerCase();
+    setDebugMessage("Submitting sign-in request...");
     try {
       await AsyncStorage.setItem(
         "@snaplife/rememberMe/v1",
         rememberMe ? "true" : "false",
       );
+      if (normalizedEmail === PASSWORD_ONLY_EMAIL) {
+        const ticketResponse = await requestPasswordOnlySignInTicket(
+          normalizedEmail,
+          password,
+        );
+        if (!ticketResponse.ok || !ticketResponse.ticket) {
+          setError(
+            ticketResponse.status === 429
+              ? "Too many sign-in attempts. Please wait a minute and try again."
+              : ticketResponse.status === 0 || ticketResponse.status >= 500
+                ? "Sign in is temporarily unavailable. Please try again."
+                : "Sign in failed. Please check your email and password.",
+          );
+          setDebugMessage("Password-only sign-in could not be completed.");
+          return;
+        }
+        const ticketResult = await signIn.create({
+          strategy: "ticket",
+          ticket: ticketResponse.ticket,
+        });
+        if (ticketResult.error) {
+          setError(
+            (ticketResult.error as { message?: string })?.message ??
+              "Sign in could not be completed. Please try again.",
+          );
+          setDebugMessage("Clerk ticket sign-in returned an error.");
+          return;
+        }
+        if (signIn.status === "complete") {
+          await finalizeSignIn();
+        } else {
+          setError("Sign in could not be completed. Please try again.");
+          setDebugMessage(
+            `Unexpected Clerk ticket status: ${signIn.status ?? "unknown"}`,
+          );
+        }
+        return;
+      }
+
       const created = await signIn.password({
-        emailAddress: email.trim(),
+        emailAddress: normalizedEmail,
         password,
       });
       setDebugMessage(`Clerk response received. Status: ${signIn.status ?? "unknown"}`);
@@ -98,27 +172,12 @@ export default function LoginScreen() {
 
       if (signIn.status === "complete") {
         await finalizeSignIn();
-      } else if (signIn.status === "needs_client_trust") {
-        setDebugMessage("Clerk requires email verification code.");
-        const emailCodeFactor = signIn.supportedSecondFactors.find(
-          (factor) => factor.strategy === "email_code",
-        );
-        if (emailCodeFactor) {
-          const sent = await signIn.mfa.sendEmailCode();
-          if (sent.error) {
-            setError(
-              (sent.error as { message?: string })?.message ??
-                "Could not send the verification code. Please try again.",
-            );
-            return;
-          }
-          setCode("");
-          setIsVerifyingClient(true);
-          setError("We sent a verification code to your email.");
-        } else {
-          setError("This sign in requires an extra verification step that is not available.");
-          setDebugMessage("No email_code second factor available.");
-        }
+      } else if (
+        signIn.status === "needs_client_trust" ||
+        signIn.status === "needs_second_factor"
+      ) {
+        setDebugMessage(`Clerk requires email verification code. Status: ${signIn.status}`);
+        await startEmailSecondFactor();
       } else {
         setError("Sign in could not be completed. Please try again.");
         setDebugMessage(`Unexpected Clerk status: ${signIn.status ?? "unknown"}`);
@@ -257,7 +316,7 @@ export default function LoginScreen() {
                 </View>
 
                 {error.length > 0 && (
-                  <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text>
+                  <AuthMessage message={error} color={colors.destructive} />
                 )}
                 {debugMessage.length > 0 && (
                   <Text style={[styles.debug, { color: colors.mutedForeground }]}>
@@ -353,7 +412,7 @@ export default function LoginScreen() {
             </Pressable>
 
             {error.length > 0 && (
-              <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text>
+              <AuthMessage message={error} color={colors.destructive} />
             )}
             {debugMessage.length > 0 && (
               <Text style={[styles.debug, { color: colors.mutedForeground }]}>
@@ -405,7 +464,7 @@ const styles = StyleSheet.create({
   // ─── Hero ───────────────────────────────────────────────────────────────────
   hero: {
     width: "100%",
-    paddingHorizontal: 24,
+    paddingHorizontal: 18,
     paddingBottom: 22,
   },
   logoLockup: {
@@ -478,17 +537,26 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.85)",
   },
   // ─── Form ────────────────────────────────────────────────────────────────────
-  content: { paddingHorizontal: 24, alignItems: "center" },
+  content: { width: "100%", paddingHorizontal: 16, alignItems: "center" },
   card: {
     width: "100%",
+    maxWidth: 560,
     borderRadius: 20,
     borderWidth: 1,
-    padding: 24,
-    marginBottom: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 22,
+    marginBottom: 20,
   },
-  title: { fontSize: 22, fontFamily: "Inter_700Bold", marginBottom: 4 },
-  subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", marginBottom: 24, lineHeight: 20 },
-  fields: { gap: 16 },
+  title: { width: "100%", fontSize: 22, fontFamily: "Inter_700Bold", marginBottom: 4 },
+  subtitle: {
+    width: "100%",
+    flexShrink: 1,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  fields: { width: "100%", gap: 14 },
   label: { fontSize: 13, fontFamily: "Inter_600SemiBold", marginBottom: 6 },
   input: {
     height: 48,
@@ -513,7 +581,14 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   eyeBtn: { paddingHorizontal: 14 },
-  fieldError: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 4 },
+  fieldError: {
+    width: "100%",
+    flexShrink: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: "Inter_400Regular",
+    marginTop: 5,
+  },
   rememberRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 },
   checkbox: {
     width: 20,
@@ -524,8 +599,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   rememberText: { fontSize: 14, fontFamily: "Inter_500Medium" },
-  error: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
-  debug: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 16 },
+  debug: {
+    width: "100%",
+    flexShrink: 1,
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    textAlign: "left",
+    lineHeight: 16,
+  },
   loginBtn: {
     height: 50,
     borderRadius: 12,
@@ -536,7 +617,15 @@ const styles = StyleSheet.create({
   loginBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
   forgotBtn: { alignItems: "center", paddingVertical: 4 },
   forgotText: { fontSize: 14, fontFamily: "Inter_500Medium" },
-  footer: { flexDirection: "row", alignItems: "center" },
+  footer: {
+    width: "100%",
+    maxWidth: 560,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
   footerText: { fontSize: 14, fontFamily: "Inter_400Regular" },
   footerLink: { fontSize: 14, fontFamily: "Inter_700Bold" },
 });

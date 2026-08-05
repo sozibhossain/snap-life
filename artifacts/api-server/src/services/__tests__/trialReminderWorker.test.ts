@@ -60,6 +60,7 @@ function reset() {
 // understands enough of them to filter rows in JS rather than SQL.
 type Pred =
   | { kind: "eq"; col: string; val: unknown }
+  | { kind: "inArray"; col: string; vals: unknown[] }
   | { kind: "gt"; col: string; val: unknown }
   | { kind: "lte"; col: string; val: unknown }
   | { kind: "isNotNull"; col: string }
@@ -87,6 +88,11 @@ vi.mock("drizzle-orm", () => {
     isNotNull: (col: { __c: string }): Pred => ({
       kind: "isNotNull",
       col: col.__c,
+    }),
+    inArray: (col: { __c: string }, vals: unknown[]): Pred => ({
+      kind: "inArray",
+      col: col.__c,
+      vals,
     }),
     // The worker uses `sql` for two specific JSON-payload predicates:
     //   sql`${pendingEmails.payload}->>'appUserId' = ${appUserId}`
@@ -168,6 +174,8 @@ vi.mock("@workspace/db", () => {
         }
         return row[p.col] === val;
       }
+      case "inArray":
+        return p.vals.includes(row[p.col]);
       case "gt":
         return (row[p.col] as Date)?.getTime?.() > (p.val as Date).getTime();
       case "lte":
@@ -353,29 +361,29 @@ beforeEach(() => {
 });
 
 describe("runTrialReminderPass", () => {
-  it("enqueues a trial_halfway email on Day 14", async () => {
-    const trialEndsAt = seedActiveTrial({ dayOf: 14 });
+  it("enqueues a seven-day reminder on Day 23", async () => {
+    const trialEndsAt = seedActiveTrial({ dayOf: 23 });
     const result = await worker.runTrialReminderPass(NOW);
     expect(result).toMatchObject({ enqueued: 1, errors: 0 });
     expect(state.pendingEmails).toHaveLength(1);
     expect(state.pendingEmails[0]).toMatchObject({
-      kind: "trial_halfway",
+      kind: "trial_reminder_7d",
       toAddress: "u1@example.com",
     });
     expect(state.pendingEmails[0].payload).toMatchObject({
       appUserId: "u-1",
       trialEndsAt: trialEndsAt.toISOString(),
-      trialDayOf: 14,
+      trialDayOf: 23,
       trialLengthDays: 30,
     });
   });
 
-  it("enqueues a trial_ending_soon email on Day 25", async () => {
-    seedActiveTrial({ dayOf: 25 });
+  it("enqueues a two-day reminder on Day 28", async () => {
+    seedActiveTrial({ dayOf: 28 });
     const result = await worker.runTrialReminderPass(NOW);
     expect(result.enqueued).toBe(1);
-    expect(state.pendingEmails[0].kind).toBe("trial_ending_soon");
-    expect(state.pendingEmails[0].payload).toMatchObject({ trialDayOf: 25 });
+    expect(state.pendingEmails[0].kind).toBe("trial_reminder_2d");
+    expect(state.pendingEmails[0].payload).toMatchObject({ trialDayOf: 28 });
   });
 
   it("does not enqueue on a non-trigger day", async () => {
@@ -386,7 +394,7 @@ describe("runTrialReminderPass", () => {
   });
 
   it("is idempotent across passes for the same trial cycle", async () => {
-    seedActiveTrial({ dayOf: 14 });
+    seedActiveTrial({ dayOf: 23 });
     await worker.runTrialReminderPass(NOW);
     await worker.runTrialReminderPass(NOW);
     await worker.runTrialReminderPass(NOW);
@@ -394,12 +402,12 @@ describe("runTrialReminderPass", () => {
   });
 
   it("re-enqueues when the trial is re-granted (different trialEndsAt)", async () => {
-    seedActiveTrial({ dayOf: 14 });
+    seedActiveTrial({ dayOf: 23 });
     await worker.runTrialReminderPass(NOW);
     expect(state.pendingEmails).toHaveLength(1);
 
     // Simulate a fresh trial grant: bump trialEndsAt to a new value
-    // that still lands in the Day-14 bucket (slightly different ms).
+    // that still lands in the Day-23 bucket (slightly different ms).
     state.subscribers[0].trialEndsAt = new Date(
       state.subscribers[0].trialEndsAt!.getTime() + 1000,
     );
@@ -408,21 +416,21 @@ describe("runTrialReminderPass", () => {
   });
 
   it("skips soft-deleted users", async () => {
-    seedActiveTrial({ dayOf: 14, deletedAt: new Date(NOW.getTime() - DAY) });
+    seedActiveTrial({ dayOf: 23, deletedAt: new Date(NOW.getTime() - DAY) });
     const result = await worker.runTrialReminderPass(NOW);
     expect(result.enqueued).toBe(0);
     expect(state.pendingEmails).toHaveLength(0);
   });
 
   it("skips users without an email on file", async () => {
-    seedActiveTrial({ dayOf: 14, email: null });
+    seedActiveTrial({ dayOf: 23, email: null });
     const result = await worker.runTrialReminderPass(NOW);
     expect(result.enqueued).toBe(0);
     expect(state.pendingEmails).toHaveLength(0);
   });
 
   it("skips users whose every push token is opted out", async () => {
-    seedActiveTrial({ dayOf: 14 });
+    seedActiveTrial({ dayOf: 23 });
     state.pushTokens.push(
       { appUserId: "u-1", optedIn: false },
       { appUserId: "u-1", optedIn: false },
@@ -434,7 +442,7 @@ describe("runTrialReminderPass", () => {
   });
 
   it("still emails users with at least one opted-in push token", async () => {
-    seedActiveTrial({ dayOf: 14 });
+    seedActiveTrial({ dayOf: 23 });
     state.pushTokens.push(
       { appUserId: "u-1", optedIn: false },
       { appUserId: "u-1", optedIn: true },
@@ -443,11 +451,12 @@ describe("runTrialReminderPass", () => {
     expect(result.enqueued).toBe(1);
   });
 
-  it("ignores store-side trials (server-trial only)", async () => {
-    seedActiveTrial({ dayOf: 14, trialSource: "store" });
+  it("enqueues reminders for store-side trials", async () => {
+    seedActiveTrial({ dayOf: 23, trialSource: "store" });
     const result = await worker.runTrialReminderPass(NOW);
-    expect(result.scanned).toBe(0);
-    expect(state.pendingEmails).toHaveLength(0);
+    expect(result.scanned).toBe(1);
+    expect(result.enqueued).toBe(1);
+    expect(state.pendingEmails).toHaveLength(1);
   });
 
   it("ignores expired trials", async () => {

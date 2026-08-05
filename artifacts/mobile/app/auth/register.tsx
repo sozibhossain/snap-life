@@ -18,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AuthMessage } from "@/components/AuthMessage";
 import { useColors } from "@/hooks/useColors";
 
 const SNAP_ICON = require("@/assets/images/snap-icon.png");
@@ -237,7 +238,11 @@ export default function RegisterScreen() {
                   autoComplete="email"
                 />
                 {errors.fields.emailAddress && (
-                  <Text style={[styles.fieldError, { color: colors.destructive }]}>
+                  <Text
+                    style={[styles.fieldError, { color: colors.destructive }]}
+                    textBreakStrategy="simple"
+                    android_hyphenationFrequency="none"
+                  >
                     {errors.fields.emailAddress.message}
                   </Text>
                 )}
@@ -262,14 +267,18 @@ export default function RegisterScreen() {
                   </Pressable>
                 </View>
                 {errors.fields.password && (
-                  <Text style={[styles.fieldError, { color: colors.destructive }]}>
+                  <Text
+                    style={[styles.fieldError, { color: colors.destructive }]}
+                    textBreakStrategy="simple"
+                    android_hyphenationFrequency="none"
+                  >
                     {errors.fields.password.message}
                   </Text>
                 )}
               </View>
 
               {error.length > 0 && (
-                <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text>
+                <AuthMessage message={error} color={colors.destructive} />
               )}
 
               <TouchableOpacity
@@ -321,14 +330,18 @@ export default function RegisterScreen() {
                   onSubmitEditing={handleVerify}
                 />
                 {errors.fields.code && (
-                  <Text style={[styles.fieldError, { color: colors.destructive }]}>
+                  <Text
+                    style={[styles.fieldError, { color: colors.destructive }]}
+                    textBreakStrategy="simple"
+                    android_hyphenationFrequency="none"
+                  >
                     {errors.fields.code.message}
                   </Text>
                 )}
               </View>
 
               {error.length > 0 && (
-                <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text>
+                <AuthMessage message={error} color={colors.destructive} />
               )}
 
               <TouchableOpacity
@@ -375,7 +388,7 @@ const styles = StyleSheet.create({
   // ─── Hero ───────────────────────────────────────────────────────────────────
   hero: {
     width: "100%",
-    paddingHorizontal: 24,
+    paddingHorizontal: 18,
     paddingBottom: 22,
   },
   logoLockup: {
@@ -448,17 +461,26 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.85)",
   },
   // ─── Form ────────────────────────────────────────────────────────────────────
-  content: { paddingHorizontal: 24, alignItems: "center" },
+  content: { width: "100%", paddingHorizontal: 16, alignItems: "center" },
   card: {
     width: "100%",
+    maxWidth: 560,
     borderRadius: 20,
     borderWidth: 1,
-    padding: 24,
-    marginBottom: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 22,
+    marginBottom: 20,
   },
-  title: { fontSize: 22, fontFamily: "Inter_700Bold", marginBottom: 4 },
-  subtitle: { fontSize: 13, fontFamily: "Inter_400Regular", marginBottom: 24, lineHeight: 19 },
-  fields: { gap: 14 },
+  title: { width: "100%", fontSize: 22, fontFamily: "Inter_700Bold", marginBottom: 4 },
+  subtitle: {
+    width: "100%",
+    flexShrink: 1,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 20,
+    lineHeight: 19,
+  },
+  fields: { width: "100%", gap: 14 },
   label: { fontSize: 13, fontFamily: "Inter_600SemiBold", marginBottom: 6 },
   input: {
     height: 48,
@@ -483,8 +505,14 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   eyeBtn: { paddingHorizontal: 14 },
-  fieldError: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 4 },
-  error: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
+  fieldError: {
+    width: "100%",
+    flexShrink: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: "Inter_400Regular",
+    marginTop: 5,
+  },
   registerBtn: {
     height: 50,
     borderRadius: 12,
@@ -497,8 +525,23 @@ const styles = StyleSheet.create({
   registerBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
   forgotBtn: { alignItems: "center", paddingVertical: 4 },
   forgotText: { fontSize: 14, fontFamily: "Inter_500Medium" },
-  terms: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 18 },
-  footer: { flexDirection: "row", alignItems: "center" },
+  terms: {
+    width: "100%",
+    flexShrink: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  footer: {
+    width: "100%",
+    maxWidth: 560,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
   footerText: { fontSize: 14, fontFamily: "Inter_400Regular" },
   footerLink: { fontSize: 14, fontFamily: "Inter_700Bold" },
 });

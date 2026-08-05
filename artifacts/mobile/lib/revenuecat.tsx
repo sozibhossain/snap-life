@@ -1,7 +1,8 @@
+import { useAuth as useClerkAuth, useUser as useClerkUser } from "@clerk/expo";
 import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Constants from "expo-constants";
 import React, { createContext, useContext, useEffect } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import Purchases, {
   type CustomerInfo,
   type PurchasesEntitlementInfo,
@@ -11,6 +12,7 @@ import Purchases, {
 } from "react-native-purchases";
 import { authHeader } from "./userToken";
 import { getApiBaseUrl } from "./serverIdentity";
+import { resolveSubscriptionAuthHeader } from "./subscriptionAuth";
 
 const REVENUECAT_TEST_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY;
 const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
@@ -114,13 +116,17 @@ interface ServerSubscription {
  */
 async function syncSubscriptionWithServer(
   appUserId: string | null | undefined,
+  getClerkToken?: () => Promise<string | null>,
 ): Promise<void> {
   if (!appUserId) return;
   if (Platform.OS === "web") return;
   const base = getApiBaseUrl();
   if (!base) return;
   try {
-    const auth = await authHeader(appUserId);
+    const auth = await resolveSubscriptionAuthHeader(
+      getClerkToken,
+      () => authHeader(appUserId),
+    );
     if (!auth.Authorization) return;
     await fetch(`${base}/api/revenuecat/sync`, {
       method: "POST",
@@ -139,13 +145,17 @@ async function syncSubscriptionWithServer(
  */
 async function fetchServerSubscription(
   appUserId: string | null,
+  getClerkToken?: () => Promise<string | null>,
 ): Promise<ServerSubscription | null> {
   if (!appUserId) return null;
   const base = getApiBaseUrl();
   // Web has no native RC SDK and no authHeader either — but the route
   // still works if we have a session. Try anyway; bail on no auth.
   try {
-    const auth = await authHeader(appUserId);
+    const auth = await resolveSubscriptionAuthHeader(
+      getClerkToken,
+      () => authHeader(appUserId),
+    );
     if (!auth.Authorization) return null;
     const url = base
       ? `${base}/api/subscription/me`
@@ -277,6 +287,13 @@ const DEV_SUBSCRIPTION: SubscriptionContextValue = {
 
 function useSubscriptionContext() {
   const queryClient = useQueryClient();
+  const { getToken: getClerkToken, isSignedIn } = useClerkAuth();
+  const { user: clerkUser } = useClerkUser();
+  const clerkUserId = clerkUser?.id ?? null;
+  const getClerkSessionToken = React.useCallback(
+    () => getClerkToken(),
+    [getClerkToken],
+  );
 
   const customerInfoQuery = useQuery<CustomerInfo>({
     queryKey: ["revenuecat", "customer-info"],
@@ -313,16 +330,38 @@ function useSubscriptionContext() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // `/subscription/me` authenticates the caller and resolves the canonical
+  // app user on the server. It therefore does not need to wait for the
+  // RevenueCat login handshake; the signed-in Clerk id is a safe query key
+  // while that handshake is still pending.
+  const subscriptionIdentity = appUserId ?? clerkUserId;
+
   const serverSubscriptionQuery = useQuery<ServerSubscription | null>({
-    queryKey: ["server", "subscription", appUserId],
-    queryFn: () => fetchServerSubscription(appUserId),
-    // Trial day-of advances at most once per day; refetch hourly so Day-X
-    // labels stay current without spamming the server. Background refetch
-    // on focus picks up purchases that completed via App Store sheet.
-    staleTime: 60 * 60 * 1000,
+    queryKey: ["server", "subscription", subscriptionIdentity],
+    queryFn: () =>
+      fetchServerSubscription(subscriptionIdentity, getClerkSessionToken),
+    // Subscription state can change outside this process (webhook, admin
+    // grant, another device), so an hour-long cache is too stale.
+    staleTime: 15 * 1000,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
-    enabled: !!appUserId,
+    enabled: isSignedIn === true && !!subscriptionIdentity,
   });
+
+  // React Query's window-focus hook is browser-oriented. Explicitly refresh
+  // when a native app returns to the foreground so external grants and
+  // renewals show immediately without logout/reinstall.
+  useEffect(() => {
+    if (!subscriptionIdentity) return;
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        void queryClient.invalidateQueries({
+          queryKey: ["server", "subscription", subscriptionIdentity],
+        });
+      }
+    });
+    return () => sub.remove();
+  }, [queryClient, subscriptionIdentity]);
 
   const purchaseMutation = useMutation({
     mutationFn: async (pkg: PurchasesPackage) => {
@@ -339,7 +378,10 @@ function useSubscriptionContext() {
         info?.originalAppUserId && !info.originalAppUserId.startsWith("$RCAnonymousID:")
           ? info.originalAppUserId
           : null;
-      void syncSubscriptionWithServer(userId);
+      void syncSubscriptionWithServer(
+        userId ?? subscriptionIdentity,
+        getClerkSessionToken,
+      );
       // The server-managed trial flips to "store" / "paid" after the
       // purchase, so re-fetch /subscription/me too.
       queryClient.invalidateQueries({ queryKey: ["server", "subscription"] });
@@ -354,7 +396,10 @@ function useSubscriptionContext() {
         info?.originalAppUserId && !info.originalAppUserId.startsWith("$RCAnonymousID:")
           ? info.originalAppUserId
           : null;
-      void syncSubscriptionWithServer(userId);
+      void syncSubscriptionWithServer(
+        userId ?? subscriptionIdentity,
+        getClerkSessionToken,
+      );
       queryClient.invalidateQueries({ queryKey: ["server", "subscription"] });
     },
   });
@@ -515,7 +560,10 @@ function useSubscriptionContext() {
     shouldShowPaymentPrompt: trialPromptVariant === "payment",
     /** Pre-trial-end urgency prompt (Day 25..28). */
     shouldShowEndOfTrialPrompt: trialPromptVariant === "endOfTrial",
-    isLoading: customerInfoQuery.isLoading || offeringsQuery.isLoading,
+    isLoading:
+      customerInfoQuery.isLoading ||
+      offeringsQuery.isLoading ||
+      serverSubscriptionQuery.isLoading,
     error: customerInfoQuery.error || offeringsQuery.error,
     purchase: purchaseMutation.mutateAsync,
     isPurchasing: purchaseMutation.isPending,
@@ -523,6 +571,10 @@ function useSubscriptionContext() {
     restore: restoreMutation.mutateAsync,
     isRestoring: restoreMutation.isPending,
     refresh: () => {
+      // Retry the RevenueCat identity handshake as well as refreshing data.
+      // A temporary RC network error must not leave a signed-in account on
+      // `$RCAnonymousID` for the rest of the app session.
+      if (appUserId) void identifyRevenueCatUser(appUserId);
       customerInfoQuery.refetch();
       offeringsQuery.refetch();
       serverSubscriptionQuery.refetch();

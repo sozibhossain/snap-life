@@ -32,6 +32,13 @@ vi.mock("@workspace/db", () => {
     email: { __col: "users.email" },
     displayName: { __col: "users.displayName" },
     isAdmin: { __col: "users.isAdmin" },
+    isTester: { __col: "users.isTester" },
+    deletedAt: { __col: "users.deletedAt" },
+  } as const;
+  const pendingEmailsTable = { __table: "pending_emails" } as const;
+  const subscribersTable = {
+    __table: "subscribers",
+    appUserId: { __col: "subscribers.appUserId" },
   } as const;
 
   type Cond = { kind?: string; args?: unknown[] } | undefined;
@@ -70,6 +77,8 @@ vi.mock("@workspace/db", () => {
                   {
                     appUserId: u.appUserId,
                     isAdmin: u.isAdmin,
+                    isTester: false,
+                    deletedAt: null,
                     clerkUserId: w.value,
                     email: null,
                     displayName: null,
@@ -83,6 +92,8 @@ vi.mock("@workspace/db", () => {
                   {
                     appUserId: w.value,
                     isAdmin: u.isAdmin,
+                    isTester: false,
+                    deletedAt: null,
                     clerkUserId: u.clerkUserId,
                     email: null,
                     displayName: null,
@@ -111,28 +122,41 @@ vi.mock("@workspace/db", () => {
     }),
     insert: (tbl: { __table: string }) => ({
       values: (v: Record<string, unknown>) => {
-        const apply = () => {
-          if (tbl.__table !== "users") return;
+        let applied = false;
+        const apply = (): boolean => {
+          if (applied || tbl.__table !== "users") return false;
           const clerkUserId = (v["clerkUserId"] as string) ?? null;
-          if (clerkUserId && usersState.byClerkId.has(clerkUserId)) return;
+          if (clerkUserId && usersState.byClerkId.has(clerkUserId)) return false;
+          applied = true;
           usersState.inserts.push(v);
           const appUserId = v["appUserId"] as string;
           const isAdmin = (v["isAdmin"] as boolean) ?? false;
           usersState.byAppUserId.set(appUserId, { clerkUserId, isAdmin });
           if (clerkUserId)
             usersState.byClerkId.set(clerkUserId, { appUserId, isAdmin });
+          return true;
         };
-        const thenable = Promise.resolve().then(apply);
-        return Object.assign(thenable, {
-          onConflictDoNothing: async (_opts: unknown) => {
-            apply();
+        return {
+          onConflictDoNothing: (_opts?: unknown) => {
+            const inserted = apply();
+            const thenable = Promise.resolve();
+            return Object.assign(thenable, {
+              returning: async (_cols: unknown) =>
+                inserted ? [{ appUserId: v["appUserId"] }] : [],
+            });
           },
-        });
+        };
       },
     }),
   };
 
-  return { db, userTokensTable, usersTable };
+  return {
+    db,
+    userTokensTable,
+    usersTable,
+    pendingEmailsTable,
+    subscribersTable,
+  };
 });
 
 vi.mock("drizzle-orm", () => ({

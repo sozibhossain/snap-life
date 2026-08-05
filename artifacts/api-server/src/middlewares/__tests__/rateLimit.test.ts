@@ -21,6 +21,24 @@ import type { Server } from "node:http";
 import express, { type Express, type Request, type Response } from "express";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+vi.mock("@workspace/db", () => ({
+  userTokensTable: {
+    appUserId: { __col: "appUserId" },
+    token: { __col: "token" },
+  },
+  db: {
+    select: () => ({
+      from: () => ({
+        where: () => ({ limit: async () => [] }),
+      }),
+    }),
+  },
+}));
+
+vi.mock("drizzle-orm", () => ({
+  eq: (...args: unknown[]) => ({ kind: "eq", args }),
+}));
+
 const ORIGINAL_ENV = process.env.NODE_ENV;
 
 async function buildApp(envOverride: string | undefined): Promise<Express> {

@@ -12,6 +12,7 @@ import {
   resolveApiBase,
   fetchAppIdentity,
   postAuthLink,
+  requestPasswordOnlySignInTicket,
 } from "../serverIdentity";
 
 const ORIGINAL_ENV = { ...process.env };
@@ -153,5 +154,62 @@ describe("postAuthLink", () => {
     expect(r.ok).toBe(false);
     expect(r.status).toBe(409);
     expect(r.error).toBe("already_linked");
+  });
+});
+
+describe("requestPasswordOnlySignInTicket", () => {
+  it("posts the credentials to the account-scoped API and returns its ticket", async () => {
+    platformMock.OS = "web";
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ ticket: "one-use-ticket" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await requestPasswordOnlySignInTicket(
+      "rabby.raziul@gmail.com",
+      "password",
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      status: 200,
+      ticket: "one-use-ticket",
+      error: undefined,
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/auth/password-only-sign-in",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          email: "rabby.raziul@gmail.com",
+          password: "password",
+        }),
+      }),
+    );
+  });
+
+  it("returns the generic API error when the password is rejected", async () => {
+    process.env.EXPO_PUBLIC_API_URL = "https://api.example.com";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: "invalid_credentials" }),
+      }),
+    );
+
+    const result = await requestPasswordOnlySignInTicket(
+      "rabby.raziul@gmail.com",
+      "wrong",
+    );
+    expect(result).toEqual({
+      ok: false,
+      status: 401,
+      ticket: undefined,
+      error: "invalid_credentials",
+    });
   });
 });

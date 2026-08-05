@@ -201,10 +201,15 @@ export default function SubscriptionScreen() {
     [trialEndsAt, user?.timezone],
   );
   const activeProductId = activeEntitlementProductId(entitlement);
+  const isServerOnlyGrant =
+    isSubscribed &&
+    !entitlement &&
+    (tier === "plus" || tier === "premium");
 
   // Billing amount for an active subscriber derived from live RC package prices.
   const billingAmount = useMemo(() => {
     if (!isSubscribed) return null;
+    if (!entitlement && (tier === "plus" || tier === "premium")) return null;
     if (tier === "premium") {
       return isFounderProductId(activeProductId)
         ? displayPlanPrice("founder_premium", founderPkg)
@@ -221,7 +226,7 @@ export default function SubscriptionScreen() {
         : displayPlanPrice("plus_monthly", monthlyPkg);
     }
     return null;
-  }, [tier, isSubscribed, activeProductId, founderPkg, premiumPkg, monthlyPkg, customerInfo]);
+  }, [tier, isSubscribed, entitlement, activeProductId, founderPkg, premiumPkg, monthlyPkg, customerInfo]);
 
   // Billing platform label (used in info rows and manage note).
   const billingPlatform =
@@ -371,6 +376,19 @@ export default function SubscriptionScreen() {
                     </Text>
                   </View>
                 </View>
+              ) : isServerOnlyGrant ? (
+                <View style={[styles.infoBlock, { borderColor: colors.border }]}>
+                  <View style={styles.infoRow}>
+                    <Feather name="gift" size={13} color={colors.mutedForeground} />
+                    <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Access</Text>
+                    <Text style={[styles.infoValue, { color: colors.foreground }]}>No expiry</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Feather name="credit-card" size={13} color={colors.mutedForeground} />
+                    <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Billing</Text>
+                    <Text style={[styles.infoValue, { color: colors.foreground }]}>Promotional</Text>
+                  </View>
+                </View>
               ) : (
                 /* Paid plan info block */
                 <View style={[styles.infoBlock, { borderColor: colors.border }]}>
@@ -418,7 +436,9 @@ export default function SubscriptionScreen() {
                 </>
               ) : (
                 <Text style={[styles.manageNote, { color: colors.mutedForeground }]}>
-                  Add payment details before your trial ends to keep your access.
+                  {isServerOnlyGrant
+                    ? "Your promotional access is active. No payment or renewal is required."
+                    : "Add payment details before your trial ends to keep your access."}
                 </Text>
               )}
             </View>
@@ -514,6 +534,13 @@ export default function SubscriptionScreen() {
               ))}
             </View>
           </>
+        ) : isLoading ? (
+          <View style={styles.heroBlock}>
+            <ActivityIndicator color={colors.primary} />
+            <Text style={[styles.heroSub, { color: colors.mutedForeground }]}>
+              Checking your subscription…
+            </Text>
+          </View>
         ) : (
           <View style={styles.heroBlock}>
             <View style={[styles.trialPill, { backgroundColor: colors.accent + "20" }]}>
@@ -533,7 +560,7 @@ export default function SubscriptionScreen() {
 
         {/* Plan cards — Premium first (MOST POPULAR), Plus below (default).
               Both plans include a 1-month free trial. Annual plans removed. */}
-        {!isSubscribed && (
+        {!isSubscribed && !isLoading && (
           <View style={{ gap: 12 }}>
             {/* FOUNDER PREMIUM - full Premium access at founding member price */}
             <PlanCard
@@ -612,7 +639,7 @@ export default function SubscriptionScreen() {
         </View>
 
         {/* CTA ---------------------------------------------------------- */}
-        {!isSubscribed && (
+        {!isSubscribed && !isLoading && (
           <View style={styles.ctaBlock}>
             {Platform.OS === "web" ? (
               // Web Billing is out of scope for the PWA milestone. Replace

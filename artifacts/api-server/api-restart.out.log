@@ -1,0 +1,156 @@
+[16:45:56.773] [32mINFO[39m (22728): [36mServer listening[39m
+    [35mport[39m: 5050
+[16:46:44.427] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "POST",
+      "url": "/api/auth/password-only-sign-in"
+    }
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 13
+[16:47:34.126] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/api/auth/password-only-sign-in"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1829
+[16:48:37.487] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "POST",
+      "url": "/api/auth/password-only-sign-in"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1573
+[16:48:38.871] [32mINFO[39m (22728): [36mverifyClerkBearerJwt: direct JWT verified[39m
+    [35msub[39m: "user_3EtJ1aDRCwq8jdKRhdjo6dIaZU7"
+[16:48:41.975] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "GET",
+      "url": "/api/subscription/me"
+    }
+    [35mres[39m: {
+      "statusCode": 304
+    }
+    [35mresponseTime[39m: 3149
+[16:48:47.046] [32mINFO[39m (22728): [36mverifyClerkBearerJwt: direct JWT verified[39m
+    [35msub[39m: "user_3EtJ1aDRCwq8jdKRhdjo6dIaZU7"
+[16:48:47.217] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "POST",
+      "url": "/api/auth/bootstrap"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 235
+[16:48:48.176] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "PUT",
+      "url": "/api/sync/meal-plan/2026-08-05"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1133
+[16:49:16.880] [32mINFO[39m (22728): [36mverifyClerkBearerJwt: direct JWT verified[39m
+    [35msub[39m: "user_3EtJ1aDRCwq8jdKRhdjo6dIaZU7"
+[16:49:17.120] [32mINFO[39m (22728): [36mverifyClerkBearerJwt: direct JWT verified[39m
+    [35msub[39m: "user_3EtJ1aDRCwq8jdKRhdjo6dIaZU7"
+[16:49:20.198] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "PUT",
+      "url": "/api/sync/meal-plan/2026-08-05"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3323
+[16:49:21.169] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "GET",
+      "url": "/api/referral"
+    }
+    [35mres[39m: {
+      "statusCode": 304
+    }
+    [35mresponseTime[39m: 4052
+[16:49:23.225] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "POST",
+      "url": "/api/auth/bootstrap"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 244
+[16:49:40.755] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "POST",
+      "url": "/api/auth/password-only-sign-in"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1223
+[16:49:42.043] [32mINFO[39m (22728): [36mverifyClerkBearerJwt: direct JWT verified[39m
+    [35msub[39m: "user_3EtJ1aDRCwq8jdKRhdjo6dIaZU7"
+[16:49:45.096] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "GET",
+      "url": "/api/subscription/me"
+    }
+    [35mres[39m: {
+      "statusCode": 304
+    }
+    [35mresponseTime[39m: 3055
+[16:49:50.423] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "POST",
+      "url": "/api/auth/bootstrap"
+    }
+    [35mres[39m: {
+      "statusCode": 409
+    }
+    [35mresponseTime[39m: 252
+[16:50:15.833] [32mINFO[39m (22728): [36mverifyClerkBearerJwt: direct JWT verified[39m
+    [35msub[39m: "user_3EtJ1aDRCwq8jdKRhdjo6dIaZU7"
+[16:50:19.130] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 13,
+      "method": "GET",
+      "url": "/api/referral"
+    }
+    [35mres[39m: {
+      "statusCode": 304
+    }
+    [35mresponseTime[39m: 3298
+[16:50:20.066] [32mINFO[39m (22728): [36mverifyClerkBearerJwt: direct JWT verified[39m
+    [35msub[39m: "user_3EtJ1aDRCwq8jdKRhdjo6dIaZU7"
+[16:50:21.199] [32mINFO[39m (22728): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "PUT",
+      "url": "/api/sync/meal-plan/2026-08-05"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1134

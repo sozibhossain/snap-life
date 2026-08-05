@@ -197,6 +197,7 @@ vi.mock("@workspace/db", () => {
     "subscriptionEvents",
     "feedback",
     "pendingEmails",
+    "auditEvents",
   ];
   const proxies: Record<string, unknown> = {};
   for (const n of tableNames) proxies[n] = tableProxy(n);
@@ -234,6 +235,9 @@ vi.mock("@workspace/db", () => {
   }
 
   const db = {
+    transaction<T>(callback: (tx: typeof db) => Promise<T>) {
+      return callback(db);
+    },
     select(shape?: unknown) {
       return {
         from(t: unknown) {
@@ -348,6 +352,7 @@ vi.mock("@workspace/db", () => {
     subscriptionEventsTable: proxies.subscriptionEvents,
     feedbackTable: proxies.feedback,
     pendingEmailsTable: proxies.pendingEmails,
+    auditEventsTable: proxies.auditEvents,
   };
 });
 
