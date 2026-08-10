@@ -24,8 +24,11 @@ import type {
   AdminUserDeleteResult,
   AdminUserLookupResult,
   AdminUserMetrics,
+  AnalyticsConsent,
+  AnalyticsConsentBody,
   AuditEventList,
   BadRequestResponse,
+  CommunityInsights,
   ForbiddenResponse,
   GetAdminAuditParams,
   GetAdminFeedbackParams,
@@ -40,6 +43,7 @@ import type {
   SyncDayBody,
   SyncError,
   SyncOk,
+  SyncOutcomeBody,
   SyncProfileBody,
   SyncSnapshot,
   SyncStateBody,
@@ -406,7 +410,7 @@ export const postMeAvatar = async (
 };
 
 export const getPostMeAvatarMutationOptions = <
-  TError = ErrorType<BadRequestResponse | UnauthorizedResponse | SyncError>,
+  TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -448,14 +452,14 @@ export type PostMeAvatarMutationResult = NonNullable<
 >;
 export type PostMeAvatarMutationBody = BodyType<MeAvatarBody>;
 export type PostMeAvatarMutationError = ErrorType<
-  BadRequestResponse | UnauthorizedResponse | SyncError
+  BadRequestResponse | UnauthorizedResponse
 >;
 
 /**
  * @summary Promote a stored object to the user's profile photo
  */
 export const usePostMeAvatar = <
-  TError = ErrorType<BadRequestResponse | UnauthorizedResponse | SyncError>,
+  TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -472,6 +476,169 @@ export const usePostMeAvatar = <
   TContext
 > => {
   return useMutation(getPostMeAvatarMutationOptions(options));
+};
+
+/**
+ * @summary Read the authenticated user's optional analytics consent
+ */
+export const getGetMeAnalyticsConsentUrl = () => {
+  return `/api/me/analytics-consent`;
+};
+
+export const getMeAnalyticsConsent = async (
+  options?: RequestInit,
+): Promise<AnalyticsConsent> => {
+  return customFetch<AnalyticsConsent>(getGetMeAnalyticsConsentUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMeAnalyticsConsentQueryKey = () => {
+  return [`/api/me/analytics-consent`] as const;
+};
+
+export const getGetMeAnalyticsConsentQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMeAnalyticsConsent>>,
+  TError = ErrorType<UnauthorizedResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMeAnalyticsConsent>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMeAnalyticsConsentQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getMeAnalyticsConsent>>
+  > = ({ signal }) => getMeAnalyticsConsent({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMeAnalyticsConsent>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMeAnalyticsConsentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMeAnalyticsConsent>>
+>;
+export type GetMeAnalyticsConsentQueryError = ErrorType<UnauthorizedResponse>;
+
+/**
+ * @summary Read the authenticated user's optional analytics consent
+ */
+
+export function useGetMeAnalyticsConsent<
+  TData = Awaited<ReturnType<typeof getMeAnalyticsConsent>>,
+  TError = ErrorType<UnauthorizedResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMeAnalyticsConsent>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMeAnalyticsConsentQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Replace optional community analytics and research consent
+ */
+export const getPutMeAnalyticsConsentUrl = () => {
+  return `/api/me/analytics-consent`;
+};
+
+export const putMeAnalyticsConsent = async (
+  analyticsConsentBody: AnalyticsConsentBody,
+  options?: RequestInit,
+): Promise<AnalyticsConsent> => {
+  return customFetch<AnalyticsConsent>(getPutMeAnalyticsConsentUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(analyticsConsentBody),
+  });
+};
+
+export const getPutMeAnalyticsConsentMutationOptions = <
+  TError = ErrorType<BadRequestResponse | UnauthorizedResponse | SyncError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof putMeAnalyticsConsent>>,
+    TError,
+    { data: BodyType<AnalyticsConsentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof putMeAnalyticsConsent>>,
+  TError,
+  { data: BodyType<AnalyticsConsentBody> },
+  TContext
+> => {
+  const mutationKey = ["putMeAnalyticsConsent"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof putMeAnalyticsConsent>>,
+    { data: BodyType<AnalyticsConsentBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return putMeAnalyticsConsent(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PutMeAnalyticsConsentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof putMeAnalyticsConsent>>
+>;
+export type PutMeAnalyticsConsentMutationBody = BodyType<AnalyticsConsentBody>;
+export type PutMeAnalyticsConsentMutationError = ErrorType<
+  BadRequestResponse | UnauthorizedResponse | SyncError
+>;
+
+/**
+ * @summary Replace optional community analytics and research consent
+ */
+export const usePutMeAnalyticsConsent = <
+  TError = ErrorType<BadRequestResponse | UnauthorizedResponse | SyncError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof putMeAnalyticsConsent>>,
+    TError,
+    { data: BodyType<AnalyticsConsentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof putMeAnalyticsConsent>>,
+  TError,
+  { data: BodyType<AnalyticsConsentBody> },
+  TContext
+> => {
+  return useMutation(getPutMeAnalyticsConsentMutationOptions(options));
 };
 
 /**
@@ -1271,6 +1438,94 @@ export const usePostSyncAssessment = <
 };
 
 /**
+ * @summary Append an idempotent structured self-reported outcome check-in
+ */
+export const getPostSyncOutcomeUrl = () => {
+  return `/api/sync/outcomes`;
+};
+
+export const postSyncOutcome = async (
+  syncOutcomeBody: SyncOutcomeBody,
+  options?: RequestInit,
+): Promise<SyncOk> => {
+  return customFetch<SyncOk>(getPostSyncOutcomeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(syncOutcomeBody),
+  });
+};
+
+export const getPostSyncOutcomeMutationOptions = <
+  TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof postSyncOutcome>>,
+    TError,
+    { data: BodyType<SyncOutcomeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof postSyncOutcome>>,
+  TError,
+  { data: BodyType<SyncOutcomeBody> },
+  TContext
+> => {
+  const mutationKey = ["postSyncOutcome"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof postSyncOutcome>>,
+    { data: BodyType<SyncOutcomeBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return postSyncOutcome(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PostSyncOutcomeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof postSyncOutcome>>
+>;
+export type PostSyncOutcomeMutationBody = BodyType<SyncOutcomeBody>;
+export type PostSyncOutcomeMutationError = ErrorType<
+  BadRequestResponse | UnauthorizedResponse
+>;
+
+/**
+ * @summary Append an idempotent structured self-reported outcome check-in
+ */
+export const usePostSyncOutcome = <
+  TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof postSyncOutcome>>,
+    TError,
+    { data: BodyType<SyncOutcomeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof postSyncOutcome>>,
+  TError,
+  { data: BodyType<SyncOutcomeBody> },
+  TContext
+> => {
+  return useMutation(getPostSyncOutcomeMutationOptions(options));
+};
+
+/**
  * Returns 200 + `{ isAdmin: true }` when the caller has a valid
 Clerk session AND `users.isAdmin = true`. Returns 401 when
 unauthenticated and 403 when authenticated-but-not-admin. Used
@@ -1512,6 +1767,85 @@ export function useGetAdminEngagementMetrics<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetAdminEngagementMetricsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Individual rows and Bone Buddy conversation text are never returned. Small cohorts are suppressed.
+ * @summary Consent-filtered aggregate community health and engagement insights
+ */
+export const getGetAdminCommunityInsightsUrl = () => {
+  return `/api/admin/metrics/community-insights`;
+};
+
+export const getAdminCommunityInsights = async (
+  options?: RequestInit,
+): Promise<CommunityInsights> => {
+  return customFetch<CommunityInsights>(getGetAdminCommunityInsightsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAdminCommunityInsightsQueryKey = () => {
+  return [`/api/admin/metrics/community-insights`] as const;
+};
+
+export const getGetAdminCommunityInsightsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminCommunityInsights>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminCommunityInsights>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetAdminCommunityInsightsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getAdminCommunityInsights>>
+  > = ({ signal }) => getAdminCommunityInsights({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminCommunityInsights>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminCommunityInsightsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminCommunityInsights>>
+>;
+export type GetAdminCommunityInsightsQueryError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary Consent-filtered aggregate community health and engagement insights
+ */
+
+export function useGetAdminCommunityInsights<
+  TData = Awaited<ReturnType<typeof getAdminCommunityInsights>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminCommunityInsights>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminCommunityInsightsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

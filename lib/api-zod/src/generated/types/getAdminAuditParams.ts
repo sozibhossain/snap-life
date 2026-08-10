@@ -28,6 +28,10 @@ export type GetAdminAuditParams = {
    */
   targetAppUserId?: string;
   /**
+   * Filter to only events where the actor (who performed the action) matches this exact ID
+   */
+  actorAppUserId?: string;
+  /**
    * Include only events at or after this ISO 8601 date-time (inclusive lower bound on createdAt)
    */
   from?: Date;

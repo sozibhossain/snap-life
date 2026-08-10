@@ -190,6 +190,8 @@ export default function HealthScreen() {
                 { label: "Movement Library",   icon: "play-circle"  as const, route: "/movement",             color: colors.success },
                 { label: "Calculate FRAX",     icon: "shield"       as const, route: "/health/frax",          color: colors.navyLight },
                 { label: "Bone Tracker",       icon: "trending-up"  as const, route: "/health/bone-tracker",  color: colors.navyLight },
+                { label: "Progress Check-in",  icon: "check-circle" as const, route: "/health/outcomes",      color: colors.success },
+                { label: "Health Profile",      icon: "user"         as const, route: "/health/profile-details", color: colors.primary },
               ].map((action) => (
                 <Pressable
                   key={action.label}

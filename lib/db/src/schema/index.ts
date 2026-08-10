@@ -22,3 +22,5 @@ export * from "./auditEvents";
 export * from "./webPushSubscriptions";
 export * from "./systemPrompts";
 export * from "./boneBuddyChatMessages";
+export * from "./analyticsConsent";
+export * from "./outcomeEntries";

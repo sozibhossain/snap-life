@@ -50,6 +50,8 @@ const ALLOWED_KINDS = [
   // User tapped "Notify me when ready" on the Wearables placeholder
   // screen. Used to size demand for real wearable integrations later.
   "wearables_interest",
+  "outcome_checkin_completed",
+  "medication_missed",
 ] as const;
 
 export type EventKind = (typeof ALLOWED_KINDS)[number];
@@ -118,20 +120,35 @@ function getDeviceTimeZone(): string | null {
 export async function fetchWeeklyEventCounts(
   appUserId: string,
 ): Promise<Record<string, number>> {
+  return (await fetchWeeklyEventSummary(appUserId)).counts;
+}
+
+export interface WeeklyEventSummary {
+  counts: Record<string, number>;
+  /** Local-calendar date -> event kind -> count. */
+  daily: Record<string, Record<string, number>>;
+}
+
+export async function fetchWeeklyEventSummary(
+  appUserId: string,
+): Promise<WeeklyEventSummary> {
   const base = getApiBaseUrl();
-  if (!base) return {};
+  if (!base) return { counts: {}, daily: {} };
   try {
     const auth = await authHeader(appUserId);
-    if (!auth.Authorization) return {};
+    if (!auth.Authorization) return { counts: {}, daily: {} };
     const tz = getDeviceTimeZone();
     const url = tz
       ? `${base}/api/events/weekly?tz=${encodeURIComponent(tz)}`
       : `${base}/api/events/weekly`;
     const r = await fetch(url, { headers: auth });
-    if (!r.ok) return {};
-    const json = (await r.json()) as { counts?: Record<string, number> };
-    return json?.counts ?? {};
+    if (!r.ok) return { counts: {}, daily: {} };
+    const json = (await r.json()) as Partial<WeeklyEventSummary>;
+    return {
+      counts: json?.counts ?? {},
+      daily: json?.daily ?? {},
+    };
   } catch {
-    return {};
+    return { counts: {}, daily: {} };
   }
 }

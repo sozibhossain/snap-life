@@ -151,6 +151,8 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
     if (!name.trim() || !email.trim() || !session || submitting) return;
     setSubmitting(true);
     setSendError(null);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20_000);
     try {
       const base = resolveApiBase();
       if (!base && Platform.OS !== "web") {
@@ -167,6 +169,7 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
           preferred: preferred.trim(),
           message: message.trim(),
         }),
+        signal: controller.signal,
       });
       if (!res.ok) {
         setSendError("Something went wrong. Please try again or email teamsnap@snaplife.co.uk directly.");
@@ -182,8 +185,9 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
         setSubmitted(true);
       }
     } catch {
-      setSendError("Could not connect. Please check your connection and try again.");
+      setSendError("Could not complete the request. Please check your connection and try again.");
     } finally {
+      clearTimeout(timeout);
       setSubmitting(false);
     }
   }

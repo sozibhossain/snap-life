@@ -5,12 +5,12 @@ import {
   ClipboardList,
   FlaskConical,
   LayoutDashboard,
-  MessageSquareText,
   Users,
   LogOut,
   Menu,
   Settings,
   ShieldCheck,
+  BarChart3,
 } from "lucide-react";
 import { PollingIndicator } from "./PollingIndicator";
 import {
@@ -38,7 +38,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/users", label: "Users", icon: Users },
-  { path: "/chats", label: "Chats", icon: MessageSquareText },
+  { path: "/community-insights", label: "Community Insights", icon: BarChart3 },
   { path: "/audit", label: "Audit Log", icon: ClipboardList },
   { path: "/dev", label: "Dev & Testing", icon: FlaskConical },
   { path: "/settings", label: "Settings", icon: Settings },

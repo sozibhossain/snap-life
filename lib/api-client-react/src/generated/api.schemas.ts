@@ -24,6 +24,21 @@ export interface SyncProfileBody {
   updatedAtMs?: number;
 }
 
+export interface AnalyticsConsentBody {
+  communityAnalytics: boolean;
+  researchUse: boolean;
+}
+
+export interface AnalyticsConsent {
+  communityAnalytics: boolean;
+  researchUse: boolean;
+  consentVersion: string;
+  /** @nullable */
+  consentedAt: string | null;
+  /** @nullable */
+  withdrawnAt: string | null;
+}
+
 export interface MeProfilePatchBody {
   /**
    * ISO 3166-1 alpha-2 country code, or null to clear.
@@ -167,6 +182,26 @@ export interface SyncAssessmentBody {
   takenAtMs: number;
 }
 
+export type SyncOutcomeBodyEntry = { [key: string]: unknown };
+
+export interface SyncOutcomeBody {
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  entryId: string;
+  entry: SyncOutcomeBodyEntry;
+  recordedAtMs: number;
+}
+
+export type SyncOutcomeSnapshotEntryEntry = { [key: string]: unknown };
+
+export interface SyncOutcomeSnapshotEntry {
+  entryId: string;
+  entry: SyncOutcomeSnapshotEntryEntry;
+  recordedAtMs: number;
+}
+
 export type SyncProfileSnapshotProfile = { [key: string]: unknown };
 
 export interface SyncProfileSnapshot {
@@ -216,6 +251,18 @@ export interface SyncSnapshot {
   gamification: SyncStateSnapshot | null;
   supplements: SyncStateSnapshot | null;
   assessments: SyncAssessmentSnapshotEntry[];
+  outcomes: SyncOutcomeSnapshotEntry[];
+}
+
+export type CommunityInsightsPrivacy = { [key: string]: unknown };
+
+/**
+ * Aggregate-only, threshold-suppressed community insights payload.
+ */
+export interface CommunityInsights {
+  generatedAt: string;
+  privacy: CommunityInsightsPrivacy;
+  [key: string]: unknown;
 }
 
 export type AuditEventAction =

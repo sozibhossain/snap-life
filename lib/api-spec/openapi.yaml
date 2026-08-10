@@ -129,6 +129,42 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+
+  /me/analytics-consent:
+    get:
+      operationId: getMeAnalyticsConsent
+      tags: [me]
+      summary: Read the authenticated user's optional analytics consent
+      responses:
+        "200":
+          description: Current consent; defaults to both choices off.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsConsent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      operationId: putMeAnalyticsConsent
+      tags: [me]
+      summary: Replace optional community analytics and research consent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyticsConsentBody"
+      responses:
+        "200":
+          description: Saved consent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsConsent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "404":
           description: Object not found
           content:
@@ -365,6 +401,29 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /sync/outcomes:
+    post:
+      operationId: postSyncOutcome
+      tags: [sync]
+      summary: Append an idempotent structured self-reported outcome check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncOutcomeBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncOk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /admin/me:
     get:
       operationId: getAdminMe
@@ -428,6 +487,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminEngagementMetrics"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/metrics/community-insights:
+    get:
+      operationId: getAdminCommunityInsights
+      tags: [admin]
+      summary: Consent-filtered aggregate community health and engagement insights
+      description: Individual rows and Bone Buddy conversation text are never returned. Small cohorts are suppressed.
+      responses:
+        "200":
+          description: Aggregate-only report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityInsights"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -758,6 +835,34 @@ components:
       required:
         - profile
 
+    AnalyticsConsentBody:
+      type: object
+      additionalProperties: false
+      properties:
+        communityAnalytics:
+          type: boolean
+        researchUse:
+          type: boolean
+      required: [communityAnalytics, researchUse]
+
+    AnalyticsConsent:
+      type: object
+      additionalProperties: false
+      properties:
+        communityAnalytics:
+          type: boolean
+        researchUse:
+          type: boolean
+        consentVersion:
+          type: string
+        consentedAt:
+          type: ["string", "null"]
+          format: date-time
+        withdrawnAt:
+          type: ["string", "null"]
+          format: date-time
+      required: [communityAnalytics, researchUse, consentVersion, consentedAt, withdrawnAt]
+
     MeProfilePatchBody:
       type: object
       additionalProperties: false
@@ -969,6 +1074,34 @@ components:
         - payload
         - takenAtMs
 
+    SyncOutcomeBody:
+      type: object
+      additionalProperties: false
+      properties:
+        entryId:
+          type: string
+          minLength: 1
+          maxLength: 100
+        entry:
+          type: object
+          additionalProperties: true
+        recordedAtMs:
+          type: integer
+      required: [entryId, entry, recordedAtMs]
+
+    SyncOutcomeSnapshotEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        entryId:
+          type: string
+        entry:
+          type: object
+          additionalProperties: true
+        recordedAtMs:
+          type: integer
+      required: [entryId, entry, recordedAtMs]
+
     SyncProfileSnapshot:
       type: object
       additionalProperties: false
@@ -1084,6 +1217,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SyncAssessmentSnapshotEntry"
+        outcomes:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncOutcomeSnapshotEntry"
       required:
         - appUserId
         - profile
@@ -1094,6 +1231,20 @@ components:
         - gamification
         - supplements
         - assessments
+        - outcomes
+
+    CommunityInsights:
+      type: object
+      description: Aggregate-only, threshold-suppressed community insights payload.
+      additionalProperties: true
+      required: [generatedAt, privacy]
+      properties:
+        generatedAt:
+          type: string
+          format: date-time
+        privacy:
+          type: object
+          additionalProperties: true
 
     AuditEvent:
       type: object

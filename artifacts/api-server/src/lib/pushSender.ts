@@ -150,7 +150,41 @@ export async function sendBoneBuddyPush(
           "expo push API error — gate remains claimed (fail-safe)",
         );
       } else {
-        expoSentCount = messages.length;
+        const payload = await resp.json().catch(() => null) as
+          | {
+              data?: Array<{
+                status?: "ok" | "error";
+                details?: { error?: string };
+              }>;
+            }
+          | null;
+        const tickets = payload?.data ?? [];
+        expoSentCount = tickets.length > 0
+          ? tickets.filter((ticket) => ticket.status === "ok").length
+          : messages.length;
+
+        // Expo reports permanently invalid installations synchronously on
+        // some sends. Disable those tokens so every future daily pass does
+        // not keep retrying a device that has uninstalled the app.
+        await Promise.all(
+          tickets.map(async (ticket, index) => {
+            if (ticket.details?.error !== "DeviceNotRegistered") return;
+            const token = expoTokens[index]?.expoToken;
+            if (!token) return;
+            await db
+              .update(pushTokensTable)
+              .set({ optedIn: false, updatedAt: new Date() })
+              .where(
+                and(
+                  eq(pushTokensTable.appUserId, appUserId),
+                  eq(pushTokensTable.expoToken, token),
+                ),
+              )
+              .catch((err) => {
+                logger.warn({ err, appUserId }, "pushSender: failed to disable invalid token");
+              });
+          }),
+        );
       }
     } catch (err) {
       logger.error(

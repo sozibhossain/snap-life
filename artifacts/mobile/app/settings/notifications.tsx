@@ -25,14 +25,24 @@ import {
   optInToWebPush,
   optOutOfWebPush,
 } from "@/lib/webPush";
+import {
+  DEFAULT_REMINDER_SETTINGS,
+  loadReminderSettings,
+  updateReminderPreference,
+  type ReminderId,
+} from "@/lib/notificationPreferences";
 
-const NOTIFICATION_SETTINGS = [
-  { id: "supplements", label: "Supplement Reminders", description: "Daily reminders to take your supplements", default: true },
-  { id: "activity", label: "Activity Goals", description: "Nudges when you're close to your step goal", default: true },
-  { id: "challenges", label: "Challenge Updates", description: "Daily and weekly challenge progress", default: false },
-  { id: "achievements", label: "Achievement Unlocks", description: "Celebrate when you earn a badge", default: true },
-  { id: "streak", label: "Streak Reminders", description: "Keep your daily streak alive", default: true },
-  { id: "reports", label: "Health Reports", description: "Weekly and monthly health summaries", default: false },
+const NOTIFICATION_SETTINGS: Array<{
+  id: ReminderId;
+  label: string;
+  description: string;
+}> = [
+  { id: "supplements", label: "Supplement Reminders", description: "Daily reminder at 9:00" },
+  { id: "activity", label: "Activity Goals", description: "Daily movement check-in at 18:00" },
+  { id: "challenges", label: "Challenge Updates", description: "Daily challenge reminder at 17:00" },
+  { id: "achievements", label: "Achievement Updates", description: "Daily progress check at 20:00" },
+  { id: "streak", label: "Streak Reminders", description: "Daily streak reminder at 19:30" },
+  { id: "reports", label: "Health Reports", description: "Weekly summary every Monday at 9:00" },
 ];
 
 /**
@@ -82,9 +92,8 @@ export default function NotificationsScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const [settings, setSettings] = useState<Record<string, boolean>>(
-    Object.fromEntries(NOTIFICATION_SETTINGS.map((n) => [n.id, n.default]))
-  );
+  const [settings, setSettings] = useState(DEFAULT_REMINDER_SETTINGS);
+  const [pendingReminder, setPendingReminder] = useState<ReminderId | null>(null);
 
   // Bone Buddy daily nudge — backed by real Expo push registration (native)
   // or Web Push subscription (web/PWA).
@@ -102,6 +111,16 @@ export default function NotificationsScreen() {
         if (!cancelled) setBoneBuddyOptedIn(s.optedIn);
       }
     })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadReminderSettings(user?.id).then((saved) => {
+      if (!cancelled) setSettings(saved);
+    });
     return () => {
       cancelled = true;
     };
@@ -156,6 +175,32 @@ export default function NotificationsScreen() {
     } else {
       await optOutOfBoneBuddyPush(userId);
       setBoneBuddyOptedIn(false);
+    }
+  }
+
+  async function handleReminderToggle(id: ReminderId, next: boolean) {
+    if (!user?.id || pendingReminder) return;
+    setPendingReminder(id);
+    const previous = settings;
+    setSettings((current) => ({ ...current, [id]: next }));
+    try {
+      const result = await updateReminderPreference(user.id, id, next);
+      setSettings(result.settings);
+      if (!result.ok) {
+        Alert.alert(
+          result.reason === "permission_denied"
+            ? "Notification permission off"
+            : "Couldn't schedule reminder",
+          result.reason === "permission_denied"
+            ? "Allow notifications in iPhone Settings, then try again."
+            : "Please try again in a moment.",
+        );
+      }
+    } catch {
+      setSettings(previous);
+      Alert.alert("Couldn't save reminder", "Please try again in a moment.");
+    } finally {
+      setPendingReminder(null);
     }
   }
 
@@ -226,7 +271,8 @@ export default function NotificationsScreen() {
               </View>
               <Switch
                 value={settings[n.id]}
-                onValueChange={(v) => setSettings((prev) => ({ ...prev, [n.id]: v }))}
+                disabled={pendingReminder !== null}
+                onValueChange={(v) => void handleReminderToggle(n.id, v)}
                 trackColor={{ false: colors.muted, true: colors.primary }}
                 thumbColor="#fff"
               />

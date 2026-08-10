@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAudioPlayer } from "expo-audio";
 import * as Speech from "expo-speech";
 import { useSpeechVoice } from "@/lib/useSpeechVoice";
@@ -310,6 +310,7 @@ export default function MeditationScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams<{ session?: string | string[] }>();
   const { logSession, currentStreak, todayCount, weekCount } = useWellbeing();
   const { hasPremiumOrTrial } = useSubscription();
 
@@ -340,6 +341,7 @@ export default function MeditationScreen() {
   /** Bounded retry that ensures music actually starts even if the first
    * play() call races the player's load step. */
   const playRetryRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const routedSessionRef = useRef<string | null>(null);
   const spokenIdsRef = useRef<Set<number>>(new Set());
   const orbAnim = useRef(new Animated.Value(0)).current;
 
@@ -514,6 +516,19 @@ export default function MeditationScreen() {
     setIsPlaying(true);
     spokenIdsRef.current = new Set();
   }
+
+  useEffect(() => {
+    const raw = Array.isArray(params.session) ? params.session[0] : params.session;
+    if (!raw || !hasPremiumOrTrial || routedSessionRef.current === raw) return;
+    const requestedId = raw.replace(/-/g, "_");
+    const requested = MEDITATIONS.find((med) => med.id === requestedId);
+    if (!requested) return;
+    routedSessionRef.current = raw;
+    void startSession(requested);
+    // startSession is intentionally omitted: it is a component-local action
+    // whose dependencies are read at the moment the routed request arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.session, hasPremiumOrTrial]);
 
   function play() {
     if (!active) return;
@@ -980,8 +995,8 @@ export default function MeditationScreen() {
         )}
 
         <Text style={[styles.footnote, { color: colors.mutedForeground }]}>
-          Voice guidance uses your device's built-in speech engine. Background music slots are reserved
-          for licensed audio in lib/wellbeingAudio.ts.
+          Voice guidance uses your device's built-in speech engine. Licensed royalty-free music is
+          selected for each session and rotates to avoid repetition.
         </Text>
       </ScrollView>
     </View>

@@ -11,10 +11,16 @@ import {
   userProfileTable,
   auditEventsTable,
   auditLogsTable,
-  boneBuddyChatMessagesTable,
+  analyticsConsentTable,
+  assessmentResultsTable,
+  nutritionLogsTable,
+  activityLogsTable,
+  supplementStateTable,
+  gamificationStateTable,
+  outcomeEntriesTable,
 } from "@workspace/db";
 import { insertAuditLog } from "../lib/audit";
-import { and, count, desc, eq, gte, lt, lte, or, sql, ilike } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lt, lte, or, sql, ilike } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { requireAdminUser } from "../lib/auth";
 import {
@@ -327,6 +333,89 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
     const thirtyDaysAgoMs = now - 30 * DAY_MS;
     const sevenDaysAgoDate = new Date(sevenDaysAgoMs);
     const thirtyDaysAgoDate = new Date(thirtyDaysAgoMs);
+    const thirtyDaysAgoIso = thirtyDaysAgoDate.toISOString().slice(0, 10);
+    const configuredMin = Number(process.env.COMMUNITY_MIN_COHORT_SIZE);
+    const minCohortSize = Number.isFinite(configuredMin)
+      ? Math.max(3, Math.floor(configuredMin))
+      : 10;
+
+    const consentRows = await db
+      .select({ appUserId: analyticsConsentTable.appUserId })
+      .from(analyticsConsentTable)
+      .where(eq(analyticsConsentTable.communityAnalytics, true));
+    const consentedUserIds = consentRows.map((row) => row.appUserId);
+
+    const suppressCount = (value: number) =>
+      value >= minCohortSize ? value : null;
+    const suppressAverage = (
+      values: number[],
+      participantCount = values.length,
+    ) =>
+      participantCount >= minCohortSize
+        ? Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2))
+        : null;
+    const asRecord = (value: unknown): Record<string, unknown> =>
+      value && typeof value === "object" && !Array.isArray(value)
+        ? (value as Record<string, unknown>)
+        : {};
+    const finite = (value: unknown): number | null =>
+      typeof value === "number" && Number.isFinite(value) ? value : null;
+    const stringArray = (value: unknown): string[] =>
+      Array.isArray(value)
+        ? value.filter((v): v is string => typeof v === "string" && v.length > 0)
+        : [];
+    const increment = (map: Map<string, number>, key: string) =>
+      map.set(key, (map.get(key) ?? 0) + 1);
+    const grouped = (map: Map<string, number>) => {
+      const visible: Array<{
+        label: string;
+        count: number | null;
+        suppressed: boolean;
+      }> = [...map.entries()]
+        .filter(([, rawCount]) => rawCount >= minCohortSize)
+        .map(([label, rawCount]) => ({
+          label,
+          count: rawCount,
+          suppressed: false,
+        }));
+      const suppressedTotal = [...map.values()]
+        .filter((rawCount) => rawCount < minCohortSize)
+        .reduce((sum, rawCount) => sum + rawCount, 0);
+      if (suppressedTotal > 0) {
+        visible.push({
+          label: "Other / suppressed",
+          count: suppressCount(suppressedTotal),
+          suppressed: true,
+        });
+      }
+      return visible.sort((a, b) => (b.count ?? -1) - (a.count ?? -1));
+    };
+
+    if (consentedUserIds.length < minCohortSize) {
+      res.json({
+        generatedAt: new Date(now).toISOString(),
+        privacy: {
+          minCohortSize,
+          consentedParticipants: null,
+          suppressed: true,
+          consentVersion: "community-v1",
+        },
+        overview: null,
+        boneHealth: null,
+        nutrition: null,
+        medicationAndSupplements: null,
+        exercise: null,
+        learningAndWellness: null,
+        outcomes: null,
+        impact: null,
+      });
+      return;
+    }
+
+    const consentFilter = inArray(
+      interactionEventsTable.appUserId,
+      consentedUserIds,
+    );
 
     const events30d = await db
       .select({
@@ -335,7 +424,12 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
         users: sql<number>`count(distinct ${interactionEventsTable.appUserId})`,
       })
       .from(interactionEventsTable)
-      .where(gte(interactionEventsTable.receivedAt, thirtyDaysAgoDate))
+      .where(
+        and(
+          consentFilter,
+          gte(interactionEventsTable.receivedAt, thirtyDaysAgoDate),
+        ),
+      )
       .groupBy(interactionEventsTable.kind);
 
     const events7d = await db
@@ -345,7 +439,12 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
         users: sql<number>`count(distinct ${interactionEventsTable.appUserId})`,
       })
       .from(interactionEventsTable)
-      .where(gte(interactionEventsTable.receivedAt, sevenDaysAgoDate))
+      .where(
+        and(
+          consentFilter,
+          gte(interactionEventsTable.receivedAt, sevenDaysAgoDate),
+        ),
+      )
       .groupBy(interactionEventsTable.kind);
 
     const byKind30d = new Map(
@@ -360,21 +459,31 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
         { count: Number(r.count), users: Number(r.users ?? 0) },
       ]),
     );
-    const eventStats = (kind: string) => ({
-      count7d: byKind7d.get(kind)?.count ?? 0,
-      users7d: byKind7d.get(kind)?.users ?? 0,
-      count30d: byKind30d.get(kind)?.count ?? 0,
-      users30d: byKind30d.get(kind)?.users ?? 0,
-    });
+    const eventStats = (kind: string) => {
+      const seven = byKind7d.get(kind) ?? { count: 0, users: 0 };
+      const thirty = byKind30d.get(kind) ?? { count: 0, users: 0 };
+      return {
+        count7d: seven.users >= minCohortSize ? seven.count : null,
+        users7d: suppressCount(seven.users),
+        count30d: thirty.users >= minCohortSize ? thirty.count : null,
+        users30d: suppressCount(thirty.users),
+      };
+    };
 
     const wellbeingMoodRows = await db
       .select({
         kind: sql<string>`coalesce(${wellbeingEntriesTable.entry}->>'kind', 'other')`,
         mood: sql<string>`coalesce(${wellbeingEntriesTable.entry}->>'mood', 'unknown')`,
         count: count(),
+        users: sql<number>`count(distinct ${wellbeingEntriesTable.appUserId})`,
       })
       .from(wellbeingEntriesTable)
-      .where(gte(wellbeingEntriesTable.completedAtMs, sevenDaysAgoMs))
+      .where(
+        and(
+          inArray(wellbeingEntriesTable.appUserId, consentedUserIds),
+          gte(wellbeingEntriesTable.completedAtMs, sevenDaysAgoMs),
+        ),
+      )
       .groupBy(
         sql`coalesce(${wellbeingEntriesTable.entry}->>'kind', 'other')`,
         sql`coalesce(${wellbeingEntriesTable.entry}->>'mood', 'unknown')`,
@@ -384,11 +493,13 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
       .select({
         pathway: sql<string>`coalesce(${interactionEventsTable.payload}->>'pathway', 'Unknown')`,
         count: count(),
+        users: sql<number>`count(distinct ${interactionEventsTable.appUserId})`,
       })
       .from(interactionEventsTable)
       .where(
         and(
           eq(interactionEventsTable.kind, "lesson_completed"),
+          consentFilter,
           gte(interactionEventsTable.receivedAt, thirtyDaysAgoDate),
         ),
       )
@@ -400,11 +511,13 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
       .select({
         sessionId: sql<string>`coalesce(${interactionEventsTable.payload}->>'sessionId', 'unknown')`,
         count: count(),
+        users: sql<number>`count(distinct ${interactionEventsTable.appUserId})`,
       })
       .from(interactionEventsTable)
       .where(
         and(
           eq(interactionEventsTable.kind, "coaching_booking_requested"),
+          consentFilter,
           gte(interactionEventsTable.receivedAt, thirtyDaysAgoDate),
         ),
       )
@@ -414,18 +527,354 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
       .select({
         consultantId: sql<string>`coalesce(${interactionEventsTable.payload}->>'consultantId', 'unknown')`,
         count: count(),
+        users: sql<number>`count(distinct ${interactionEventsTable.appUserId})`,
       })
       .from(interactionEventsTable)
       .where(
         and(
           eq(interactionEventsTable.kind, "expert_support_requested"),
+          consentFilter,
           gte(interactionEventsTable.receivedAt, thirtyDaysAgoDate),
         ),
       )
       .groupBy(sql`coalesce(${interactionEventsTable.payload}->>'consultantId', 'unknown')`);
 
+    const [
+      profiles,
+      assessments,
+      nutritionRows,
+      activityRows,
+      supplementRows,
+      gamificationRows,
+      outcomeRows,
+      learningRows,
+      lifetimeEventRows,
+    ] = await Promise.all([
+      db
+        .select({
+          appUserId: userProfileTable.appUserId,
+          age: userProfileTable.age,
+          gender: userProfileTable.gender,
+          condition: userProfileTable.condition,
+          country: userProfileTable.country,
+          diagnosisYear: userProfileTable.diagnosisYear,
+          goals: userProfileTable.goals,
+          coexistingConditions: userProfileTable.coexistingConditions,
+          fractureHistory: userProfileTable.fractureHistory,
+          streakDays: userProfileTable.streakDays,
+        })
+        .from(userProfileTable)
+        .where(inArray(userProfileTable.appUserId, consentedUserIds)),
+      db
+        .select({
+          appUserId: assessmentResultsTable.appUserId,
+          kind: assessmentResultsTable.kind,
+          payload: assessmentResultsTable.payload,
+        })
+        .from(assessmentResultsTable)
+        .where(inArray(assessmentResultsTable.appUserId, consentedUserIds)),
+      db
+        .select({
+          appUserId: nutritionLogsTable.appUserId,
+          log: nutritionLogsTable.log,
+        })
+        .from(nutritionLogsTable)
+        .where(
+          and(
+            inArray(nutritionLogsTable.appUserId, consentedUserIds),
+            gte(nutritionLogsTable.day, thirtyDaysAgoIso),
+          ),
+        ),
+      db
+        .select({
+          appUserId: activityLogsTable.appUserId,
+          log: activityLogsTable.log,
+        })
+        .from(activityLogsTable)
+        .where(
+          and(
+            inArray(activityLogsTable.appUserId, consentedUserIds),
+            gte(activityLogsTable.day, thirtyDaysAgoIso),
+          ),
+        ),
+      db
+        .select({
+          appUserId: supplementStateTable.appUserId,
+          state: supplementStateTable.state,
+        })
+        .from(supplementStateTable)
+        .where(inArray(supplementStateTable.appUserId, consentedUserIds)),
+      db
+        .select({
+          appUserId: gamificationStateTable.appUserId,
+          state: gamificationStateTable.state,
+        })
+        .from(gamificationStateTable)
+        .where(inArray(gamificationStateTable.appUserId, consentedUserIds)),
+      db
+        .select({
+          appUserId: outcomeEntriesTable.appUserId,
+          entry: outcomeEntriesTable.entry,
+          recordedAtMs: outcomeEntriesTable.recordedAtMs,
+        })
+        .from(outcomeEntriesTable)
+        .where(inArray(outcomeEntriesTable.appUserId, consentedUserIds)),
+      db
+        .select({
+          appUserId: interactionEventsTable.appUserId,
+          payload: interactionEventsTable.payload,
+        })
+        .from(interactionEventsTable)
+        .where(
+          and(
+            consentFilter,
+            eq(interactionEventsTable.kind, "lesson_completed"),
+            gte(interactionEventsTable.receivedAt, thirtyDaysAgoDate),
+          ),
+        ),
+      db
+        .select({
+          kind: interactionEventsTable.kind,
+          count: count(),
+          users: sql<number>`count(distinct ${interactionEventsTable.appUserId})`,
+        })
+        .from(interactionEventsTable)
+        .where(consentFilter)
+        .groupBy(interactionEventsTable.kind),
+    ]);
+
+    const ageGroups = new Map<string, number>();
+    const genderGroups = new Map<string, number>();
+    const conditionGroups = new Map<string, number>();
+    const countryGroups = new Map<string, number>();
+    const goalGroups = new Map<string, number>();
+    const coexistGroups = new Map<string, number>();
+    const fractureLocations = new Map<string, number>();
+    const diagnosisYears: number[] = [];
+    const streaks: number[] = [];
+    for (const profile of profiles) {
+      const age = profile.age;
+      if (age != null) {
+        const bucket =
+          age < 35 ? "18–34" : age < 45 ? "35–44" : age < 55 ? "45–54" : age < 65 ? "55–64" : age < 75 ? "65–74" : "75+";
+        increment(ageGroups, bucket);
+      }
+      increment(genderGroups, profile.gender?.trim() || "Not provided");
+      increment(conditionGroups, profile.condition?.trim() || "Not provided");
+      increment(countryGroups, profile.country?.trim() || "Not provided");
+      for (const goal of stringArray(profile.goals)) increment(goalGroups, goal);
+      for (const item of stringArray(profile.coexistingConditions)) increment(coexistGroups, item);
+      if (Array.isArray(profile.fractureHistory)) {
+        for (const item of profile.fractureHistory) {
+          const location = asRecord(item).location;
+          if (typeof location === "string") increment(fractureLocations, location);
+        }
+      }
+      if (profile.diagnosisYear && profile.diagnosisYear > 1900) {
+        diagnosisYears.push(new Date(now).getUTCFullYear() - profile.diagnosisYear);
+      }
+      if (typeof profile.streakDays === "number") streaks.push(profile.streakDays);
+    }
+
+    const tScores: number[] = [];
+    const fraxMajor: number[] = [];
+    const fraxHip: number[] = [];
+    const bmis: number[] = [];
+    const tScoreUsers = new Set<string>();
+    const fraxMajorUsers = new Set<string>();
+    const fraxHipUsers = new Set<string>();
+    const bmiUsers = new Set<string>();
+    const riskFactors = new Map<string, number>();
+    const riskFactorUsers = new Map<string, Set<string>>();
+    const previousFractureUsers = new Set<string>();
+    let previousFractures = 0;
+    for (const row of assessments) {
+      const payload = asRecord(row.payload);
+      if (row.kind === "dexa") {
+        const values = [payload.spineTScore, payload.hipTScore, payload.tScore]
+          .map(finite)
+          .filter((v): v is number => v !== null);
+        if (values.length > 0) {
+          tScores.push(Math.min(...values));
+          tScoreUsers.add(row.appUserId);
+        }
+        const bmi = finite(payload.bmi);
+        if (bmi !== null) {
+          bmis.push(bmi);
+          bmiUsers.add(row.appUserId);
+        }
+      } else if (row.kind === "frax") {
+        const major = finite(payload.majorFractureRisk);
+        const hip = finite(payload.hipFractureRisk);
+        if (major !== null) {
+          fraxMajor.push(major);
+          fraxMajorUsers.add(row.appUserId);
+        }
+        if (hip !== null) {
+          fraxHip.push(hip);
+          fraxHipUsers.add(row.appUserId);
+        }
+        const inputs = asRecord(payload.inputs);
+        for (const key of [
+          "previousFracture",
+          "parentHipFracture",
+          "smoking",
+          "alcohol",
+          "glucocorticoids",
+          "rheumatoidArthritis",
+          "secondaryOsteoporosis",
+        ]) {
+          if (inputs[key] === true) {
+            const users = riskFactorUsers.get(key) ?? new Set<string>();
+            users.add(row.appUserId);
+            riskFactorUsers.set(key, users);
+          }
+        }
+        if (inputs.previousFracture === true) previousFractureUsers.add(row.appUserId);
+      }
+    }
+    for (const [key, users] of riskFactorUsers) {
+      riskFactors.set(key, users.size);
+    }
+    previousFractures = previousFractureUsers.size;
+
+    const nutrientValues: Record<string, number[]> = {
+      calcium: [], protein: [], vitaminD: [], magnesium: [], calories: [],
+    };
+    const nutrientUsers: Record<string, Set<string>> = Object.fromEntries(
+      Object.keys(nutrientValues).map((key) => [key, new Set<string>()]),
+    );
+    for (const row of nutritionRows) {
+      const log = asRecord(row.log);
+      for (const key of Object.keys(nutrientValues)) {
+        const value = finite(log[key]);
+        if (value !== null) {
+          nutrientValues[key]!.push(value);
+          nutrientUsers[key]!.add(row.appUserId);
+        }
+      }
+    }
+
+    const supplementNames = new Map<string, number>();
+    const medicationNames = new Map<string, number>();
+    let currentTaken = 0;
+    let currentTracked = 0;
+    for (const row of supplementRows) {
+      const items = asRecord(row.state).supplements;
+      if (!Array.isArray(items)) continue;
+      for (const rawItem of items) {
+        const item = asRecord(rawItem);
+        const name = typeof item.name === "string" ? item.name.trim() : "Unknown";
+        const target = item.category === "medication" ? medicationNames : supplementNames;
+        increment(target, name || "Unknown");
+        currentTracked += 1;
+        if (item.taken === true) currentTaken += 1;
+      }
+    }
+
+    const steps: number[] = [];
+    const activeMinutes: number[] = [];
+    const stepUsers = new Set<string>();
+    const activeMinuteUsers = new Set<string>();
+    const exerciseTypes = new Map<string, number>();
+    const exerciseTypeUsers = new Map<string, Set<string>>();
+    for (const row of activityRows) {
+      const log = asRecord(row.log);
+      const step = finite(log.steps);
+      const minutes = finite(log.activeMinutes);
+      if (step !== null) {
+        steps.push(step);
+        stepUsers.add(row.appUserId);
+      }
+      if (minutes !== null) {
+        activeMinutes.push(minutes);
+        activeMinuteUsers.add(row.appUserId);
+      }
+      if (Array.isArray(log.exerciseSessions)) {
+        for (const session of log.exerciseSessions) {
+          const kind = asRecord(session).kind;
+          if (typeof kind === "string") {
+            const users = exerciseTypeUsers.get(kind) ?? new Set<string>();
+            users.add(row.appUserId);
+            exerciseTypeUsers.set(kind, users);
+          }
+        }
+      }
+    }
+    for (const [kind, users] of exerciseTypeUsers) {
+      exerciseTypes.set(kind, users.size);
+    }
+
+    const lessonNames = new Map<string, number>();
+    const lessonUsers = new Map<string, Set<string>>();
+    let learningDurationSec = 0;
+    for (const row of learningRows) {
+      const payload = asRecord(row.payload);
+      const title = typeof payload.title === "string" ? payload.title : "Unknown";
+      const users = lessonUsers.get(title) ?? new Set<string>();
+      users.add(row.appUserId);
+      lessonUsers.set(title, users);
+      learningDurationSec += finite(payload.durationSec) ?? 0;
+    }
+    for (const [title, users] of lessonUsers) {
+      lessonNames.set(title, users.size);
+    }
+
+    const latestOutcomeByUser = new Map<string, { at: number; entry: Record<string, unknown> }>();
+    for (const row of outcomeRows) {
+      const prior = latestOutcomeByUser.get(row.appUserId);
+      if (!prior || row.recordedAtMs > prior.at) {
+        latestOutcomeByUser.set(row.appUserId, {
+          at: row.recordedAtMs,
+          entry: asRecord(row.entry),
+        });
+      }
+    }
+    const outcomeDimensions = [
+      "confidence",
+      "knowledge",
+      "mobility",
+      "exerciseParticipation",
+      "nutritionQuality",
+      "sleepQuality",
+      "stressLevel",
+      "qualityOfLife",
+    ];
+    const outcomeAverages: Record<string, number | null> = {};
+    for (const dimension of outcomeDimensions) {
+      const values = [...latestOutcomeByUser.values()]
+        .map((v) => finite(v.entry[dimension]))
+        .filter((v): v is number => v !== null);
+      outcomeAverages[dimension] = suppressAverage(values);
+    }
+    const falls = [...latestOutcomeByUser.values()]
+      .map((v) => finite(v.entry.fallsLast90Days))
+      .filter((v): v is number => v !== null);
+    const fractures = [...latestOutcomeByUser.values()]
+      .map((v) => finite(v.entry.fracturesLast12Months))
+      .filter((v): v is number => v !== null);
+
+    const lifetimeEvents = new Map<string, number | null>(
+      lifetimeEventRows.map((r) => [
+        r.kind,
+        Number(r.users) >= minCohortSize ? Number(r.count) : null,
+      ]),
+    );
+    const lifetimeCount = (kind: string): number | null =>
+      lifetimeEvents.get(kind) ?? null;
+    const safeSum = (...values: Array<number | null>): number | null =>
+      values.every((value): value is number => value !== null)
+        ? values.reduce((sum, value) => sum + value, 0)
+        : null;
+
     res.json({
       generatedAt: new Date(now).toISOString(),
+      privacy: {
+        minCohortSize,
+        consentedParticipants: suppressCount(consentedUserIds.length),
+        suppressed: consentedUserIds.length < minCohortSize,
+        consentVersion: "community-v1",
+      },
       windows: {
         last7dStart: sevenDaysAgoDate.toISOString(),
         last30dStart: thirtyDaysAgoDate.toISOString(),
@@ -447,24 +896,101 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
         medications: eventStats("medication_taken"),
         dexa: eventStats("dexa_logged"),
         frax: eventStats("frax_logged"),
+        activity: eventStats("activity_logged"),
+        outcomes: eventStats("outcome_checkin_completed"),
       },
       wellbeingSupportNeeds7d: wellbeingMoodRows.map((r) => ({
-        kind: r.kind,
-        mood: r.mood,
-        count: Number(r.count),
+        kind: Number(r.users) >= minCohortSize ? r.kind : "suppressed",
+        mood: Number(r.users) >= minCohortSize ? r.mood : "suppressed",
+        count: Number(r.users) >= minCohortSize ? Number(r.count) : null,
       })),
       topLearningPathways30d: topLearningPathways.map((r) => ({
-        pathway: r.pathway,
-        count: Number(r.count),
+        pathway: Number(r.users) >= minCohortSize ? r.pathway : "suppressed",
+        count: Number(r.users) >= minCohortSize ? Number(r.count) : null,
       })),
       coachingDemand30d: coachingBySession.map((r) => ({
-        sessionId: r.sessionId,
-        count: Number(r.count),
+        sessionId: Number(r.users) >= minCohortSize ? r.sessionId : "suppressed",
+        count: Number(r.users) >= minCohortSize ? Number(r.count) : null,
       })),
       expertDemand30d: expertByConsultant.map((r) => ({
-        consultantId: r.consultantId,
-        count: Number(r.count),
+        consultantId: Number(r.users) >= minCohortSize ? r.consultantId : "suppressed",
+        count: Number(r.users) >= minCohortSize ? Number(r.count) : null,
       })),
+      overview: {
+        age: grouped(ageGroups),
+        gender: grouped(genderGroups),
+        condition: grouped(conditionGroups),
+        country: grouped(countryGroups),
+        goals: grouped(goalGroups),
+        averageYearsSinceDiagnosis: suppressAverage(diagnosisYears),
+      },
+      boneHealth: {
+        averageTScore: suppressAverage(tScores, tScoreUsers.size),
+        averageFraxMajorRisk: suppressAverage(fraxMajor, fraxMajorUsers.size),
+        averageFraxHipRisk: suppressAverage(fraxHip, fraxHipUsers.size),
+        averageBmi: suppressAverage(bmis, bmiUsers.size),
+        previousFractureReports: suppressCount(previousFractures),
+        fractureLocations: grouped(fractureLocations),
+        riskFactors: grouped(riskFactors),
+        coexistingConditions: grouped(coexistGroups),
+      },
+      nutrition: Object.fromEntries(
+        Object.entries(nutrientValues).map(([key, values]) => [
+          key,
+          {
+            average30d: suppressAverage(values, nutrientUsers[key]!.size),
+            loggedDays:
+              nutrientUsers[key]!.size >= minCohortSize ? values.length : null,
+          },
+        ]),
+      ),
+      medicationAndSupplements: {
+        commonSupplements: grouped(supplementNames),
+        commonMedications: grouped(medicationNames),
+        currentAdherenceRate:
+          supplementRows.length >= minCohortSize
+            ? Number((currentTaken / currentTracked).toFixed(3))
+            : null,
+        supplementTaken: eventStats("supplement_taken"),
+        medicationTaken: eventStats("medication_taken"),
+        medicationMissed: eventStats("medication_missed"),
+      },
+      exercise: {
+        averageSteps30d: suppressAverage(steps, stepUsers.size),
+        averageActiveMinutes30d: suppressAverage(
+          activeMinutes,
+          activeMinuteUsers.size,
+        ),
+        sessionTypes30d: grouped(exerciseTypes),
+      },
+      learningAndWellness: {
+        mostCompletedLessons30d: grouped(lessonNames).slice(0, 10),
+        leastCompletedLessons30d: grouped(lessonNames).reverse().slice(0, 10),
+        totalLearningHours30d:
+          new Set(learningRows.map((row) => row.appUserId)).size >= minCohortSize
+            ? Number((learningDurationSec / 3600).toFixed(1))
+            : null,
+        averageCommunityStreak: suppressAverage(streaks),
+      },
+      outcomes: {
+        participantCount: suppressCount(latestOutcomeByUser.size),
+        averages: outcomeAverages,
+        averageFallsLast90Days: suppressAverage(falls),
+        averageFracturesLast12Months: suppressAverage(fractures),
+      },
+      impact: {
+        learningSessions: lifetimeCount("lesson_completed"),
+        wellnessSessions: safeSum(
+          lifetimeCount("breathing_session_completed"),
+          lifetimeCount("meditation_session_completed"),
+        ),
+        medicationsLogged: lifetimeCount("medication_taken"),
+        supplementsLogged: lifetimeCount("supplement_taken"),
+        exerciseLogs: lifetimeCount("activity_logged"),
+        boneBuddyMessages: lifetimeCount("bone_buddy_message_sent"),
+        outcomeCheckIns: lifetimeCount("outcome_checkin_completed"),
+        achievementStates: suppressCount(gamificationRows.length),
+      },
     });
   } catch (err) {
     req.log?.error({ err }, "admin community insights metrics failed");
@@ -944,110 +1470,6 @@ router.get("/admin/users", async (req, res): Promise<void> => {
     });
   } catch (err) {
     req.log.error({ err }, "admin/users list failed");
-    res.status(500).json({ error: "internal_error" });
-  }
-});
-
-/* -------------------------------------------------------------------------- *
- * GET /admin/chats
- *
- * Paginated read-only view of authenticated Bone Buddy chat turns.
- * -------------------------------------------------------------------------- */
-router.get("/admin/chats", async (req, res): Promise<void> => {
-  const u = await requireAdminUser(req, res);
-  if (!u) return;
-
-  const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 500);
-  const offset = Math.max(Number(req.query.offset) || 0, 0);
-  const search =
-    typeof req.query.search === "string" ? req.query.search.trim() : "";
-  const appUserId =
-    typeof req.query.appUserId === "string" ? req.query.appUserId.trim() : "";
-
-  try {
-    const escaped = search.replace(/[\\%_]/g, "\\$&");
-    const conds = [];
-    if (appUserId) conds.push(eq(boneBuddyChatMessagesTable.appUserId, appUserId));
-    if (search) {
-      conds.push(
-        or(
-          ilike(boneBuddyChatMessagesTable.appUserId, `%${escaped}%`),
-          ilike(boneBuddyChatMessagesTable.content, `%${escaped}%`),
-        ),
-      );
-    }
-    const where =
-      conds.length === 0 ? undefined : conds.length === 1 ? conds[0] : and(...conds);
-
-    const [totalRow] = await db
-      .select({ value: count() })
-      .from(boneBuddyChatMessagesTable)
-      .where(where);
-
-    const rows = await db
-      .select({
-        id: boneBuddyChatMessagesTable.id,
-        requestId: boneBuddyChatMessagesTable.requestId,
-        appUserId: boneBuddyChatMessagesTable.appUserId,
-        role: boneBuddyChatMessagesTable.role,
-        content: boneBuddyChatMessagesTable.content,
-        promptKey: boneBuddyChatMessagesTable.promptKey,
-        promptVersion: boneBuddyChatMessagesTable.promptVersion,
-        createdAt: boneBuddyChatMessagesTable.createdAt,
-      })
-      .from(boneBuddyChatMessagesTable)
-      .where(where)
-      .orderBy(desc(boneBuddyChatMessagesTable.createdAt))
-      .limit(limit)
-      .offset(offset);
-
-    const userIds = [...new Set(rows.map((r) => r.appUserId))];
-    const usersById = new Map<
-      string,
-      { email: string | null; displayName: string | null }
-    >();
-    await Promise.all(
-      userIds.map(async (appUserId) => {
-        const [userRow] = await db
-          .select({
-            email: usersTable.email,
-            displayName: usersTable.displayName,
-          })
-          .from(usersTable)
-          .where(eq(usersTable.appUserId, appUserId))
-          .limit(1);
-        usersById.set(appUserId, {
-          email: userRow?.email ?? null,
-          displayName: userRow?.displayName ?? null,
-        });
-      }),
-    );
-
-    res.json({
-      items: rows.map((r) => {
-        const user = usersById.get(r.appUserId);
-        return {
-          id: r.id,
-          requestId: r.requestId,
-          appUserId: r.appUserId,
-          email: user?.email ?? null,
-          displayName: user?.displayName ?? null,
-          role: r.role,
-          content: r.content,
-          promptKey: r.promptKey,
-          promptVersion: r.promptVersion,
-          createdAt:
-            r.createdAt instanceof Date
-              ? r.createdAt.toISOString()
-              : (r.createdAt ?? null),
-        };
-      }),
-      total: Number(totalRow?.value ?? 0),
-      limit,
-      offset,
-    });
-  } catch (err) {
-    req.log?.error({ err }, "admin/chats list failed");
     res.status(500).json({ error: "internal_error" });
   }
 });

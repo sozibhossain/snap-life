@@ -1,6 +1,8 @@
 /**
  * Lesson detail screen — SNAP Foundations.
  *
+ * Nested in the Learn tab so primary navigation remains available.
+ *
  * Layout:
  *   • Gradient header — lesson number, icon, title, duration, XP
  *   • Scrollable sections — each with accent bar + heading + body
@@ -26,6 +28,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useGamification } from "@/context/GamificationContext";
 import { LessonCompleteModal } from "@/components/LessonCompleteModal";
+import { PremiumGate } from "@/components/PremiumGate";
 import { useColors } from "@/hooks/useColors";
 import { logInteractionEvent } from "@/lib/events";
 import {
@@ -35,7 +38,9 @@ import {
   Lesson,
   loadLearnProgress,
   markLessonComplete,
+  isPremiumLesson,
 } from "@/lib/learnContent";
+import { useSubscription } from "@/lib/revenuecat";
 
 export default function LessonScreen() {
   const { id }     = useLocalSearchParams<{ id: string }>();
@@ -44,6 +49,7 @@ export default function LessonScreen() {
   const router     = useRouter();
   const { user }   = useAuth();
   const { addXP }  = useGamification();
+  const { hasPremiumOrTrial } = useSubscription();
 
   const lesson: Lesson | undefined = LESSONS.find((l) => l.id === id);
 
@@ -51,6 +57,8 @@ export default function LessonScreen() {
   const [completing,  setCompleting]  = useState(false);
   const [showModal,   setShowModal]   = useState(false);
   const userId = user?.id ?? null;
+  const topPad    = Platform.OS === "web" ? 67 : insets.top;
+  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   useEffect(() => {
     loadLearnProgress(userId).then(setProgress);
@@ -81,6 +89,24 @@ export default function LessonScreen() {
     router.replace("/(tabs)/learn" as never);
   }
 
+  if (isPremiumLesson(lesson) && !hasPremiumOrTrial) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad + 12 }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <Pressable onPress={goBackOrHub} style={[styles.backBtn, { marginHorizontal: 16 }]} hitSlop={10}>
+          <Feather name="arrow-left" size={22} color={colors.foreground} />
+          <Text style={[styles.backText, { color: colors.foreground }]}>Back</Text>
+        </Pressable>
+        <View style={{ padding: 16 }}>
+          <PremiumGate
+            feature="Premium Learning"
+            description="Advanced learning pathways, guided actions and personalised next steps are available on SNAP Premium."
+          />
+        </View>
+      </View>
+    );
+  }
+
   async function handleComplete() {
     if (completing || isCompleted) return;
     setCompleting(true);
@@ -104,9 +130,6 @@ export default function LessonScreen() {
       setCompleting(false);
     }
   }
-
-  const topPad    = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

@@ -83,6 +83,13 @@ export const GetSyncSnapshotResponse = zod.object({
       takenAtMs: zod.number(),
     }),
   ),
+  outcomes: zod.array(
+    zod.object({
+      entryId: zod.string(),
+      entry: zod.record(zod.string(), zod.unknown()),
+      recordedAtMs: zod.number(),
+    }),
+  ),
 });
 
 /**
@@ -175,6 +182,33 @@ export const PostMeAvatarBody = zod.object({
 export const PostMeAvatarResponse = zod.object({
   ok: zod.boolean(),
   avatarUrl: zod.string(),
+});
+
+/**
+ * @summary Read the authenticated user's optional analytics consent
+ */
+export const GetMeAnalyticsConsentResponse = zod.object({
+  communityAnalytics: zod.boolean(),
+  researchUse: zod.boolean(),
+  consentVersion: zod.string(),
+  consentedAt: zod.coerce.date().nullable(),
+  withdrawnAt: zod.coerce.date().nullable(),
+});
+
+/**
+ * @summary Replace optional community analytics and research consent
+ */
+export const PutMeAnalyticsConsentBody = zod.object({
+  communityAnalytics: zod.boolean(),
+  researchUse: zod.boolean(),
+});
+
+export const PutMeAnalyticsConsentResponse = zod.object({
+  communityAnalytics: zod.boolean(),
+  researchUse: zod.boolean(),
+  consentVersion: zod.string(),
+  consentedAt: zod.coerce.date().nullable(),
+  withdrawnAt: zod.coerce.date().nullable(),
 });
 
 /**
@@ -355,6 +389,21 @@ export const PostSyncAssessmentResponse = zod.object({
 });
 
 /**
+ * @summary Append an idempotent structured self-reported outcome check-in
+ */
+export const postSyncOutcomeBodyEntryIdMax = 100;
+
+export const PostSyncOutcomeBody = zod.object({
+  entryId: zod.string().min(1).max(postSyncOutcomeBodyEntryIdMax),
+  entry: zod.record(zod.string(), zod.unknown()),
+  recordedAtMs: zod.number(),
+});
+
+export const PostSyncOutcomeResponse = zod.object({
+  ok: zod.boolean(),
+});
+
+/**
  * Returns 200 + `{ isAdmin: true }` when the caller has a valid
 Clerk session AND `users.isAdmin = true`. Returns 401 when
 unauthenticated and 403 when authenticated-but-not-admin. Used
@@ -466,6 +515,17 @@ export const GetAdminEngagementMetricsResponse = zod.object({
     }),
   ),
 });
+
+/**
+ * Individual rows and Bone Buddy conversation text are never returned. Small cohorts are suppressed.
+ * @summary Consent-filtered aggregate community health and engagement insights
+ */
+export const GetAdminCommunityInsightsResponse = zod
+  .object({
+    generatedAt: zod.coerce.date(),
+    privacy: zod.record(zod.string(), zod.unknown()),
+  })
+  .describe("Aggregate-only, threshold-suppressed community insights payload.");
 
 /**
  * Merges the server-managed 30-day Premium trial granted at

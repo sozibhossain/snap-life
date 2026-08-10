@@ -20,6 +20,14 @@ export interface MeApiResult<T = unknown> {
   error?: string;
 }
 
+export interface AnalyticsConsentState {
+  communityAnalytics: boolean;
+  researchUse: boolean;
+  consentVersion: string;
+  consentedAt: string | null;
+  withdrawnAt: string | null;
+}
+
 function authHeaders(token: string | null): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -123,6 +131,71 @@ export async function resetMyTesterData(
       status: r.status,
       data: { resetAt: typeof body.resetAt === "string" ? body.resetAt : "" },
     };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 0,
+      error: err instanceof Error ? err.message : "network_error",
+    };
+  }
+}
+
+export async function fetchAnalyticsConsent(
+  token: string | null,
+): Promise<MeApiResult<AnalyticsConsentState>> {
+  const base = resolveApiBase();
+  if (base === null) return { ok: false, status: 0, error: "no_api_base_url" };
+  try {
+    const r = await fetch(`${base}/api/me/analytics-consent`, {
+      headers: { Accept: "application/json", ...authHeaders(token) },
+    });
+    const body = (await r.json().catch(() => ({}))) as
+      | AnalyticsConsentState
+      | { error?: string };
+    if (!r.ok) {
+      return {
+        ok: false,
+        status: r.status,
+        error: "error" in body ? body.error : undefined,
+      };
+    }
+    return { ok: true, status: r.status, data: body as AnalyticsConsentState };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 0,
+      error: err instanceof Error ? err.message : "network_error",
+    };
+  }
+}
+
+export async function updateAnalyticsConsent(
+  token: string | null,
+  values: Pick<AnalyticsConsentState, "communityAnalytics" | "researchUse">,
+): Promise<MeApiResult<AnalyticsConsentState>> {
+  const base = resolveApiBase();
+  if (base === null) return { ok: false, status: 0, error: "no_api_base_url" };
+  try {
+    const r = await fetch(`${base}/api/me/analytics-consent`, {
+      method: "PUT",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...authHeaders(token),
+      },
+      body: JSON.stringify(values),
+    });
+    const body = (await r.json().catch(() => ({}))) as
+      | AnalyticsConsentState
+      | { error?: string };
+    if (!r.ok) {
+      return {
+        ok: false,
+        status: r.status,
+        error: "error" in body ? body.error : undefined,
+      };
+    }
+    return { ok: true, status: r.status, data: body as AnalyticsConsentState };
   } catch (err) {
     return {
       ok: false,

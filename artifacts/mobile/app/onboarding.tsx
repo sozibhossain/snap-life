@@ -20,6 +20,7 @@ import { useUser, useClerk } from "@clerk/expo";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { resolveApiBase } from "@/lib/serverIdentity";
+import { updateAnalyticsConsent } from "@/lib/meApi";
 
 const SNAP_ICON = require("@/assets/images/snap-icon.png");
 
@@ -178,6 +179,8 @@ export default function OnboardingScreen() {
   // Step 3 — optional referral code
   const [referralExpanded, setReferralExpanded] = useState(false);
   const [referralCode, setReferralCode] = useState("");
+  const [communityAnalytics, setCommunityAnalytics] = useState(false);
+  const [researchUse, setResearchUse] = useState(false);
 
   const lastNameRef   = useRef<TextInput>(null);
   const emailRef      = useRef<TextInput>(null);
@@ -196,9 +199,9 @@ export default function OnboardingScreen() {
   }
 
   function toggleCondition(id: string) {
-    setConditions((prev) =>
-      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
-    );
+    // Journey stage is a single analytics cohort. Keeping this radio-like
+    // avoids silently discarding all but the first selected condition.
+    setConditions((prev) => (prev.includes(id) ? [] : [id]));
   }
 
   async function handleComplete() {
@@ -232,7 +235,18 @@ export default function OnboardingScreen() {
       age: derivedAge,
       location: location.trim() || undefined,
       condition: conditions[0] as "osteoporosis" | "osteopenia" | "at_risk" | "healthy" | undefined,
+      goals,
     });
+    try {
+      const token = (await session?.getToken()) ?? null;
+      await updateAnalyticsConsent(token, {
+        communityAnalytics,
+        researchUse: communityAnalytics && researchUse,
+      });
+    } catch {
+      // Consent defaults to off on the server, so a network failure never
+      // causes a user to be included without a successful opt-in.
+    }
   }
 
   function handleNext() {
@@ -567,6 +581,35 @@ export default function OnboardingScreen() {
                   />
                 </View>
               )}
+
+              <View style={[styles.consentBox, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <Text style={[styles.consentTitle, { color: colors.foreground }]}>Optional community insights</Text>
+                <Text style={[styles.consentText, { color: colors.mutedForeground }]}>Help SNAP Life understand population trends using anonymised, grouped data. Your individual Bone Buddy conversations are never included.</Text>
+                <Pressable
+                  style={styles.consentRow}
+                  onPress={() => {
+                    const next = !communityAnalytics;
+                    setCommunityAnalytics(next);
+                    if (!next) setResearchUse(false);
+                  }}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: communityAnalytics }}
+                >
+                  <Feather name={communityAnalytics ? "check-square" : "square"} size={20} color={communityAnalytics ? colors.primary : colors.mutedForeground} />
+                  <Text style={[styles.consentLabel, { color: colors.foreground }]}>Include my anonymised data in community insights</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.consentRow, { opacity: communityAnalytics ? 1 : 0.45 }]}
+                  disabled={!communityAnalytics}
+                  onPress={() => setResearchUse((value) => !value)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: researchUse, disabled: !communityAnalytics }}
+                >
+                  <Feather name={researchUse ? "check-square" : "square"} size={20} color={researchUse ? colors.primary : colors.mutedForeground} />
+                  <Text style={[styles.consentLabel, { color: colors.foreground }]}>Allow approved research use of the same grouped data</Text>
+                </Pressable>
+                <Text style={[styles.consentFootnote, { color: colors.mutedForeground }]}>Both choices are off by default and can be changed any time in Settings → Privacy.</Text>
+              </View>
             </View>
           )}
         </ScrollView>
@@ -721,6 +764,12 @@ const styles = StyleSheet.create({
 
   // Goals (step 2)
   goalsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  consentBox: { width: "100%", borderWidth: 1, borderRadius: 14, padding: 14, gap: 10 },
+  consentTitle: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  consentText: { fontSize: 12, lineHeight: 18, fontFamily: "Inter_400Regular" },
+  consentRow: { flexDirection: "row", alignItems: "flex-start", gap: 9 },
+  consentLabel: { flex: 1, fontSize: 12, lineHeight: 17, fontFamily: "Inter_500Medium" },
+  consentFootnote: { fontSize: 10, lineHeight: 15, fontFamily: "Inter_400Regular" },
   goalCard: {
     width: "47%",
     padding: 16,

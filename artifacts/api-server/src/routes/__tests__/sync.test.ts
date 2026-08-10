@@ -87,6 +87,7 @@ vi.mock("@workspace/db", () => {
     assessmentResultsTable: makeTable("assessment_results"),
     supplementStateTable: makeTable("supplement_state"),
     interactionEventsTable: makeTable("interaction_events"),
+    outcomeEntriesTable: makeTable("outcome_entries"),
   } as const;
 
   const db = {
@@ -208,6 +209,7 @@ describe("/sync/* — auth gates", () => {
     ["PUT", "/sync/gamification", { state: {} }],
     ["POST", "/sync/wellbeing", { entryId: "x", entry: {}, completedAtMs: 1 }],
     ["POST", "/sync/assessment", { resultId: "x", kind: "dexa", payload: {}, takenAtMs: 1 }],
+    ["POST", "/sync/outcomes", { entryId: "x", entry: {}, recordedAtMs: 1 }],
     ["GET", "/sync/snapshot", undefined],
   ];
 
@@ -254,6 +256,14 @@ describe("/sync/* — body validation", () => {
   it("POST /sync/assessment rejects when kind is missing with 400", async () => {
     const res = await call("POST", "/sync/assessment", {
       body: { resultId: "r1", payload: {}, takenAtMs: 1 },
+    });
+    expect(res.status).toBe(400);
+    expect(inserts).toHaveLength(0);
+  });
+
+  it("POST /sync/outcomes rejects when entryId is missing with 400", async () => {
+    const res = await call("POST", "/sync/outcomes", {
+      body: { entry: { confidence: 4 }, recordedAtMs: 1 },
     });
     expect(res.status).toBe(400);
     expect(inserts).toHaveLength(0);
@@ -340,6 +350,24 @@ describe("/sync/* — happy paths source identity from the bearer token", () => 
     expect(inserts).toHaveLength(1);
     expect(inserts[0].table).toBe("assessment_results");
     expect(inserts[0].conflict?.kind).toBe("nothing");
+  });
+
+  it("POST /sync/outcomes appends an idempotent structured check-in", async () => {
+    const r = await call("POST", "/sync/outcomes", {
+      body: {
+        entryId: "outcome-1",
+        entry: { confidence: 4, mobility: 3, fallsLast90Days: 0 },
+        recordedAtMs: 1234,
+      },
+    });
+    expect(r.status).toBe(200);
+    expect(inserts).toHaveLength(1);
+    expect(inserts[0].table).toBe("outcome_entries");
+    expect(inserts[0].conflict?.kind).toBe("nothing");
+    expect(inserts[0].values).toMatchObject({
+      appUserId: "user-1",
+      entryId: "outcome-1",
+    });
   });
 });
 

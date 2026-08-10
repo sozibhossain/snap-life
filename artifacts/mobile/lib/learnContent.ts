@@ -375,6 +375,13 @@ export const LESSONS: Lesson[] = [
   },
 ];
 
+/** Core foundations remain open to everyone; advanced pathways are Premium. */
+export const FREE_LESSON_COUNT = 3;
+
+export function isPremiumLesson(lesson: Lesson): boolean {
+  return lesson.index > FREE_LESSON_COUNT;
+}
+
 // ── Persistence ───────────────────────────────────────────────────────────────
 
 export function learnProgressKey(userId: string | null): string {

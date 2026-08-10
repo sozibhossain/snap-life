@@ -13,6 +13,10 @@
 
 const CONNECTOR_NAME = "revenuecat";
 const PROJECT_ID_ENV = "REVENUECAT_PROJECT_ID";
+const SECRET_API_KEY_ENVS = [
+  "REVENUECAT_SECRET_API_KEY",
+  "REVENUECAT_API_KEY",
+] as const;
 const REVENUECAT_BASE_URL = "https://api.revenuecat.com/v2";
 
 interface ConnectorSettings {
@@ -32,6 +36,14 @@ function tokenFromSettings(s: ConnectorSettings | undefined): string | null {
 }
 
 async function getAccessToken(): Promise<string> {
+  // Render and other conventional deployments use a RevenueCat v2 secret
+  // key directly. Keep the connector path below as a backwards-compatible
+  // fallback for Replit deployments.
+  for (const envName of SECRET_API_KEY_ENVS) {
+    const directToken = process.env[envName]?.trim();
+    if (directToken) return directToken;
+  }
+
   const cachedToken = tokenFromSettings(cachedSettings);
   if (
     cachedToken &&
@@ -49,7 +61,7 @@ async function getAccessToken(): Promise<string> {
     : null;
   if (!hostname || !xReplitToken) {
     throw new Error(
-      "RevenueCat connector unavailable: missing REPLIT_CONNECTORS_HOSTNAME or repl identity.",
+      "RevenueCat server auth unavailable: configure REVENUECAT_SECRET_API_KEY, or provide the Replit RevenueCat connector environment.",
     );
   }
 

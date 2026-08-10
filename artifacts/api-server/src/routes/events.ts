@@ -47,6 +47,8 @@ const ALLOWED_KINDS = new Set<string>([
   // User tapped "Notify me when ready" on the Wearables placeholder
   // screen. Used to size demand for real wearable integrations later.
   "wearables_interest",
+  "outcome_checkin_completed",
+  "medication_missed",
 ]);
 
 const MAX_PAYLOAD_BYTES = 4_096;
@@ -189,6 +191,19 @@ function startOfLocalDayUTC(now: Date, timeZone: string): Date {
   return new Date(guess);
 }
 
+function localDateISO(value: Date, timeZone: string): string {
+  const parts: Record<string, string> = {};
+  for (const part of new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value)) {
+    parts[part.type] = part.value;
+  }
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
 /**
  * Per-user weekly aggregate — counts by kind for the last 7 days for the
  * authed user. Used by later milestones to power the weekly SNAP Shot
@@ -223,6 +238,8 @@ router.get("/events/weekly", async (req, res) => {
       .select({
         kind: interactionEventsTable.kind,
         count: sql<number>`count(*)::int`,
+        occurredAtMs: interactionEventsTable.occurredAtMs,
+        receivedAt: interactionEventsTable.receivedAt,
       })
       .from(interactionEventsTable)
       .where(
@@ -244,10 +261,27 @@ router.get("/events/weekly", async (req, res) => {
           ),
         ),
       )
-      .groupBy(interactionEventsTable.kind);
+      .groupBy(
+        interactionEventsTable.kind,
+        interactionEventsTable.occurredAtMs,
+        interactionEventsTable.receivedAt,
+      );
     const counts: Record<string, number> = {};
-    for (const r of rows) counts[r.kind] = r.count;
-    res.json({ appUserId, windowDays: 7, tz, windowStartMs, counts });
+    const daily: Record<string, Record<string, number>> = {};
+    for (const r of rows) {
+      counts[r.kind] = (counts[r.kind] ?? 0) + r.count;
+      const eventDate =
+        r.occurredAtMs != null
+          ? new Date(Number(r.occurredAtMs))
+          : r.receivedAt instanceof Date
+            ? r.receivedAt
+            : null;
+      if (!eventDate || Number.isNaN(eventDate.getTime())) continue;
+      const date = localDateISO(eventDate, tz);
+      daily[date] ??= {};
+      daily[date][r.kind] = (daily[date][r.kind] ?? 0) + r.count;
+    }
+    res.json({ appUserId, windowDays: 7, tz, windowStartMs, counts, daily });
   } catch (err) {
     req.log?.error({ err }, "interaction events weekly aggregate failed");
     res.status(500).json({ error: "internal" });

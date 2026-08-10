@@ -16,6 +16,16 @@ function isString(v: unknown): v is string {
   return typeof v === "string";
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[char] ?? char);
+}
+
 const SESSION_LABELS: Record<string, string> = {
   consultation: "Free Consultation (30 min)",
   focus: "Focus Session (45 min — £65)",
@@ -48,13 +58,18 @@ async function handleCoachingBooking(req: Request, res: Response) {
     res.status(400).json({ error: "input too long" });
     return;
   }
-  if (!email.includes("@")) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     res.status(400).json({ error: "invalid email" });
     return;
   }
 
   const sessionLabel = SESSION_LABELS[sessionId] ?? sessionId;
   const receivedAt   = new Date().toLocaleString("en-GB", { timeZone: "Europe/London" });
+  const safeSessionLabel = escapeHtml(sessionLabel);
+  const safeName = escapeHtml(name);
+  const safeEmail = escapeHtml(email);
+  const safePreferred = escapeHtml(preferred);
+  const safeMessage = escapeHtml(message).replace(/\n/g, "<br>");
 
   if (!resend) {
     req.log?.warn({ sessionId, name }, "coaching booking: RESEND_API_KEY not set, logging only");
@@ -79,29 +94,29 @@ async function handleCoachingBooking(req: Request, res: Response) {
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; width: 140px; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Session</td>
-                <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-weight: 700; color: #F47530;">${sessionLabel}</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-weight: 700; color: #F47530;">${safeSessionLabel}</td>
               </tr>
               <tr>
                 <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Name</td>
-                <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;">${name}</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;">${safeName}</td>
               </tr>
               <tr>
                 <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Email</td>
-                <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;"><a href="mailto:${email}" style="color: #3ABBD4;">${email}</a></td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;"><a href="mailto:${safeEmail}" style="color: #3ABBD4;">${safeEmail}</a></td>
               </tr>
               ${preferred ? `
               <tr>
                 <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Preferred time</td>
-                <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;">${preferred}</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;">${safePreferred}</td>
               </tr>` : ""}
               ${message ? `
               <tr>
                 <td style="padding: 10px 0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; vertical-align: top;">Message</td>
-                <td style="padding: 10px 0; font-size: 15px; line-height: 1.6;">${message.replace(/\n/g, "<br>")}</td>
+                <td style="padding: 10px 0; font-size: 15px; line-height: 1.6;">${safeMessage}</td>
               </tr>` : ""}
             </table>
             <div style="margin-top: 20px; padding: 14px 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #64748b;">
-              Reply directly to this email to reach <strong>${name}</strong> at <strong>${email}</strong>.
+              Reply directly to this email to reach <strong>${safeName}</strong> at <strong>${safeEmail}</strong>.
             </div>
           </div>
         </div>

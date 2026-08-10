@@ -184,7 +184,10 @@ function wellbeingTile(
     subtitle: readout.reason,
     icon: r.surface === "breathing" ? "wind" : "headphones",
     accent: r.surface === "breathing" ? "accent" : "primary",
-    route: r.surface === "breathing" ? "/breathing-studio" : "/meditation",
+    route:
+      r.surface === "breathing"
+        ? "/breathing-studio"
+        : `/meditation?session=${encodeURIComponent(r.sessionHint)}`,
     ctaLabel: r.surface === "breathing" ? "Start breathing" : "Start meditation",
   };
 }

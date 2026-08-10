@@ -7,6 +7,7 @@
  */
 import type { SyncAssessmentSnapshotEntry } from "./syncAssessmentSnapshotEntry";
 import type { SyncDaySnapshot } from "./syncDaySnapshot";
+import type { SyncOutcomeSnapshotEntry } from "./syncOutcomeSnapshotEntry";
 import type { SyncProfileSnapshot } from "./syncProfileSnapshot";
 import type { SyncStateSnapshot } from "./syncStateSnapshot";
 import type { SyncWellbeingSnapshotEntry } from "./syncWellbeingSnapshotEntry";
@@ -21,4 +22,5 @@ export interface SyncSnapshot {
   gamification: SyncStateSnapshot | null;
   supplements: SyncStateSnapshot | null;
   assessments: SyncAssessmentSnapshotEntry[];
+  outcomes: SyncOutcomeSnapshotEntry[];
 }

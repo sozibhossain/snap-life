@@ -13,7 +13,10 @@ import {
   Text,
   View,
 } from "react-native";
-import type { PurchasesPackage } from "react-native-purchases";
+import Purchases, {
+  INTRO_ELIGIBILITY_STATUS,
+  type PurchasesPackage,
+} from "react-native-purchases";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
@@ -28,10 +31,10 @@ import { openManageSubscription } from "@/lib/manageSubscription";
 import { BillingIssueBanner } from "@/components/BillingIssueBanner";
 
 // Plan keys map 1:1 to RevenueCat package identifiers via SNAP_PLUS_PACKAGE_IDS.
-//   "premium"      → SNAP Premium (£14.99/mo after 1-month free trial)
-//   "plus_monthly" → SNAP Plus   (£6.99/mo after 1-month free trial)
-// Both plans include a RevenueCat IAP introductory offer (1 month free).
-// Payment details are required upfront; no charge until trial ends.
+//   "premium"      → SNAP Premium (£14.99/mo)
+//   "plus_monthly" → SNAP Plus   (£6.99/mo)
+// Trial wording is displayed only when RevenueCat reports that the current
+// iOS App Store account is eligible for the configured introductory offer.
 // Annual plans removed — monthly only.
 // Default selection is Plus ("no forced upgrade").
 type PlanKey = "founder_premium" | "premium" | "plus_monthly";
@@ -65,6 +68,7 @@ interface CompRow {
 const COMPARISON_TABLE: CompRow[] = [
   { feature: "Breathing Studio",      plus: { tone: "lite", label: "Basic" },   premium: { tone: "full", label: "Full" } },
   { feature: "Meditation Library",    plus: { tone: "no" },                     premium: { tone: "full", label: "Full" } },
+  { feature: "Advanced Learning",     plus: { tone: "no" },                     premium: { tone: "yes" } },
   { feature: "Bone Health Tracking",  plus: { tone: "lite", label: "Basic" },   premium: { tone: "full", label: "Full" } },
   { feature: "My Insights",           plus: { tone: "no" },                     premium: { tone: "yes" } },
   { feature: "Daily Check-In",        plus: { tone: "yes" },                    premium: { tone: "yes" } },
@@ -148,6 +152,38 @@ export default function SubscriptionScreen() {
     () => findPackage(offering, SNAP_PLUS_PACKAGE_IDS.monthly),
     [offering],
   );
+  const [trialEligibleProducts, setTrialEligibleProducts] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const packages = [founderPkg, premiumPkg, monthlyPkg].filter(
+      (pkg): pkg is PurchasesPackage => Boolean(pkg),
+    );
+    const productIds = packages.map((pkg) => pkg.product.identifier);
+    if (Platform.OS !== "ios" || productIds.length === 0) {
+      setTrialEligibleProducts(new Set());
+      return;
+    }
+    let cancelled = false;
+    void Purchases.checkTrialOrIntroductoryPriceEligibility(productIds)
+      .then((eligibility) => {
+        if (cancelled) return;
+        setTrialEligibleProducts(new Set(
+          packages
+            .filter((pkg) =>
+              pkg.product.introPrice?.price === 0 &&
+              eligibility[pkg.product.identifier]?.status ===
+                INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE,
+            )
+            .map((pkg) => pkg.product.identifier),
+        ));
+      })
+      .catch(() => {
+        if (!cancelled) setTrialEligibleProducts(new Set());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [founderPkg, premiumPkg, monthlyPkg]);
 
   // Default selection: Founder Premium when it exists in the current offering.
   const [selected, setSelected] = useState<PlanKey>("founder_premium");
@@ -171,11 +207,11 @@ export default function SubscriptionScreen() {
       : selected === "premium"
       ? premiumPkg
       : monthlyPkg;
-  // Both plans include a 1-month free trial (RC IAP introductory offer).
-  // Payment details are required upfront by the App Store / Google Play;
-  // no charge until the 30-day trial period ends.
+  // RevenueCat/App Store eligibility is the source of truth for trial copy.
   const selectedIsPremium = selected === "premium" || selected === "founder_premium";
-  const showTrialCopy = true;
+  const showTrialCopy = Boolean(
+    selectedPkg && trialEligibleProducts.has(selectedPkg.product.identifier),
+  );
   const trialLabel = "1 month free";
   const planFriendlyName =
     selected === "founder_premium"
@@ -541,7 +577,7 @@ export default function SubscriptionScreen() {
               Checking your subscription…
             </Text>
           </View>
-        ) : (
+        ) : showTrialCopy ? (
           <View style={styles.heroBlock}>
             <View style={[styles.trialPill, { backgroundColor: colors.accent + "20" }]}>
               <Feather name="zap" size={13} color={colors.accent} />
@@ -556,10 +592,16 @@ export default function SubscriptionScreen() {
               Full access to every feature. No charge today — cancel before your first payment and you'll never be billed.
             </Text>
           </View>
+        ) : (
+          <View style={styles.heroBlock}>
+            <Text style={[styles.heroTitle, { color: colors.foreground }]}>Choose your SNAP plan</Text>
+            <Text style={[styles.heroSub, { color: colors.mutedForeground }]}>
+              Secure monthly billing through your app store. Cancel anytime in your subscription settings.
+            </Text>
+          </View>
         )}
 
-        {/* Plan cards — Premium first (MOST POPULAR), Plus below (default).
-              Both plans include a 1-month free trial. Annual plans removed. */}
+        {/* Monthly plan cards. Annual plans have been removed. */}
         {!isSubscribed && !isLoading && (
           <View style={{ gap: 12 }}>
             {/* FOUNDER PREMIUM - full Premium access at founding member price */}
@@ -572,10 +614,15 @@ export default function SubscriptionScreen() {
               colors={colors}
               title="Founder Premium"
               priceMain={displayPlanPrice("founder_premium", founderPkg)}
-              priceSub="/month after free trial"
+              priceSub={trialEligibleProducts.has(founderPkg?.product.identifier ?? "") ? "/month after free trial" : "/month"}
               note="Full Premium access at founding member pricing"
               badge="FOUNDERS"
             />
+            {!founderPkg && (
+              <Text style={[styles.planAvailabilityNote, { color: colors.mutedForeground }]}>
+                Founder Premium is not available in the current App Store offering. Check the RevenueCat package before release.
+              </Text>
+            )}
 
             {/* PREMIUM — full-featured plan */}
             <PlanCard
@@ -586,7 +633,7 @@ export default function SubscriptionScreen() {
               colors={colors}
               title="SNAP Premium"
               priceMain={displayPlanPrice("premium", premiumPkg)}
-              priceSub="/month after free trial"
+              priceSub={trialEligibleProducts.has(premiumPkg?.product.identifier ?? "") ? "/month after free trial" : "/month"}
               note="Everything in Plus — personalised AI coaching, guided programs, advanced insights"
               badge="MOST POPULAR"
             />
@@ -600,7 +647,7 @@ export default function SubscriptionScreen() {
               colors={colors}
               title="SNAP Plus"
               priceMain={displayPlanPrice("plus_monthly", monthlyPkg)}
-              priceSub="/month after free trial"
+              priceSub={trialEligibleProducts.has(monthlyPkg?.product.identifier ?? "") ? "/month after free trial" : "/month"}
               note="Essential daily tools — breathing basics, check-ins and core meal plans"
             />
           </View>
@@ -683,7 +730,9 @@ export default function SubscriptionScreen() {
                   ) : (
                     <Text style={styles.ctaBtnText}>
                       {selectedPkg
-                        ? `Start free trial — ${planFriendlyName}`
+                        ? showTrialCopy
+                          ? `Start free trial — ${planFriendlyName}`
+                          : `Continue with ${planFriendlyName}`
                         : "Reload plans"}
                     </Text>
                   )}
@@ -693,7 +742,9 @@ export default function SubscriptionScreen() {
             <Text style={[styles.ctaNote, { color: colors.mutedForeground }]}>
               {Platform.OS === "web"
                 ? "In-app purchases run through the App Store / Play Store. Open SNAP Life on your phone to start a trial — your account will sync automatically."
-                : `No charge today · Payment details stored securely by ${Platform.OS === "ios" ? "Apple" : "Google"} · First payment ${firstPaymentDate} unless cancelled`}
+                : showTrialCopy
+                  ? `No charge today · Payment details stored securely by ${Platform.OS === "ios" ? "Apple" : "Google"} · First payment ${firstPaymentDate} unless cancelled`
+                  : `Payment is confirmed securely by ${Platform.OS === "ios" ? "Apple" : "Google"} before the subscription starts`}
             </Text>
           </View>
         )}
@@ -749,7 +800,9 @@ export default function SubscriptionScreen() {
             </Text>
             <Text style={[styles.modalBody, { color: colors.mutedForeground }]}>
               {confirmPkg
-                ? `${planFriendlyName} — 1 month free, then ${confirmPkg.product.priceString}/month.\n\nNo charge today. First payment on ${firstPaymentDate}. Cancel anytime in your app store settings before that date and you won't be billed.`
+                ? trialEligibleProducts.has(confirmPkg.product.identifier)
+                  ? `${planFriendlyName} — 1 month free, then ${confirmPkg.product.priceString}/month.\n\nNo charge today. First payment on ${firstPaymentDate}. Cancel anytime in your app store settings before that date and you won't be billed.`
+                  : `${planFriendlyName} is ${confirmPkg.product.priceString}/month. Your app store will show the final price before confirming. Cancel anytime in your subscription settings.`
                 : ""}
             </Text>
             {purchaseError && (
@@ -805,8 +858,9 @@ export default function SubscriptionScreen() {
               Welcome to {planFriendlyName}
             </Text>
             <Text style={[styles.modalBody, { color: colors.mutedForeground }]}>
-              You're all set. Every feature is unlocked for your free month.
-              {` First payment on ${firstPaymentDate} — cancel anytime before then.`}
+              {showTrialCopy
+                ? `You're all set. Every feature is unlocked for your free month. First payment on ${firstPaymentDate} — cancel anytime before then.`
+                : "You're all set. Your subscribed features are now unlocked."}
             </Text>
             <Pressable
               style={[
@@ -959,6 +1013,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
   },
   trialPillText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  planAvailabilityNote: {
+    marginTop: -4,
+    paddingHorizontal: 4,
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: "Inter_400Regular",
+  },
   heroTitle: { fontSize: 26, fontFamily: "Inter_700Bold", textAlign: "center", lineHeight: 34 },
   heroSub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 19 },
 

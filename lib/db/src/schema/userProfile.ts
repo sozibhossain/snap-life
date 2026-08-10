@@ -39,6 +39,14 @@ export const userProfileTable = pgTable("user_profile", {
   country: text("country"),
   /** IANA timezone name (e.g. `Europe/London`). Optional. */
   timezone: text("timezone"),
+  /** Calendar year the user was first diagnosed, when applicable. */
+  diagnosisYear: integer("diagnosis_year"),
+  /** Stable goal identifiers selected during onboarding/profile editing. */
+  goals: jsonb("goals").notNull().default([]),
+  /** User-entered co-existing condition identifiers; never free text in reports. */
+  coexistingConditions: jsonb("coexisting_conditions").notNull().default([]),
+  /** Structured self-reported fractures: year + anatomical location. */
+  fractureHistory: jsonb("fracture_history").notNull().default([]),
   level: integer("level").notNull().default(1),
   xp: integer("xp").notNull().default(0),
   xpToNextLevel: integer("xp_to_next_level").notNull().default(500),

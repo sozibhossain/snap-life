@@ -128,6 +128,7 @@ const state = {
   userProfile: [] as Array<Record<string, unknown>>,
   auditEvents: [] as AuditEventRow[],
   boneBuddyChatMessages: [] as BoneBuddyChatMessageRow[],
+  analyticsConsent: [] as Array<Record<string, unknown>>,
 };
 
 function reset() {
@@ -142,6 +143,7 @@ function reset() {
   state.userProfile.length = 0;
   state.auditEvents.length = 0;
   state.boneBuddyChatMessages.length = 0;
+  state.analyticsConsent.length = 0;
 }
 
 /* -------------------------------------------------------------------------- *
@@ -210,6 +212,7 @@ const TABLE_KEYS = {
   userProfile: "userProfile",
   auditEvents: "auditEvents",
   boneBuddyChatMessages: "boneBuddyChatMessages",
+  analyticsConsent: "analyticsConsent",
 } as const;
 
 function makeTableProxy(tableName: string): unknown {
@@ -234,6 +237,7 @@ const pushUserStateTable = makeTableProxy(TABLE_KEYS.pushUserState);
 const userProfileTable = makeTableProxy(TABLE_KEYS.userProfile);
 const auditEventsTable = makeTableProxy(TABLE_KEYS.auditEvents);
 const boneBuddyChatMessagesTable = makeTableProxy(TABLE_KEYS.boneBuddyChatMessages);
+const analyticsConsentTable = makeTableProxy(TABLE_KEYS.analyticsConsent);
 
 interface Cond {
   kind: string;
@@ -262,6 +266,8 @@ function rowsFor(t: string): Array<Record<string, unknown>> {
       return state.auditEvents as unknown as Array<Record<string, unknown>>;
     case TABLE_KEYS.boneBuddyChatMessages:
       return state.boneBuddyChatMessages as unknown as Array<Record<string, unknown>>;
+    case TABLE_KEYS.analyticsConsent:
+      return state.analyticsConsent;
     default:
       return [];
   }
@@ -527,6 +533,7 @@ vi.mock("@workspace/db", () => {
     userProfileTable,
     auditEventsTable,
     boneBuddyChatMessagesTable,
+    analyticsConsentTable,
   };
 });
 
@@ -540,6 +547,7 @@ vi.mock("drizzle-orm", () => ({
   ilike: (a: unknown, b: unknown) => ({ kind: "ilike", args: [a, b] }),
   lt: (a: unknown, b: unknown) => ({ kind: "lt", args: [a, b] }),
   lte: (a: unknown, b: unknown) => ({ kind: "lte", args: [a, b] }),
+  inArray: (a: unknown, b: unknown) => ({ kind: "inArray", args: [a, b] }),
   sql: (
     strings: TemplateStringsArray,
     ...values: unknown[]
@@ -605,9 +613,9 @@ describe("admin gate", () => {
     "/admin/me",
     "/admin/metrics/users",
     "/admin/metrics/engagement",
+    "/admin/metrics/community-insights",
     "/admin/metrics/subscriptions",
     "/admin/feedback",
-    "/admin/chats",
     "/admin/users/lookup?email=admin@snap.life",
   ];
 
@@ -639,6 +647,25 @@ describe("admin gate", () => {
 /* -------------------------------------------------------------------------- *
  * Per-endpoint aggregation logic
  * -------------------------------------------------------------------------- */
+
+describe("GET /admin/metrics/community-insights", () => {
+  it("returns a blank report below the minimum consented cohort", async () => {
+    state.analyticsConsent.push(
+      { appUserId: "user-1", communityAnalytics: true },
+      { appUserId: "user-2", communityAnalytics: true },
+    );
+    const response = await fetch(`${baseUrl}/admin/metrics/community-insights`);
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as Record<string, any>;
+    expect(body.privacy).toMatchObject({
+      minCohortSize: 10,
+      consentedParticipants: null,
+      suppressed: true,
+    });
+    expect(body.overview).toBeNull();
+    expect(body.impact).toBeNull();
+  });
+});
 
 describe("GET /admin/metrics/users", () => {
   it("counts users, admins, recent signups, and tier breakdown", async () => {
@@ -1400,78 +1427,9 @@ describe("GET /admin/feedback", () => {
 });
 
 describe("GET /admin/chats", () => {
-  it("returns newest Bone Buddy chat turns with user metadata and search", async () => {
-    state.users.push({
-      appUserId: "alice",
-      clerkUserId: "user_alice",
-      email: "alice@example.com",
-      displayName: "Alice",
-      isAdmin: false,
-      createdAt: new Date("2026-01-01T00:00:00.000Z"),
-    });
-    state.boneBuddyChatMessages.push(
-      {
-        id: 1,
-        requestId: "req-1",
-        appUserId: "alice",
-        role: "user",
-        content: "Can you help me with calcium today?",
-        promptKey: "bone_buddy",
-        promptVersion: 7,
-        createdAt: new Date("2026-02-01T10:00:00.000Z"),
-      },
-      {
-        id: 2,
-        requestId: "req-1",
-        appUserId: "alice",
-        role: "assistant",
-        content: "A yoghurt with breakfast could be a simple start.",
-        promptKey: "bone_buddy",
-        promptVersion: 7,
-        createdAt: new Date("2026-02-01T10:00:03.000Z"),
-      },
-      {
-        id: 3,
-        requestId: "req-2",
-        appUserId: "bob",
-        role: "user",
-        content: "Unrelated question",
-        promptKey: "bone_buddy",
-        promptVersion: 7,
-        createdAt: new Date("2026-02-02T10:00:00.000Z"),
-      },
-    );
-
-    const r = await fetch(`${baseUrl}/admin/chats?search=calcium&limit=10`);
-    expect(r.status).toBe(200);
-    const body = (await r.json()) as {
-      total: number;
-      items: Array<{
-        id: number;
-        appUserId: string;
-        email: string | null;
-        displayName: string | null;
-        role: string;
-        content: string;
-        promptKey: string;
-        promptVersion: number | null;
-        createdAt: string;
-      }>;
-    };
-
-    expect(body.total).toBe(1);
-    expect(body.items).toHaveLength(1);
-    expect(body.items[0]).toMatchObject({
-      id: 1,
-      appUserId: "alice",
-      email: "alice@example.com",
-      displayName: "Alice",
-      role: "user",
-      content: "Can you help me with calcium today?",
-      promptKey: "bone_buddy",
-      promptVersion: 7,
-      createdAt: "2026-02-01T10:00:00.000Z",
-    });
+  it("is not exposed because individual Bone Buddy conversations are private", async () => {
+    const r = await fetch(`${baseUrl}/admin/chats`);
+    expect(r.status).toBe(404);
   });
 });
 

@@ -49,6 +49,9 @@ import {
   subscriptionEventsTable,
   feedbackTable,
   auditEventsTable,
+  analyticsConsentTable,
+  boneBuddyChatMessagesTable,
+  outcomeEntriesTable,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireUser } from "../lib/auth";
@@ -160,6 +163,14 @@ export async function softDeleteAccount(
       .delete(pushUserStateTable)
       .where(eq(pushUserStateTable.appUserId, appUserId));
     await tx.delete(userTokensTable).where(eq(userTokensTable.appUserId, appUserId));
+    await tx
+      .delete(analyticsConsentTable)
+      .where(eq(analyticsConsentTable.appUserId, appUserId));
+    // Historical builds persisted full Bone Buddy transcripts. New builds
+    // no longer do so; erase any legacy rows immediately on account delete.
+    await tx
+      .delete(boneBuddyChatMessagesTable)
+      .where(eq(boneBuddyChatMessagesTable.appUserId, appUserId));
 
     await tx
       .update(feedbackTable)
@@ -275,6 +286,9 @@ router.get("/me/export", async (req, res): Promise<void> => {
       subscriber,
       subscriptionEvents,
       feedback,
+      analyticsConsent,
+      legacyBoneBuddyMessages,
+      outcomeEntries,
     ] = await Promise.all([
       db.select().from(usersTable).where(eq(usersTable.appUserId, u.appUserId)),
       db
@@ -344,6 +358,18 @@ router.get("/me/export", async (req, res): Promise<void> => {
         .select()
         .from(feedbackTable)
         .where(eq(feedbackTable.appUserId, u.appUserId)),
+      db
+        .select()
+        .from(analyticsConsentTable)
+        .where(eq(analyticsConsentTable.appUserId, u.appUserId)),
+      db
+        .select()
+        .from(boneBuddyChatMessagesTable)
+        .where(eq(boneBuddyChatMessagesTable.appUserId, u.appUserId)),
+      db
+        .select()
+        .from(outcomeEntriesTable)
+        .where(eq(outcomeEntriesTable.appUserId, u.appUserId)),
     ]);
 
     const archive = {
@@ -366,6 +392,9 @@ router.get("/me/export", async (req, res): Promise<void> => {
       subscriber: subscriber[0] ?? null,
       subscriptionEvents,
       feedback,
+      analyticsConsent: analyticsConsent[0] ?? null,
+      legacyBoneBuddyMessages,
+      outcomeEntries,
     };
 
     // Use Content-Disposition so a browser fetch downloads the JSON as
@@ -383,6 +412,103 @@ router.get("/me/export", async (req, res): Promise<void> => {
     });
   } catch (err) {
     req.log?.error({ err }, "GET /me/export failed");
+    res.status(500).json({ error: "internal" });
+  }
+});
+
+const CONSENT_VERSION = "community-v1";
+
+router.get("/me/analytics-consent", async (req, res): Promise<void> => {
+  const u = await requireUser(req, res);
+  if (!u) return;
+  try {
+    const [row] = await db
+      .select()
+      .from(analyticsConsentTable)
+      .where(eq(analyticsConsentTable.appUserId, u.appUserId))
+      .limit(1);
+    res.json({
+      communityAnalytics: row?.communityAnalytics ?? false,
+      researchUse: row?.researchUse ?? false,
+      consentVersion: row?.consentVersion ?? CONSENT_VERSION,
+      consentedAt: row?.consentedAt?.toISOString() ?? null,
+      withdrawnAt: row?.withdrawnAt?.toISOString() ?? null,
+    });
+  } catch (err) {
+    req.log?.error({ err }, "GET /me/analytics-consent failed");
+    res.status(500).json({ error: "internal" });
+  }
+});
+
+router.put("/me/analytics-consent", async (req, res): Promise<void> => {
+  const u = await requireUser(req, res);
+  if (!u) return;
+  const body = req.body as
+    | { communityAnalytics?: unknown; researchUse?: unknown }
+    | undefined;
+  if (
+    typeof body?.communityAnalytics !== "boolean" ||
+    typeof body?.researchUse !== "boolean"
+  ) {
+    res.status(400).json({ error: "boolean consent values required" });
+    return;
+  }
+  if (!body.communityAnalytics && body.researchUse) {
+    res.status(400).json({
+      error: "research use requires community analytics consent",
+    });
+    return;
+  }
+
+  const communityAnalytics = body.communityAnalytics;
+  // Research is a narrower secondary purpose and cannot remain enabled if
+  // the broader community-analytics permission has been withdrawn.
+  const researchUse = communityAnalytics && body.researchUse;
+  const now = new Date();
+  try {
+    await db
+      .insert(analyticsConsentTable)
+      .values({
+        appUserId: u.appUserId,
+        communityAnalytics,
+        researchUse,
+        consentVersion: CONSENT_VERSION,
+        consentedAt: communityAnalytics ? now : null,
+        withdrawnAt: communityAnalytics ? null : now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: analyticsConsentTable.appUserId,
+        set: {
+          communityAnalytics,
+          researchUse,
+          consentVersion: CONSENT_VERSION,
+          consentedAt: communityAnalytics ? now : null,
+          withdrawnAt: communityAnalytics ? null : now,
+          updatedAt: now,
+        },
+      });
+
+    await db.insert(auditEventsTable).values({
+      actorAppUserId: "self",
+      targetAppUserId: u.appUserId,
+      action: "analytics_consent_updated",
+      payload: {
+        communityAnalytics,
+        researchUse,
+        consentVersion: CONSENT_VERSION,
+      },
+    });
+
+    res.json({
+      communityAnalytics,
+      researchUse,
+      consentVersion: CONSENT_VERSION,
+      consentedAt: communityAnalytics ? now.toISOString() : null,
+      withdrawnAt: communityAnalytics ? null : now.toISOString(),
+    });
+  } catch (err) {
+    req.log?.error({ err }, "PUT /me/analytics-consent failed");
     res.status(500).json({ error: "internal" });
   }
 });
@@ -754,6 +880,15 @@ router.post("/me/reset", async (req, res): Promise<void> => {
         tx
           .delete(pushUserStateTable)
           .where(eq(pushUserStateTable.appUserId, userId)),
+        tx
+          .delete(analyticsConsentTable)
+          .where(eq(analyticsConsentTable.appUserId, userId)),
+        tx
+          .delete(boneBuddyChatMessagesTable)
+          .where(eq(boneBuddyChatMessagesTable.appUserId, userId)),
+        tx
+          .delete(outcomeEntriesTable)
+          .where(eq(outcomeEntriesTable.appUserId, userId)),
       ]);
       await tx.insert(auditEventsTable).values({
         actorAppUserId: "self",

@@ -9,6 +9,8 @@ import {
 import { ClerkProvider } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { setAudioModeAsync } from "expo-audio";
+import * as Notifications from "expo-notifications";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -33,10 +35,20 @@ import {
   initializeRevenueCat,
 } from "@/lib/revenuecat";
 import { initSentry, Sentry } from "@/lib/sentry";
+import { logInteractionEvent } from "@/lib/events";
 
 initSentry();
 
 SplashScreen.preventAutoHideAsync();
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 try {
   initializeRevenueCat();
@@ -55,6 +67,31 @@ function RootLayoutNav() {
   const router = useRouter();
   const segments = useSegments();
   const [authLoadTimedOut, setAuthLoadTimedOut] = useState(false);
+
+  useEffect(() => {
+    const openResponse = (response: Notifications.NotificationResponse) => {
+      const data = response.notification.request.content.data;
+      const route = typeof data?.route === "string" ? data.route : "/(tabs)/coach";
+      if (route.startsWith("/")) router.push(route as never);
+      logInteractionEvent({
+        appUserId: user?.id,
+        kind: "push_opened",
+        payload: {
+          route,
+          copyId: typeof data?.copyId === "string" ? data.copyId : undefined,
+          notificationKind: typeof data?.kind === "string" ? data.kind : undefined,
+        },
+      });
+    };
+
+    const subscription = Notifications.addNotificationResponseReceivedListener(openResponse);
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (!response) return;
+      openResponse(response);
+      void Notifications.clearLastNotificationResponseAsync();
+    });
+    return () => subscription.remove();
+  }, [router, user?.id]);
 
   // Tie RevenueCat purchases to the signed-in user so subscriptions follow
   // them across devices and reinstalls. Only fire once we've resolved the
@@ -125,6 +162,8 @@ function RootLayoutNav() {
       <Stack.Screen name="health/supplements" options={{ headerShown: false }} />
       <Stack.Screen name="health/add-supplement" options={{ headerShown: false }} />
       <Stack.Screen name="health/meal-plan" options={{ headerShown: false }} />
+      <Stack.Screen name="health/outcomes" options={{ headerShown: false }} />
+      <Stack.Screen name="health/profile-details" options={{ headerShown: false }} />
       <Stack.Screen name="recipe/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="nutrition-guide/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="meditation" options={{ headerShown: false }} />
@@ -202,6 +241,17 @@ function RootLayoutInner() {
   useEffect(() => {
     const timeout = setTimeout(() => setFontLoadTimedOut(true), 5000);
     return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    // Keep wellness audio audible when an iPhone's hardware silent switch is
+    // enabled. Breathing Studio and Meditation share this audio session.
+    void setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: false,
+    }).catch((err) => {
+      console.warn("[SNAP Life] Unable to configure the audio session", err);
+    });
   }, []);
 
   const fontsReady = fontsLoaded || Boolean(fontError) || fontLoadTimedOut;

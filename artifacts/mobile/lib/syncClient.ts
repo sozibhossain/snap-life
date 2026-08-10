@@ -292,6 +292,11 @@ export interface SyncSnapshot {
     payload: unknown;
     takenAtMs: number;
   }>;
+  outcomes?: Array<{
+    entryId: string;
+    entry: unknown;
+    recordedAtMs: number;
+  }>;
 }
 
 export interface PullArgs {
@@ -344,6 +349,7 @@ function snapshotKeys(appUserId: string, clerkUserId: string | null) {
     // user's sessions into another's view.
     wellbeing: `@snaplife/wellbeing/v1:${appUserId}`,
     profile: clerkUserId ? `@snaplife/profile/v1:${clerkUserId}` : null,
+    outcomes: `@snaplife/outcomes/v1:${appUserId}`,
   };
 }
 
@@ -451,6 +457,14 @@ export async function applySnapshotToAsyncStorage(
     }
   }
 
+  const outcomeEntries = args.snapshot.outcomes ?? [];
+  if (outcomeEntries.length > 0) {
+    const outcomes = [...outcomeEntries]
+      .sort((a, b) => b.recordedAtMs - a.recordedAtMs)
+      .map((o) => o.entry);
+    writes.push(AsyncStorage.setItem(k.outcomes, JSON.stringify(outcomes)));
+  }
+
   await Promise.all(writes);
 }
 
@@ -465,4 +479,5 @@ export const SyncPaths = {
   gamification: () => "/sync/gamification",
   wellbeing: () => "/sync/wellbeing",
   assessment: () => "/sync/assessment",
+  outcomes: () => "/sync/outcomes",
 } as const;

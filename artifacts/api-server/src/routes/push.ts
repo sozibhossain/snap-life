@@ -291,7 +291,7 @@ router.post("/push/daily-nudge", async (req, res) => {
     body: text,
     title: "Bone Buddy",
     copyId: "daily-nudge-v1",
-    data: { kind: "daily-nudge" },
+    data: { kind: "daily-nudge", route: "/(tabs)/coach" },
   });
   res.json(result);
 });

@@ -32,10 +32,12 @@ function IntakeRow({
   item,
   onMark,
   onRemove,
+  onMissed,
 }: {
   item: Supplement;
   onMark: () => void;
   onRemove: () => void;
+  onMissed: () => void;
 }) {
   const colors = useColors();
   const isMed = item.category === "medication";
@@ -97,12 +99,19 @@ function IntakeRow({
           {item.taken ? (
             <Badge label={`${item.takenAt ?? "Taken"}`} variant="success" size="sm" />
           ) : (
-            <Pressable
-              style={[styles.markBtn, { backgroundColor: accentColor }]}
-              onPress={onMark}
-            >
-              <Text style={styles.markBtnText}>Mark taken</Text>
-            </Pressable>
+            <View style={{ gap: 5 }}>
+              <Pressable
+                style={[styles.markBtn, { backgroundColor: accentColor }]}
+                onPress={onMark}
+              >
+                <Text style={styles.markBtnText}>Mark taken</Text>
+              </Pressable>
+              {isMed && (
+                <Pressable onPress={onMissed}>
+                  <Text style={[styles.missedText, { color: colors.destructive }]}>Mark missed</Text>
+                </Pressable>
+              )}
+            </View>
           )}
           <Pressable
             onPress={onRemove}
@@ -123,7 +132,7 @@ export default function SupplementsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { supplements, markSupplementTaken, removeSupplement } = useHealth();
+  const { supplements, markSupplementTaken, markMedicationMissed, removeSupplement } = useHealth();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -313,6 +322,7 @@ export default function SupplementsScreen() {
                 key={s.id}
                 item={s}
                 onMark={() => handleMark(s.id)}
+                onMissed={() => undefined}
                 onRemove={() => handleRemove(s)}
               />
             ))}
@@ -343,6 +353,7 @@ export default function SupplementsScreen() {
                 key={m.id}
                 item={m}
                 onMark={() => handleMark(m.id)}
+                onMissed={() => markMedicationMissed(m.id)}
                 onRemove={() => handleRemove(m)}
               />
             ))}
@@ -498,6 +509,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   markBtnText: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" },
+  missedText: { fontSize: 10, fontFamily: "Inter_600SemiBold", textAlign: "center" },
   removeBtn: { padding: 2 },
   emptyState: { alignItems: "center", paddingVertical: 48, gap: 12 },
   emptyTitle: { fontSize: 17, fontFamily: "Inter_700Bold" },

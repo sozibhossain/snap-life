@@ -1,9 +1,7 @@
 import { Router, type IRouter } from "express";
 import OpenAI from "openai";
-import { randomUUID } from "node:crypto";
 import {
   db,
-  boneBuddyChatMessagesTable,
   subscribersTable,
   systemPromptsTable,
   userTokensTable,
@@ -98,6 +96,8 @@ const OPENAI_API_KEY = resolveOpenAiApiKey();
 const openai = new OpenAI({
   baseURL: process.env.OPENAI_BASE_URL ?? process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
   apiKey: OPENAI_API_KEY ?? "missing-openai-key",
+  timeout: 40_000,
+  maxRetries: 1,
 });
 
 // Whether a real OpenAI key is configured. When it isn't, the chat route
@@ -218,25 +218,6 @@ export async function resolveBoneBuddySystemPrompt(): Promise<ResolvedSystemProm
     version: null,
     source: "fallback",
   };
-}
-
-async function persistBoneBuddyMessage(params: {
-  requestId: string;
-  appUserId: string | null;
-  role: "user" | "assistant";
-  content: string;
-  promptKey: string;
-  promptVersion: number | null;
-}): Promise<void> {
-  if (!params.appUserId || !params.content.trim()) return;
-  await db.insert(boneBuddyChatMessagesTable).values({
-    requestId: params.requestId,
-    appUserId: params.appUserId,
-    role: params.role,
-    content: params.content.trim(),
-    promptKey: params.promptKey,
-    promptVersion: params.promptVersion,
-  });
 }
 
 void seedDefaultBoneBuddyPrompt().catch(() => {
@@ -668,12 +649,6 @@ router.post("/chat/bone-buddy", async (req, res) => {
     body.kickoff && sanitized.length === 0
       ? [{ role: "user" as const, content: "(open the conversation now)" }]
       : sanitized;
-  const requestId = randomUUID();
-  const newestUserTurn =
-    !body.kickoff && sanitized.length > 0
-      ? [...sanitized].reverse().find((m) => m.role === "user")
-      : undefined;
-
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
@@ -681,19 +656,6 @@ router.post("/chat/bone-buddy", async (req, res) => {
   res.flushHeaders?.();
 
   try {
-    if (newestUserTurn) {
-      persistBoneBuddyMessage({
-        requestId,
-        appUserId,
-        role: "user",
-        content: newestUserTurn.content,
-        promptKey: resolvedPrompt.key,
-        promptVersion: resolvedPrompt.version,
-      }).catch((err) => {
-        req.log?.warn?.({ err, appUserId }, "bone-buddy user message persistence failed");
-      });
-    }
-
     req.log?.info(
       {
         model: "gpt-5-mini",
@@ -720,11 +682,9 @@ router.post("/chat/bone-buddy", async (req, res) => {
 
     req.log?.info("chat/bone-buddy openai stream created");
 
-    let assistantContent = "";
     for await (const chunk of stream) {
       const delta = chunk.choices?.[0]?.delta?.content;
       if (delta) {
-        assistantContent += delta;
         res.write(
           `data: ${JSON.stringify({
             choices: [{ delta: { content: delta } }],
@@ -735,17 +695,6 @@ router.post("/chat/bone-buddy", async (req, res) => {
 
     res.write("data: [DONE]\n\n");
     res.end();
-
-    persistBoneBuddyMessage({
-      requestId,
-      appUserId,
-      role: "assistant",
-      content: assistantContent,
-      promptKey: resolvedPrompt.key,
-      promptVersion: resolvedPrompt.version,
-    }).catch((err) => {
-      req.log?.warn?.({ err, appUserId }, "bone-buddy assistant message persistence failed");
-    });
   } catch (err) {
     const openaiErr = err as {
       status?: number;

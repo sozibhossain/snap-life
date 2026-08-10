@@ -28,7 +28,10 @@ import { useWellbeing } from "@/context/WellbeingContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumGate } from "@/components/PremiumGate";
 import { useSubscription } from "@/lib/revenuecat";
-import { fetchWeeklyEventCounts } from "@/lib/events";
+import {
+  fetchWeeklyEventSummary,
+  type WeeklyEventSummary,
+} from "@/lib/events";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -50,9 +53,16 @@ function getLastNDateISOs(n: number): string[] {
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
-    out.push(d.toISOString().split("T")[0]);
+    out.push(dateISOFromDate(d));
   }
   return out;
+}
+
+function dateISOFromDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 // ─── Sparkline ────────────────────────────────────────────────────────────────
@@ -408,7 +418,10 @@ function ConsistencyCard() {
   const { user } = useAuth();
   const { activityLogs, nutritionLogs, supplements, todayActivity, nutritionStreak } = useHealth();
   const { entries: wellbeingEntries, currentStreak: wellbeingStreak } = useWellbeing();
-  const [weeklyEvents, setWeeklyEvents] = useState<Record<string, number>>({});
+  const [weeklySummary, setWeeklySummary] = useState<WeeklyEventSummary>({
+    counts: {},
+    daily: {},
+  });
 
   const DAYS = 7;
   const dayISOs   = useMemo(() => getLastNDateISOs(DAYS),   []);
@@ -417,11 +430,11 @@ function ConsistencyCard() {
   useEffect(() => {
     let cancelled = false;
     if (!user?.id) {
-      setWeeklyEvents({});
+      setWeeklySummary({ counts: {}, daily: {} });
       return;
     }
-    fetchWeeklyEventCounts(user.id).then((counts) => {
-      if (!cancelled) setWeeklyEvents(counts);
+    fetchWeeklyEventSummary(user.id).then((summary) => {
+      if (!cancelled) setWeeklySummary(summary);
     });
     return () => {
       cancelled = true;
@@ -434,7 +447,7 @@ function ConsistencyCard() {
   const breathingSet = useMemo(() => {
     const s = new Set<string>();
     wellbeingEntries.filter((e) => e.kind === "breathing").forEach((e) =>
-      s.add(new Date(e.completedAt).toISOString().split("T")[0])
+      s.add(dateISOFromDate(new Date(e.completedAt)))
     );
     return s;
   }, [wellbeingEntries]);
@@ -442,39 +455,50 @@ function ConsistencyCard() {
   const meditationSet = useMemo(() => {
     const s = new Set<string>();
     wellbeingEntries.filter((e) => e.kind === "meditation").forEach((e) =>
-      s.add(new Date(e.completedAt).toISOString().split("T")[0])
+      s.add(dateISOFromDate(new Date(e.completedAt)))
     );
     return s;
   }, [wellbeingEntries]);
 
-  const takenToday = supplements.filter((s) => s.taken).length;
-  const totalSupps = supplements.length;
+  const supplementItems = supplements.filter((s) => s.category !== "medication");
+  const medicationItems = supplements.filter((s) => s.category === "medication");
+  const takenToday = supplementItems.filter((s) => s.taken).length;
+  const totalSupps = supplementItems.length;
+  const medicationTakenToday = medicationItems.filter((s) => s.taken).length;
   const stepsToday = todayActivity?.steps ?? 0;
   const stepsPct   = Math.min(1, stepsToday / 8000);
-  const countChecks = (count: number) => {
-    const active = Math.min(DAYS, Math.max(0, Math.round(count)));
-    return dayISOs.map((_, i) => i >= DAYS - active);
+  const eventChecks = (...kinds: string[]) => {
+    return dayISOs.map((date) =>
+      kinds.some((kind) => (weeklySummary.daily[date]?.[kind] ?? 0) > 0),
+    );
   };
+  const weeklyEvents = weeklySummary.counts;
   const learningCount = weeklyEvents.lesson_completed ?? 0;
   const boneBuddyCount =
     (weeklyEvents.bone_buddy_message_sent ?? 0) + (weeklyEvents.bone_buddy_opened ?? 0);
   const communityCount =
-    (weeklyEvents.community_tab_opened ?? 0) + (weeklyEvents.coaching_booking_requested ?? 0);
+    (weeklyEvents.community_tab_opened ?? 0) +
+    (weeklyEvents.coaching_booking_requested ?? 0) +
+    (weeklyEvents.expert_support_requested ?? 0);
 
   const rows: Array<{ label: string; color: string; checks: boolean[] }> = [
     { label: "Nutrition", color: colors.xpGold,  checks: dayISOs.map((d) => nutritionSet.has(d)) },
     { label: "Activity",  color: colors.primary,  checks: dayISOs.map((d) => activitySet.has(d))  },
     { label: "Breathing", color: "#22d3ee",        checks: dayISOs.map((d) => breathingSet.has(d)) },
     { label: "Meditate",  color: "#a78bfa",        checks: dayISOs.map((d) => meditationSet.has(d)) },
-    { label: "Learning",  color: colors.accent,    checks: countChecks(learningCount) },
-    { label: "Buddy",     color: colors.success,   checks: countChecks(boneBuddyCount) },
-    { label: "Community", color: "#fb7185",        checks: countChecks(communityCount) },
+    { label: "Supplements", color: "#f59e0b", checks: eventChecks("supplement_taken") },
+    { label: "Medication", color: "#ef4444", checks: eventChecks("medication_taken") },
+    { label: "Learning",  color: colors.accent, checks: eventChecks("lesson_completed") },
+    { label: "Buddy", color: colors.success, checks: eventChecks("bone_buddy_message_sent", "bone_buddy_opened") },
+    { label: "Community", color: "#fb7185", checks: eventChecks("community_tab_opened", "coaching_booking_requested", "expert_support_requested") },
   ];
 
   const hasAnyData =
     activityLogs.length > 0 ||
     nutritionLogs.length > 0 ||
     wellbeingEntries.length > 0 ||
+    totalSupps > 0 ||
+    medicationItems.length > 0 ||
     learningCount > 0 ||
     boneBuddyCount > 0 ||
     communityCount > 0;
@@ -534,6 +558,14 @@ function ConsistencyCard() {
           <View style={cc.statCell}>
             <Text style={[cc.statValue, { color: colors.foreground }]}>{takenToday}/{totalSupps}</Text>
             <Text style={[cc.statLabel, { color: colors.mutedForeground }]}>supplements</Text>
+          </View>
+        )}
+        {medicationItems.length > 0 && (
+          <View style={cc.statCell}>
+            <Text style={[cc.statValue, { color: colors.foreground }]}>
+              {medicationTakenToday}/{medicationItems.length}
+            </Text>
+            <Text style={[cc.statLabel, { color: colors.mutedForeground }]}>medications</Text>
           </View>
         )}
       </View>

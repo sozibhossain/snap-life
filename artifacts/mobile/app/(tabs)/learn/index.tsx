@@ -1,7 +1,8 @@
 /**
  * SNAP Foundations — Learn tab.
  *
- * Visual roadmap: a vertical journey path with nodes for each lesson.
+ * Visual roadmap: a vertical journey path with nodes for each lesson. This
+ * index lives inside the tab navigator so lesson details retain bottom nav.
  * Completed nodes show a checkmark, the active node pulses, locked nodes
  * are muted with a lock. The connector line is solid for completed
  * sections and faded for upcoming ones.
@@ -14,6 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   Platform,
   Pressable,
@@ -32,7 +34,9 @@ import {
   LearnProgress,
   loadLearnProgress,
   unlockedLessonIds,
+  isPremiumLesson,
 } from "@/lib/learnContent";
+import { useSubscription } from "@/lib/revenuecat";
 
 // ── Pulsing ring for the active node ──────────────────────────────────────────
 
@@ -69,6 +73,7 @@ interface NodeProps {
   lesson: typeof LESSONS[number];
   isCompleted: boolean;
   isUnlocked: boolean;
+  isPremiumLocked: boolean;
   isFirst: boolean;
   isLast: boolean;
   prevCompleted: boolean;
@@ -80,14 +85,15 @@ function RoadmapNode({
   lesson,
   isCompleted,
   isUnlocked,
+  isPremiumLocked,
   isFirst,
   isLast,
   prevCompleted,
   colors,
   onPress,
 }: NodeProps) {
-  const isActive  = isUnlocked && !isCompleted;
-  const isLocked  = !isUnlocked;
+  const isActive  = isUnlocked && !isPremiumLocked && !isCompleted;
+  const isLocked  = !isUnlocked || isPremiumLocked;
 
   const accentHex =
     lesson.accent === "primary"  ? colors.primary  :
@@ -139,7 +145,7 @@ function RoadmapNode({
 
       {/* ── Lesson card ── */}
       <Pressable
-        disabled={isLocked}
+        disabled={!isUnlocked}
         onPress={onPress}
         style={({ pressed }) => [
           styles.lessonCard,
@@ -174,7 +180,9 @@ function RoadmapNode({
 
         {isLocked ? (
           <Text style={[styles.lockedHint, { color: colors.mutedForeground }]}>
-            Complete lesson {lesson.index - 1} to unlock
+            {isPremiumLocked
+              ? "Premium pathway — tap to view plans"
+              : `Complete lesson ${lesson.index - 1} to unlock`}
           </Text>
         ) : (
           <Text style={[styles.lessonTagline, { color: colors.mutedForeground }]} numberOfLines={2}>
@@ -210,6 +218,12 @@ function RoadmapNode({
               <Text style={[styles.metaText, { color: accentHex }]}>Up next</Text>
             </View>
           )}
+          {isPremiumLocked && (
+            <View style={[styles.metaChip, { backgroundColor: colors.accent + "15" }]}>
+              <Feather name="star" size={10} color={colors.accent} />
+              <Text style={[styles.metaText, { color: colors.accent }]}>Premium</Text>
+            </View>
+          )}
         </View>
       </Pressable>
     </View>
@@ -223,6 +237,7 @@ export default function LearnScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
+  const { hasPremiumOrTrial } = useSubscription();
 
   const [progress, setProgress] = useState<LearnProgress>(EMPTY_PROGRESS);
   const userId = user?.id ?? null;
@@ -327,6 +342,7 @@ export default function LearnScreen() {
           {LESSONS.map((lesson, idx) => {
             const isCompleted = progress.completedIds.includes(lesson.id);
             const isUnlocked  = unlocked.has(lesson.id);
+            const isPremiumLocked = isPremiumLesson(lesson) && !hasPremiumOrTrial;
             const prevCompleted = idx === 0 ? true : progress.completedIds.includes(LESSONS[idx - 1].id);
 
             return (
@@ -335,11 +351,25 @@ export default function LearnScreen() {
                 lesson={lesson}
                 isCompleted={isCompleted}
                 isUnlocked={isUnlocked}
+                isPremiumLocked={isPremiumLocked}
                 isFirst={idx === 0}
                 isLast={idx === LESSONS.length - 1}
                 prevCompleted={prevCompleted}
                 colors={colors}
-                onPress={() => router.push(`/learn/${lesson.id}` as never)}
+                onPress={() => {
+                  if (isPremiumLocked) {
+                    Alert.alert(
+                      "Premium Learning",
+                      "Advanced SNAP pathways are available with Premium.",
+                      [
+                        { text: "Not now", style: "cancel" },
+                        { text: "See plans", onPress: () => router.push("/subscription" as never) },
+                      ],
+                    );
+                    return;
+                  }
+                  router.push(`/learn/${lesson.id}` as never);
+                }}
               />
             );
           })}

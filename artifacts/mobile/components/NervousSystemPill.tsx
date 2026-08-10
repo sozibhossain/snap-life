@@ -78,7 +78,7 @@ export function NervousSystemPill() {
   const route =
     readout.recommendation.surface === "breathing"
       ? "/breathing-studio"
-      : "/meditation";
+      : `/meditation?session=${encodeURIComponent(readout.recommendation.sessionHint)}`;
 
   return (
     <Animated.View style={{ opacity: fade }}>

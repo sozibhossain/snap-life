@@ -48,8 +48,8 @@
       "node": "22.16.0",
       "distribution": "store",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://2.24.141.11:5050",
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZW5nYWdpbmctc2VhaG9yc2UtNTkuY2xlcmsuYWNjb3VudHMuZGV2JA",
+        "EXPO_PUBLIC_API_URL": "https://snap-life-api.onrender.com",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuc25hcGxpZmUuY28udWsk",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_mwBZTxsGGmiudnZsGYAiRoEzdfZ",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "goog_nlLeoaOHPDicPFZhtMuFuFCZEgC"
       },

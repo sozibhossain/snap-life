@@ -73,6 +73,17 @@ export interface ActivityLog {
   calories: number;
   activeMinutes: number;
   distance: number;
+  exerciseSessions?: Array<{
+    kind:
+      | "walking"
+      | "resistance"
+      | "weight_bearing"
+      | "balance"
+      | "yoga"
+      | "pilates"
+      | "tai_chi";
+    durationMinutes: number;
+  }>;
 }
 
 export type NutritionMealKey = BridgeMealKey;
@@ -141,6 +152,8 @@ export interface Supplement {
   isCustom?: boolean;
   taken: boolean;
   takenAt?: string;
+  missedCount?: number;
+  lastMissedAt?: string;
 }
 
 /** Numeric contribution from a single meal — what gets added to (or
@@ -188,6 +201,7 @@ interface HealthContextType {
     portionMultiplier?: number,
   ) => Promise<void>;
   markSupplementTaken: (id: string) => Promise<void>;
+  markMedicationMissed: (id: string) => Promise<void>;
   addSupplement: (item: Omit<Supplement, "id" | "taken" | "takenAt">) => Promise<void>;
   removeSupplement: (id: string) => Promise<void>;
   getLatestDexaScore: () => number | null;
@@ -603,6 +617,43 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function markMedicationMissed(id: string) {
+    const missedItem = supplements.find(
+      (item) => item.id === id && item.category === "medication",
+    );
+    if (!missedItem) return;
+
+    const updated = supplements.map((item) =>
+      item.id === id
+        ? {
+            ...item,
+            taken: false,
+            takenAt: undefined,
+            missedCount: (item.missedCount ?? 0) + 1,
+            lastMissedAt: new Date().toISOString(),
+          }
+        : item,
+    );
+    setSupplements(updated);
+    await AsyncStorage.setItem(
+      keysFor(userId).supplements,
+      JSON.stringify(updated),
+    );
+    enqueueSync({
+      appUserId: userId,
+      domain: "supplements",
+      modifier: null,
+      method: "PUT",
+      path: SyncPaths.supplements(),
+      body: { state: { supplements: updated }, updatedAtMs: Date.now() },
+    });
+    logInteractionEvent({
+      appUserId: userId,
+      kind: "medication_missed",
+      payload: { id: missedItem.id, name: missedItem.name },
+    });
+  }
+
   async function addSupplement(item: Omit<Supplement, "id" | "taken" | "takenAt">) {
     const newItem: Supplement = {
       ...item,
@@ -828,6 +879,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         upsertTodayNutrition,
         markMealEaten,
         markSupplementTaken,
+        markMedicationMissed,
         addSupplement,
         removeSupplement,
         getLatestDexaScore,

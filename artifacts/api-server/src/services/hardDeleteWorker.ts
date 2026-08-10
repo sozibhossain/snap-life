@@ -31,6 +31,9 @@ import {
   userTokensTable,
   subscriptionEventsTable,
   feedbackTable,
+  analyticsConsentTable,
+  boneBuddyChatMessagesTable,
+  outcomeEntriesTable,
 } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { insertAuditLog } from "../lib/audit";
@@ -72,6 +75,15 @@ async function hardDeleteUserCascade(appUserId: string, purgedAt: Date): Promise
     db.delete(userTokensTable).where(eq(userTokensTable.appUserId, appUserId)),
     db.delete(subscriptionEventsTable).where(eq(subscriptionEventsTable.appUserId, appUserId)),
     db.delete(feedbackTable).where(eq(feedbackTable.appUserId, appUserId)),
+    db
+      .delete(analyticsConsentTable)
+      .where(eq(analyticsConsentTable.appUserId, appUserId)),
+    db
+      .delete(boneBuddyChatMessagesTable)
+      .where(eq(boneBuddyChatMessagesTable.appUserId, appUserId)),
+    db
+      .delete(outcomeEntriesTable)
+      .where(eq(outcomeEntriesTable.appUserId, appUserId)),
   ]);
   await db.delete(usersTable).where(eq(usersTable.appUserId, appUserId));
   // Non-fatal audit entry — written after the delete succeeds.

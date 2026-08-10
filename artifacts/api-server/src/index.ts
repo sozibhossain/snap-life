@@ -8,6 +8,7 @@ import { startTestimonialScheduler } from "./services/testimonialWorker";
 import { startTrialCleanupScheduler } from "./services/trialCleanupWorker";
 import { startTrialReminderScheduler } from "./services/trialReminderWorker";
 import { startWeeklySnapShotScheduler } from "./services/weeklySnapShotWorker";
+import { startDailyPushScheduler } from "./services/dailyPushWorker";
 
 // Last-resort safety nets. A stray rejection or throw that escapes a
 // route/worker's own try/catch is logged here instead of silently taking
@@ -81,4 +82,7 @@ app.listen(port, (err) => {
   // enqueues a product update newsletter for every active user.
   // No-op under NODE_ENV=test.
   startMonthlyNewsletterScheduler();
+  // Opted-in native and web devices receive one Bone Buddy nudge at 09:00
+  // in the user's saved timezone. The sender enforces the global 24h cap.
+  startDailyPushScheduler();
 });

@@ -16,6 +16,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHealth } from "@/context/HealthContext";
 import { useColors } from "@/hooks/useColors";
 
+const EXERCISE_TYPES = [
+  ["walking", "Walking"],
+  ["resistance", "Resistance"],
+  ["weight_bearing", "Weight-bearing"],
+  ["balance", "Balance"],
+  ["yoga", "Yoga"],
+  ["pilates", "Pilates"],
+  ["tai_chi", "Tai chi"],
+] as const;
+
 export default function ActivityScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -26,6 +36,7 @@ export default function ActivityScreen() {
   const [calories, setCalories] = useState("");
   const [activeMinutes, setActiveMinutes] = useState("");
   const [distance, setDistance] = useState("");
+  const [exerciseTypes, setExerciseTypes] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -47,6 +58,10 @@ export default function ActivityScreen() {
         calories: isNaN(c) ? 0 : c,
         activeMinutes: isNaN(m) ? 0 : m,
         distance: isNaN(d) ? 0 : d,
+        exerciseSessions: exerciseTypes.map((kind) => ({
+          kind: kind as (typeof EXERCISE_TYPES)[number][0],
+          durationMinutes: isNaN(m) ? 0 : m,
+        })),
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
@@ -118,6 +133,42 @@ export default function ActivityScreen() {
           </View>
         ))}
 
+        <View
+          style={[
+            styles.exerciseCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.exerciseTitle, { color: colors.foreground }]}>Exercise types</Text>
+          <Text style={[styles.exerciseHint, { color: colors.mutedForeground }]}>Select all that apply to today's active minutes.</Text>
+          <View style={styles.chipWrap}>
+            {EXERCISE_TYPES.map(([value, label]) => {
+              const selected = exerciseTypes.includes(value);
+              return (
+                <Pressable
+                  key={value}
+                  onPress={() =>
+                    setExerciseTypes((current) =>
+                      selected
+                        ? current.filter((item) => item !== value)
+                        : [...current, value],
+                    )
+                  }
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: selected ? colors.primary : "transparent",
+                      borderColor: selected ? colors.primary : colors.border,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.chipText, { color: selected ? "#fff" : colors.foreground }]}>{label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
         {error.length > 0 && (
           <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text>
         )}
@@ -182,4 +233,10 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   tipText: { fontSize: 12, fontFamily: "Inter_400Regular", flex: 1, lineHeight: 18 },
+  exerciseCard: { padding: 14, borderRadius: 14, borderWidth: 1, gap: 7 },
+  exerciseTitle: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  exerciseHint: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
+  chip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  chipText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
 });

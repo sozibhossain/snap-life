@@ -198,6 +198,9 @@ vi.mock("@workspace/db", () => {
     "feedback",
     "pendingEmails",
     "auditEvents",
+    "analyticsConsent",
+    "boneBuddyChatMessages",
+    "outcomeEntries",
   ];
   const proxies: Record<string, unknown> = {};
   for (const n of tableNames) proxies[n] = tableProxy(n);
@@ -357,6 +360,9 @@ vi.mock("@workspace/db", () => {
     feedbackTable: proxies.feedback,
     pendingEmailsTable: proxies.pendingEmails,
     auditEventsTable: proxies.auditEvents,
+    analyticsConsentTable: proxies.analyticsConsent,
+    boneBuddyChatMessagesTable: proxies.boneBuddyChatMessages,
+    outcomeEntriesTable: proxies.outcomeEntries,
   };
 });
 
@@ -409,6 +415,43 @@ beforeEach(() => {
   // here so the gate-positive cases work; the gate-negative cases
   // override the env locally.
   process.env.SNAP_LIFE_ENV = "staging";
+});
+
+describe("/api/me/analytics-consent", () => {
+  it("defaults to opt-out and persists an explicit opt-in", async () => {
+    const initial = await fetch(`${baseUrl}/me/analytics-consent`);
+    expect(initial.status).toBe(200);
+    await expect(initial.json()).resolves.toMatchObject({
+      communityAnalytics: false,
+      researchUse: false,
+      consentVersion: "community-v1",
+    });
+
+    const saved = await fetch(`${baseUrl}/me/analytics-consent`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ communityAnalytics: true, researchUse: true }),
+    });
+    expect(saved.status).toBe(200);
+    await expect(saved.json()).resolves.toMatchObject({
+      communityAnalytics: true,
+      researchUse: true,
+    });
+    expect(tbl("analyticsConsent")[0]).toMatchObject({
+      appUserId: "user-1",
+      communityAnalytics: true,
+      researchUse: true,
+    });
+  });
+
+  it("does not allow research use without community analytics consent", async () => {
+    const res = await fetch(`${baseUrl}/me/analytics-consent`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ communityAnalytics: false, researchUse: true }),
+    });
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("GET /api/me/export", () => {
@@ -468,6 +511,9 @@ describe("GET /api/me/export", () => {
       "subscriber",
       "subscriptionEvents",
       "feedback",
+      "analyticsConsent",
+      "legacyBoneBuddyMessages",
+      "outcomeEntries",
     ]) {
       expect(body).toHaveProperty(key);
     }

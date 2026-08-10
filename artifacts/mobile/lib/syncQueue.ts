@@ -22,7 +22,8 @@ export type SyncDomain =
   | "supplements"
   | "gamification"
   | "wellbeing"
-  | "assessment";
+  | "assessment"
+  | "outcomes";
 
 export interface SyncQueueItem {
   /** Stable client id (used in tests + the persisted log). */
@@ -33,7 +34,7 @@ export interface SyncQueueItem {
    * gamification) this is just the domain name — a newer enqueue wipes
    * out any earlier pending item under the same key. For per-day
    * domains (nutrition, activity, meal-plan) the key is `${domain}:${day}`.
-   * Append-only domains (wellbeing, assessment) use a unique
+   * Append-only domains (wellbeing, assessment, outcomes) use a unique
    * client-generated id so retries are idempotent but distinct entries
    * never collapse into one.
    */

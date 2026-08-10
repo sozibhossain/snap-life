@@ -12,6 +12,7 @@ import { authHeader } from "@/lib/userToken";
 import { getApiBaseUrl } from "@/lib/serverIdentity";
 import { summariseWeekSources, todayLocalISO } from "@/lib/weeklySnap";
 import {
+  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -33,6 +34,75 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: string;
+}
+
+const BONE_BUDDY_TIMEOUT_MS = 45_000;
+
+type SseReader = {
+  read: () => Promise<{ done: boolean; value?: Uint8Array }>;
+  cancel: () => Promise<unknown>;
+};
+
+/**
+ * Consume an OpenAI-style SSE stream without losing JSON when a network
+ * chunk ends halfway through a line. The previous implementation split each
+ * chunk independently, which made iOS connections occasionally produce an
+ * empty/partial Bone Buddy answer.
+ */
+async function readBoneBuddyStream(
+  reader: SseReader,
+  onContent: (content: string) => void,
+  isCurrent: () => boolean = () => true,
+): Promise<string> {
+  const decoder = new TextDecoder();
+  let buffered = "";
+  let fullContent = "";
+  let finished = false;
+
+  const consumeLine = (rawLine: string) => {
+    const line = rawLine.replace(/\r$/, "");
+    if (!line.startsWith("data:")) return;
+    const data = line.slice(5).trimStart();
+    if (data === "[DONE]") {
+      finished = true;
+      return;
+    }
+    if (!data) return;
+    try {
+      const parsed = JSON.parse(data) as {
+        choices?: Array<{ delta?: { content?: string } }>;
+      };
+      const delta = parsed.choices?.[0]?.delta?.content ?? "";
+      if (delta) {
+        fullContent += delta;
+        if (isCurrent()) onContent(fullContent);
+      }
+    } catch {
+      // Keep waiting for valid SSE lines. A malformed upstream event should
+      // not discard the content already received.
+    }
+  };
+
+  while (!finished) {
+    if (!isCurrent()) {
+      try { await reader.cancel(); } catch {}
+      break;
+    }
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffered += decoder.decode(value, { stream: true });
+    let newline = buffered.indexOf("\n");
+    while (newline >= 0) {
+      consumeLine(buffered.slice(0, newline));
+      buffered = buffered.slice(newline + 1);
+      if (finished) break;
+      newline = buffered.indexOf("\n");
+    }
+  }
+
+  buffered += decoder.decode();
+  if (!finished && buffered.trim()) consumeLine(buffered);
+  return fullContent;
 }
 
 /**
@@ -219,14 +289,12 @@ export default function CoachScreen() {
     messagesRef.current = messages;
   }, [messages]);
 
-  // On focus (re-entry to the Coach tab): clear the badge for today,
-  // fire-and-forget the proactive daily nudge, AND — once per (user,
-  // local date) — append a fresh in-chat daily check-in if the user
+  // On focus (re-entry to the Coach tab): clear the badge for today and,
+  // once per (user, local date), append a fresh in-chat daily check-in if the user
   // already has chat history but hasn't received today's check-in yet.
   // useFocusEffect re-runs on every focus, so this works correctly
   // across day-rollover even if the tab stays mounted. Server-side
-  // 24h gate inside sendBoneBuddyPush is the second line of defence.
-  const dailyNudgeFiredKeyRef = useRef<string | null>(null);
+  // Scheduled push delivery is handled independently by the API worker.
   const dailyPrefillKeyRef = useRef<string | null>(null);
   const weeklyCheckInFiredKeyRef = useRef<string | null>(null);
   useFocusEffect(
@@ -244,25 +312,6 @@ export default function CoachScreen() {
       const dayKey = `${uid}:${today}`;
 
       // 1) Push nudge — once per (user, day) per app session.
-      if (dailyNudgeFiredKeyRef.current !== dayKey) {
-        dailyNudgeFiredKeyRef.current = dayKey;
-        void (async () => {
-          try {
-            const base = getApiBase();
-            if (!base) return;
-            const auth = await authHeader(uid);
-            if (!auth.Authorization) return;
-            await fetch(`${base}/api/push/daily-nudge`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", ...auth },
-              body: JSON.stringify({ firstName, todayLocalDate: today }),
-            });
-          } catch {
-            // best-effort
-          }
-        })();
-      }
-
       // 2) Weekly check-in — once every 7 days when history exists.
       // Fires before the daily prefill check so they don't both run.
       void (async () => {
@@ -356,6 +405,7 @@ export default function CoachScreen() {
    */
   const welcomeAbortRef = useRef<AbortController | null>(null);
   const welcomeForKeyRef = useRef<string | null>(null);
+  const messageAbortRef = useRef<AbortController | null>(null);
 
   // Cancel any in-flight kickoff when the user/account (and therefore
   // historyKey) changes, or when the screen unmounts. We also clear the
@@ -369,6 +419,12 @@ export default function CoachScreen() {
         welcomeAbortRef.current.abort();
         welcomeAbortRef.current = null;
         welcomeForKeyRef.current = null;
+        setIsSending(false);
+        setStreamingContent("");
+      }
+      if (messageAbortRef.current) {
+        messageAbortRef.current.abort();
+        messageAbortRef.current = null;
         setIsSending(false);
         setStreamingContent("");
       }
@@ -629,6 +685,7 @@ export default function CoachScreen() {
 
     const startedForKey = historyKey;
     const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), BONE_BUDDY_TIMEOUT_MS);
     welcomeAbortRef.current = controller;
     welcomeForKeyRef.current = startedForKey;
 
@@ -660,29 +717,11 @@ export default function CoachScreen() {
       let fullContent = "";
       if (response.body) {
         const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        while (true) {
-          if (!isStillCurrent()) {
-            try { await reader.cancel(); } catch (e) {}
-            return;
-          }
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") break;
-              try {
-                const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta?.content ?? "";
-                fullContent += delta;
-                if (isStillCurrent()) setStreamingContent(fullContent);
-              } catch (e) {}
-            }
-          }
-        }
+        fullContent = await readBoneBuddyStream(
+          reader,
+          setStreamingContent,
+          isStillCurrent,
+        );
       }
 
       if (!isStillCurrent()) return;
@@ -711,6 +750,7 @@ export default function CoachScreen() {
       // next time the user opens the chat.
       setMessages([fallback]);
     } finally {
+      clearTimeout(timeout);
       // Only release UI state + the in-flight gate if this request is the
       // one currently active for this key. A stale request finishing later
       // must NOT clear isSending for a newer in-flight request.
@@ -738,7 +778,7 @@ export default function CoachScreen() {
 
   /**
    * Daily check-in pre-fill — used when the user already has chat
-   * history but hasn't yet received today's proactive opener. Streams
+   * history but hasn't yet received today's in-chat opener. Streams
    * a single short, contextual line + open question via the same
    * chat-backend kickoff path, then APPENDS it to the persisted history
    * (rather than replacing). Race-safe re-using the same in-flight gate
@@ -748,6 +788,7 @@ export default function CoachScreen() {
     if (welcomeForKeyRef.current === historyKey) return;
     const startedForKey = historyKey;
     const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), BONE_BUDDY_TIMEOUT_MS);
     welcomeAbortRef.current = controller;
     welcomeForKeyRef.current = startedForKey;
     const isStillCurrent = () =>
@@ -775,29 +816,11 @@ export default function CoachScreen() {
       let fullContent = "";
       if (response.body) {
         const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        while (true) {
-          if (!isStillCurrent()) {
-            try { await reader.cancel(); } catch (e) {}
-            return;
-          }
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") break;
-              try {
-                const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta?.content ?? "";
-                fullContent += delta;
-                if (isStillCurrent()) setStreamingContent(fullContent);
-              } catch (e) {}
-            }
-          }
-        }
+        fullContent = await readBoneBuddyStream(
+          reader,
+          setStreamingContent,
+          isStillCurrent,
+        );
       }
 
       if (!isStillCurrent()) return;
@@ -819,6 +842,7 @@ export default function CoachScreen() {
       // them a touchpoint for today.
       if ((err as { name?: string })?.name === "AbortError") return;
     } finally {
+      clearTimeout(timeout);
       if (isStillCurrent()) {
         setIsSending(false);
         setStreamingContent("");
@@ -837,6 +861,7 @@ export default function CoachScreen() {
     if (welcomeForKeyRef.current === historyKey) return;
     const startedForKey = historyKey;
     const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), BONE_BUDDY_TIMEOUT_MS);
     welcomeAbortRef.current = controller;
     welcomeForKeyRef.current = startedForKey;
     const isStillCurrent = () =>
@@ -865,28 +890,11 @@ export default function CoachScreen() {
       let fullContent = "";
       if (response.body) {
         const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        while (true) {
-          if (!isStillCurrent()) {
-            try { await reader.cancel(); } catch (e) {}
-            return;
-          }
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          for (const line of chunk.split("\n")) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") break;
-              try {
-                const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta?.content ?? "";
-                fullContent += delta;
-                if (isStillCurrent()) setStreamingContent(fullContent);
-              } catch (e) {}
-            }
-          }
-        }
+        fullContent = await readBoneBuddyStream(
+          reader,
+          setStreamingContent,
+          isStillCurrent,
+        );
       }
 
       if (!isStillCurrent() || !fullContent.trim()) return;
@@ -903,6 +911,7 @@ export default function CoachScreen() {
     } catch (err) {
       if ((err as { name?: string })?.name === "AbortError") return;
     } finally {
+      clearTimeout(timeout);
       if (isStillCurrent()) {
         setIsSending(false);
         setStreamingContent("");
@@ -963,7 +972,13 @@ export default function CoachScreen() {
       });
     }
     setIsSending(true);
-    setStreamingContent("...");
+    // Keep the streaming content empty until the first token arrives. The
+    // empty streaming message renders as a dedicated thinking indicator.
+    setStreamingContent("");
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), BONE_BUDDY_TIMEOUT_MS);
+    messageAbortRef.current = controller;
 
     try {
       const auth = user?.id ? await authHeader(user.id) : { Authorization: "" };
@@ -978,6 +993,7 @@ export default function CoachScreen() {
           userContext: buildUserContext(),
           isPremium: hasPremiumOrTrial,
         }),
+        signal: controller.signal,
       });
 
       // If the server returned a non-2xx (e.g. upstream 5xx), don't try to
@@ -989,26 +1005,12 @@ export default function CoachScreen() {
       let fullContent = "";
       if (response.body) {
         const reader = response.body.getReader();
-        const decoder = new TextDecoder();
         setStreamingContent("");
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") break;
-              try {
-                const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta?.content ?? "";
-                fullContent += delta;
-                setStreamingContent(fullContent);
-              } catch (e) {}
-            }
-          }
-        }
+        fullContent = await readBoneBuddyStream(
+          reader,
+          setStreamingContent,
+          () => !controller.signal.aborted && messageAbortRef.current === controller,
+        );
       } else {
         const data = (await response.json()) as { message?: string };
         fullContent =
@@ -1027,6 +1029,8 @@ export default function CoachScreen() {
       setMessages(updated);
       saveHistory(updated);
     } catch (err) {
+      if ((err as { name?: string })?.name === "AbortError") return;
+      if (messageAbortRef.current !== controller) return;
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -1038,8 +1042,12 @@ export default function CoachScreen() {
       setMessages(updated);
       saveHistory(updated);
     } finally {
-      setIsSending(false);
-      setStreamingContent("");
+      clearTimeout(timeout);
+      if (messageAbortRef.current === controller) {
+        messageAbortRef.current = null;
+        setIsSending(false);
+        setStreamingContent("");
+      }
     }
   }
 
@@ -1076,7 +1084,7 @@ export default function CoachScreen() {
   }
 
   const displayMessages =
-    isSending && streamingContent
+    isSending
       ? [
           ...messages,
           {
@@ -1219,8 +1227,9 @@ export default function CoachScreen() {
               </View>
             );
           }
-          // Don't show speaker on the live-streaming placeholder ("...").
+          // Don't show speaker controls on the live-streaming message.
           const isStreaming = item.id === "streaming";
+          const isWaitingForReply = isStreaming && !item.content.trim();
           const isPlaying = speakingId === item.id;
           return (
             <View
@@ -1234,40 +1243,70 @@ export default function CoachScreen() {
                 colors.shadows.sm,
               ]}
             >
-              <Text style={[styles.messageText, { color: colors.foreground }]}>
-                {item.content}
-              </Text>
-              <View style={styles.assistantMeta}>
-                <Text
-                  style={[styles.messageTime, { color: colors.mutedForeground }]}
+              {isWaitingForReply ? (
+                <View
+                  style={styles.thinkingIndicator}
+                  accessibilityRole="progressbar"
+                  accessibilityLabel="Bone Buddy is thinking"
+                  accessibilityLiveRegion="polite"
                 >
-                  {new Date(item.timestamp).toLocaleTimeString("en-GB", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    ...(user?.timezone ? { timeZone: user.timezone } : {}),
-                  })}
-                </Text>
-                {!isStreaming && (
-                  <Pressable
-                    onPress={() => speakMessage(item)}
-                    hitSlop={8}
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text
                     style={[
-                      styles.speakerBtn,
-                      isPlaying && {
-                        backgroundColor: colors.primary + "18",
-                        borderColor: colors.primary + "40",
-                      },
+                      styles.thinkingText,
+                      { color: colors.mutedForeground },
                     ]}
-                    accessibilityLabel={isPlaying ? "Stop reading" : "Read aloud"}
                   >
-                    <Feather
-                      name={isPlaying ? "volume-2" : "volume-1"}
-                      size={13}
-                      color={isPlaying ? colors.primary : colors.mutedForeground}
-                    />
-                  </Pressable>
-                )}
-              </View>
+                    Bone Buddy is thinking…
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <Text
+                    style={[styles.messageText, { color: colors.foreground }]}
+                  >
+                    {item.content}
+                  </Text>
+                  <View style={styles.assistantMeta}>
+                    <Text
+                      style={[
+                        styles.messageTime,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
+                      {new Date(item.timestamp).toLocaleTimeString("en-GB", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        ...(user?.timezone ? { timeZone: user.timezone } : {}),
+                      })}
+                    </Text>
+                    {!isStreaming && (
+                      <Pressable
+                        onPress={() => speakMessage(item)}
+                        hitSlop={8}
+                        style={[
+                          styles.speakerBtn,
+                          isPlaying && {
+                            backgroundColor: colors.primary + "18",
+                            borderColor: colors.primary + "40",
+                          },
+                        ]}
+                        accessibilityLabel={
+                          isPlaying ? "Stop reading" : "Read aloud"
+                        }
+                      >
+                        <Feather
+                          name={isPlaying ? "volume-2" : "volume-1"}
+                          size={13}
+                          color={
+                            isPlaying ? colors.primary : colors.mutedForeground
+                          }
+                        />
+                      </Pressable>
+                    )}
+                  </View>
+                </>
+              )}
             </View>
           );
         }}
@@ -1423,6 +1462,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginTop: 4,
+  },
+  thinkingIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minHeight: 22,
+  },
+  thinkingText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
   },
   messageTime: {
     fontSize: 10,

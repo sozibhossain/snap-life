@@ -79,6 +79,9 @@ vi.mock("@workspace/db", () => {
     userTokensTable: makeTable("user_tokens"),
     subscriptionEventsTable: makeTable("subscription_events"),
     feedbackTable: makeTable("feedback"),
+    analyticsConsentTable: makeTable("analytics_consent"),
+    boneBuddyChatMessagesTable: makeTable("bone_buddy_chat_messages"),
+    outcomeEntriesTable: makeTable("outcome_entries"),
     // Exported so tests can reference the names; the worker must never delete these.
     auditLogsTable: makeTable("audit_logs"),
     auditEventsTable: makeTable("audit_events"),
@@ -137,6 +140,9 @@ const EXPECTED_USER_DATA_TABLES = new Set([
   "user_tokens",
   "subscription_events",
   "feedback",
+  "analytics_consent",
+  "bone_buddy_chat_messages",
+  "outcome_entries",
 ]);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

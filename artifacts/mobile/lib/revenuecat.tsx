@@ -356,6 +356,12 @@ function useSubscriptionContext() {
     const sub = AppState.addEventListener("change", (state) => {
       if (state === "active") {
         void queryClient.invalidateQueries({
+          queryKey: ["revenuecat", "customer-info"],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["revenuecat", "offerings"],
+        });
+        void queryClient.invalidateQueries({
           queryKey: ["server", "subscription", subscriptionIdentity],
         });
       }

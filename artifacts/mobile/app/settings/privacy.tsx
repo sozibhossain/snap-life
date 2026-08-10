@@ -22,7 +22,7 @@ import { Feather } from "@expo/vector-icons";
 import { useAuth as useClerkAuth } from "@clerk/expo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -31,6 +31,7 @@ import {
   ScrollView,
   Share,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
@@ -42,8 +43,11 @@ import { getUserToken } from "@/lib/userToken";
 import {
   deleteMyAccount,
   downloadExportArchive,
+  fetchAnalyticsConsent,
   fetchMyExport,
   resetMyTesterData,
+  updateAnalyticsConsent,
+  type AnalyticsConsentState,
 } from "@/lib/meApi";
 
 type ConfirmFn = (title: string, message: string) => Promise<boolean>;
@@ -76,6 +80,15 @@ export default function PrivacyScreen() {
   const { user, isTester, logout } = useAuth();
   const { getToken } = useClerkAuth();
   const [busy, setBusy] = useState<"export" | "delete" | "reset" | null>(null);
+  const [consent, setConsent] = useState<AnalyticsConsentState>({
+    communityAnalytics: false,
+    researchUse: false,
+    consentVersion: "community-v1",
+    consentedAt: null,
+    withdrawnAt: null,
+  });
+  const [consentLoading, setConsentLoading] = useState(true);
+  const [consentSaving, setConsentSaving] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -89,6 +102,53 @@ export default function PrivacyScreen() {
       // ignore; fall through to legacy
     }
     return user?.id ? await getUserToken(user.id) : null;
+  }
+
+  useEffect(() => {
+    let active = true;
+    setConsentLoading(true);
+    void (async () => {
+      const token = await resolveToken();
+      const result = await fetchAnalyticsConsent(token);
+      if (!active) return;
+      if (result.ok && result.data) setConsent(result.data);
+      setConsentLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
+    // The active account is the identity boundary for consent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  async function saveConsent(
+    communityAnalytics: boolean,
+    researchUse: boolean,
+  ) {
+    if (consentSaving) return;
+    const previous = consent;
+    const optimistic = {
+      ...consent,
+      communityAnalytics,
+      researchUse: communityAnalytics && researchUse,
+    };
+    setConsent(optimistic);
+    setConsentSaving(true);
+    try {
+      const token = await resolveToken();
+      const result = await updateAnalyticsConsent(token, optimistic);
+      if (result.ok && result.data) {
+        setConsent(result.data);
+      } else {
+        setConsent(previous);
+        notify(
+          "Consent update failed",
+          "We couldn't save your choice. Please check your connection and try again.",
+        );
+      }
+    } finally {
+      setConsentSaving(false);
+    }
   }
 
   async function handleExport() {
@@ -285,10 +345,62 @@ export default function PrivacyScreen() {
           </Text>
           <Text style={[styles.gdprText, { color: colors.mutedForeground }]}>
             Your health and wellbeing information is used to provide SNAP Life
-            features and is not sold. Use the controls below to export or
-            remove your account data.
+            features and is not sold. Use the controls below to export or remove
+            your account data.
           </Text>
         </View>
+
+        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>
+          Community insights & research
+        </Text>
+        <Card variant="outlined">
+          <View
+            style={[styles.consentRow, { borderBottomColor: colors.border }]}
+          >
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>
+                Anonymised community insights
+              </Text>
+              <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>
+                Include your health and usage data only in grouped statistics.
+                Individual records and conversations are never shown.
+              </Text>
+            </View>
+            {consentLoading ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Switch
+                value={consent.communityAnalytics}
+                disabled={consentSaving}
+                onValueChange={(value) =>
+                  saveConsent(value, value ? consent.researchUse : false)
+                }
+                trackColor={{ false: colors.muted, true: colors.primary }}
+                thumbColor="#fff"
+              />
+            )}
+          </View>
+          <View style={styles.consentRow}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>
+                Approved research use
+              </Text>
+              <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>
+                Allow de-identified, minimum-group-size protected data in
+                approved research and partner reports.
+              </Text>
+            </View>
+            <Switch
+              value={consent.researchUse}
+              disabled={
+                consentLoading || consentSaving || !consent.communityAnalytics
+              }
+              onValueChange={(value) => saveConsent(true, value)}
+              trackColor={{ false: colors.muted, true: colors.primary }}
+              thumbColor="#fff"
+            />
+          </View>
+        </Card>
 
         <Text style={[styles.sectionLabel, { color: colors.foreground }]}>
           Your data
@@ -337,16 +449,16 @@ export default function PrivacyScreen() {
                 >
                   {item.label}
                 </Text>
-                <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>
+                <Text
+                  style={[styles.rowDesc, { color: colors.mutedForeground }]}
+                >
                   {item.desc}
                 </Text>
               </View>
               {busy === item.key ? (
                 <ActivityIndicator
                   size="small"
-                  color={
-                    item.destructive ? colors.destructive : colors.primary
-                  }
+                  color={item.destructive ? colors.destructive : colors.primary}
                 />
               ) : (
                 <Feather
@@ -437,6 +549,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 16,
+  },
+  consentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
   },
   rowIcon: {
     width: 32,

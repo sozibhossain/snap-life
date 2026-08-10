@@ -28,6 +28,7 @@ import {
   gamificationStateTable,
   assessmentResultsTable,
   supplementStateTable,
+  outcomeEntriesTable,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import {
@@ -123,6 +124,32 @@ router.put("/sync/profile", async (req, res) => {
     typeof p[k] === "string" ? (p[k] as string) : null;
   const pickInt = (k: string) =>
     typeof p[k] === "number" && Number.isFinite(p[k]) ? Math.floor(p[k] as number) : null;
+  const pickStringArray = (k: string, max = 20) =>
+    Array.isArray(p[k])
+      ? (p[k] as unknown[])
+          .filter((v): v is string => typeof v === "string")
+          .map((v) => v.trim().slice(0, 80))
+          .filter(Boolean)
+          .slice(0, max)
+      : [];
+  const fractureHistory = Array.isArray(p.fractureHistory)
+    ? (p.fractureHistory as unknown[])
+        .filter(
+          (v): v is { year?: unknown; location?: unknown } =>
+            typeof v === "object" && v !== null,
+        )
+        .map((v) => ({
+          year:
+            typeof v.year === "number" && Number.isFinite(v.year)
+              ? Math.floor(v.year)
+              : null,
+          location:
+            typeof v.location === "string"
+              ? v.location.trim().slice(0, 60)
+              : "other",
+        }))
+        .slice(0, 30)
+    : [];
 
   // Locale fields are validated even on the loosely-typed sync path
   // so the canonical /api/me/profile contract isn't bypassable by
@@ -149,6 +176,10 @@ router.put("/sync/profile", async (req, res) => {
     joinedAt: pickStr("joinedAt"),
     country,
     timezone,
+    diagnosisYear: pickInt("diagnosisYear"),
+    goals: pickStringArray("goals"),
+    coexistingConditions: pickStringArray("coexistingConditions"),
+    fractureHistory,
     level: pickInt("level") ?? 1,
     xp: pickInt("xp") ?? 0,
     xpToNextLevel: pickInt("xpToNextLevel") ?? 500,
@@ -175,6 +206,10 @@ router.put("/sync/profile", async (req, res) => {
           joinedAt: row.joinedAt,
           country: row.country,
           timezone: row.timezone,
+          diagnosisYear: row.diagnosisYear,
+          goals: row.goals,
+          coexistingConditions: row.coexistingConditions,
+          fractureHistory: row.fractureHistory,
           level: row.level,
           xp: row.xp,
           xpToNextLevel: row.xpToNextLevel,
@@ -406,6 +441,49 @@ router.post("/sync/assessment", async (req, res) => {
   }
 });
 
+/** Append a repeatable, structured patient-reported outcome check-in. */
+router.post("/sync/outcomes", async (req, res) => {
+  const appUserId = await requireUserAuth(req, res);
+  if (!appUserId) return;
+  const raw = req.body as
+    | { entryId?: unknown; entry?: unknown; recordedAtMs?: unknown }
+    | undefined;
+  const entry = raw?.entry;
+  if (
+    typeof raw?.entryId !== "string" ||
+    raw.entryId.length < 1 ||
+    raw.entryId.length > 100 ||
+    typeof entry !== "object" ||
+    entry === null ||
+    typeof raw.recordedAtMs !== "number" ||
+    !Number.isFinite(raw.recordedAtMs)
+  ) {
+    res.status(400).json({ error: "invalid outcome entry" });
+    return;
+  }
+  if (JSON.stringify(raw).length > 16 * 1024) {
+    res.status(400).json({ error: "body too large" });
+    return;
+  }
+  try {
+    await db
+      .insert(outcomeEntriesTable)
+      .values({
+        appUserId,
+        entryId: raw.entryId,
+        entry,
+        recordedAtMs: raw.recordedAtMs,
+      })
+      .onConflictDoNothing({
+        target: [outcomeEntriesTable.appUserId, outcomeEntriesTable.entryId],
+      });
+    res.json({ ok: true });
+  } catch (err) {
+    req.log?.error({ err }, "sync outcomes append failed");
+    res.status(500).json({ error: "internal" });
+  }
+});
+
 /**
  * GET /sync/snapshot — return the full per-user snapshot. Used by the
  * mobile client on app launch (and after a sign-in flow) to seed
@@ -430,6 +508,7 @@ router.get("/sync/snapshot", async (req, res) => {
       gamificationRows,
       supplementRows,
       assessmentRows,
+      outcomeRows,
     ] = await Promise.all([
       db
         .select()
@@ -466,6 +545,10 @@ router.get("/sync/snapshot", async (req, res) => {
         .select()
         .from(assessmentResultsTable)
         .where(eq(assessmentResultsTable.appUserId, appUserId)),
+      db
+        .select()
+        .from(outcomeEntriesTable)
+        .where(eq(outcomeEntriesTable.appUserId, appUserId)),
     ]);
 
     const profileRow = profileRows[0] ?? null;
@@ -519,6 +602,11 @@ router.get("/sync/snapshot", async (req, res) => {
         kind: r.kind,
         payload: r.payload,
         takenAtMs: r.takenAtMs,
+      })),
+      outcomes: outcomeRows.map((r) => ({
+        entryId: r.entryId,
+        entry: r.entry,
+        recordedAtMs: r.recordedAtMs,
       })),
       // NOTE: `badge_unlocks` table is provisioned (and reserved for a
       // future per-unlock timeline / notification feature) but is NOT

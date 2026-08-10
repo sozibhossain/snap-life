@@ -62,6 +62,10 @@ export interface User {
   age?: number;
   gender?: string;
   condition?: "osteoporosis" | "osteopenia" | "at_risk" | "healthy";
+  diagnosisYear?: number;
+  goals?: string[];
+  coexistingConditions?: string[];
+  fractureHistory?: Array<{ year?: number; location: string }>;
   joinedAt: string;
   level: number;
   xp: number;
@@ -124,6 +128,10 @@ interface StoredProfile {
   age?: number;
   gender?: string;
   condition?: User["condition"];
+  diagnosisYear?: number;
+  goals?: string[];
+  coexistingConditions?: string[];
+  fractureHistory?: Array<{ year?: number; location: string }>;
   joinedAt?: string;
   level?: number;
   xp?: number;
@@ -193,6 +201,12 @@ function buildUser(args: {
     age: p.age,
     gender: p.gender,
     condition: p.condition,
+    diagnosisYear: p.diagnosisYear,
+    goals: Array.isArray(p.goals) ? p.goals : [],
+    coexistingConditions: Array.isArray(p.coexistingConditions)
+      ? p.coexistingConditions
+      : [],
+    fractureHistory: Array.isArray(p.fractureHistory) ? p.fractureHistory : [],
     joinedAt: p.joinedAt || base.joinedAt,
     level: typeof p.level === "number" ? p.level : base.level,
     xp: typeof p.xp === "number" ? p.xp : base.xp,
@@ -224,6 +238,10 @@ function userToStoredProfile(u: User): StoredProfile {
     age: u.age,
     gender: u.gender,
     condition: u.condition,
+    diagnosisYear: u.diagnosisYear,
+    goals: u.goals,
+    coexistingConditions: u.coexistingConditions,
+    fractureHistory: u.fractureHistory,
     joinedAt: u.joinedAt,
     level: u.level,
     xp: u.xp,
