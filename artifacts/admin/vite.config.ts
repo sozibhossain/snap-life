@@ -22,12 +22,19 @@ const basePath = process.env.BASE_PATH ?? "/admin/";
 // different ports, so Vite forwards `/api/*` to the api-server here.
 const apiTarget = process.env.VITE_API_PROXY_TARGET ?? "http://localhost:5050";
 
+// Browser extensions execute in the page context and can emit global errors.
+// Keep those unrelated failures from being promoted to a Vite app-error overlay.
+const browserExtensionStackPattern =
+  /(?:chrome|moz|safari-web)-extension:\/\//i;
+
 export default defineConfig({
   base: basePath,
   plugins: [
     react(),
     tailwindcss({ optimize: false }),
-    runtimeErrorOverlay(),
+    runtimeErrorOverlay({
+      filter: (error) => !browserExtensionStackPattern.test(error.stack ?? ""),
+    }),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [

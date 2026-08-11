@@ -16,6 +16,16 @@ function isString(v: unknown): v is string {
   return typeof v === "string";
 }
 
+export function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[char] ?? char);
+}
+
 // ── Consultant registry ───────────────────────────────────────────────────────
 // Adding a new consultant = adding one entry here. The mobile app
 // mirrors this list in ExpertSupportTab.tsx.
@@ -78,11 +88,24 @@ async function handleExpertSupportRequest(req: Request, res: Response) {
   const receivedAt = new Date().toLocaleString("en-GB", { timeZone: "Europe/London" });
 
   if (!resend) {
-    req.log?.warn({ consultantId, name }, "expert support: RESEND_API_KEY not set, logging only");
-    req.log?.info({ name, email, consultantId, preferred, reason }, "expert support request (no mailer)");
-    res.json({ ok: true });
+    req.log?.error(
+      { consultantId, name },
+      "expert support: RESEND_API_KEY not set — request was not delivered",
+    );
+    res.status(503).json({
+      error: "email_service_unavailable",
+      message: "Email service is temporarily unavailable. Please contact teamsnap@snaplife.co.uk directly.",
+    });
     return;
   }
+
+  const safeConsultantLabel = escapeHtml(consultant.label);
+  const safeConsultantTitle = escapeHtml(consultant.title);
+  const safeName = escapeHtml(name);
+  const safeEmail = escapeHtml(email);
+  const safePhone = escapeHtml(phone);
+  const safePreferred = escapeHtml(preferred);
+  const safeReason = escapeHtml(reason).replace(/\n/g, "<br>");
 
   const htmlBody = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1C3A4A;">
@@ -94,34 +117,34 @@ async function handleExpertSupportRequest(req: Request, res: Response) {
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; width: 150px; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Consultant</td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-weight: 700; color: #1C3A4A;">${consultant.label} — ${consultant.title}</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-weight: 700; color: #1C3A4A;">${safeConsultantLabel} — ${safeConsultantTitle}</td>
           </tr>
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Name</td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;">${name}</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;">${safeName}</td>
           </tr>
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Email</td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;"><a href="mailto:${email}" style="color: #3ABBD4;">${email}</a></td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;"><a href="mailto:${safeEmail}" style="color: #3ABBD4;">${safeEmail}</a></td>
           </tr>
           ${phone ? `
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Phone</td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;">${phone}</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;">${safePhone}</td>
           </tr>` : ""}
           ${preferred ? `
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Preferred time</td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;">${preferred}</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;">${safePreferred}</td>
           </tr>` : ""}
           ${reason ? `
           <tr>
             <td style="padding: 10px 0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; vertical-align: top;">Reason</td>
-            <td style="padding: 10px 0; font-size: 15px; line-height: 1.6;">${reason.replace(/\n/g, "<br>")}</td>
+            <td style="padding: 10px 0; font-size: 15px; line-height: 1.6;">${safeReason}</td>
           </tr>` : ""}
         </table>
         <div style="margin-top: 20px; padding: 14px 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #64748b;">
-          Reply directly to this email to reach <strong>${name}</strong> at <strong>${email}</strong>.
+          Reply directly to this email to reach <strong>${safeName}</strong> at <strong>${safeEmail}</strong>.
         </div>
         <div style="margin-top: 12px; padding: 12px 16px; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; font-size: 12px; color: #1E40AF;">
           ⚑ This request has also been sent to ${TEAM_EMAIL} for oversight and continuity of care.
@@ -166,6 +189,7 @@ async function handleExpertSupportRequest(req: Request, res: Response) {
     req.log?.info({ consultantId, name, email }, "expert support: emails sent");
 
     // 3. Queue a confirmation email to the user
+    let confirmationQueued = true;
     await db
       .insert(pendingEmailsTable)
       .values({
@@ -181,10 +205,11 @@ async function handleExpertSupportRequest(req: Request, res: Response) {
       })
       .onConflictDoNothing()
       .catch((err) => {
+        confirmationQueued = false;
         logger.warn({ err, email }, "expert support: failed to queue confirmation email (soft)");
       });
 
-    res.json({ ok: true });
+    res.json({ ok: true, emailDelivered: true, confirmationQueued });
   } catch (err) {
     req.log?.error({ err, consultantId }, "expert support: unexpected error");
     res.status(500).json({ error: "internal" });

@@ -6,6 +6,7 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "backfill-users": "tsx ./src/backfillUsers.ts",
+    "community-insights-test-data": "tsx ./src/communityInsightsTestData.ts",
     "nightly-e2e": "tsx ./src/nightlyE2e.ts",
     "generate-vapid-keys": "tsx ./src/generateVapidKeys.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"

@@ -341,6 +341,7 @@ export default function MeditationScreen() {
   /** Bounded retry that ensures music actually starts even if the first
    * play() call races the player's load step. */
   const playRetryRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const triedTrackUrlsRef = useRef<Set<string>>(new Set());
   const routedSessionRef = useRef<string | null>(null);
   const spokenIdsRef = useRef<Set<number>>(new Set());
   const orbAnim = useRef(new Animated.Value(0)).current;
@@ -362,6 +363,7 @@ export default function MeditationScreen() {
   // — history-aware and time-of-day weighted — then held stable for the full
   // session so the player never reinitialises mid-meditation.
   const [activeTrackUrl, setActiveTrackUrl] = useState<string | null>(null);
+  const [musicUnavailable, setMusicUnavailable] = useState(false);
   const musicSource = useMemo(() => {
     if (!activeTrackUrl) return null;
     return { uri: activeTrackUrl };
@@ -508,6 +510,8 @@ export default function MeditationScreen() {
     const history = await getTrackHistory(med.id);
     const track = pickTrack(pool, history, getTimeOfDay());
     recordTrackPlay(med.id, track.url).catch(() => {});
+    triedTrackUrlsRef.current = new Set([track.url]);
+    setMusicUnavailable(false);
     setActiveTrackUrl(track.url);
 
     setActive(med);
@@ -668,8 +672,21 @@ export default function MeditationScreen() {
         } catch {
           playing = false;
         }
-        if (playing || attempts >= 10) {
+        if (playing) {
           clearPlayRetry();
+          return;
+        }
+        if (attempts >= 20) {
+          clearPlayRetry();
+          const pool = MEDITATION_POOLS[active.id] ?? MEDITATION_POOLS.stress_relief;
+          const fallback = pool.find((track) => !triedTrackUrlsRef.current.has(track.url));
+          if (fallback) {
+            triedTrackUrlsRef.current.add(fallback.url);
+            recordTrackPlay(active.id, fallback.url).catch(() => {});
+            setActiveTrackUrl(fallback.url);
+          } else {
+            setMusicUnavailable(true);
+          }
           return;
         }
         try {
@@ -846,6 +863,11 @@ export default function MeditationScreen() {
               ? "Let the voice carry you. Breathe naturally."
               : "Voice off — sit with the music."}
           </Text>
+          {musicUnavailable && musicOn && (
+            <Text style={styles.tipText}>
+              Background music could not load. Voice guidance will continue.
+            </Text>
+          )}
         </View>
 
         <View style={[styles.controlsBlock, { paddingBottom: bottomPad + 12 }]}>

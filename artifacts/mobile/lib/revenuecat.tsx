@@ -3,12 +3,12 @@ import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/re
 import Constants from "expo-constants";
 import React, { createContext, useContext, useEffect } from "react";
 import { AppState, Platform } from "react-native";
-import Purchases, {
-  type CustomerInfo,
-  type PurchasesEntitlementInfo,
-  type PurchasesOffering,
-  type PurchasesOfferings,
-  type PurchasesPackage,
+import type {
+  CustomerInfo,
+  PurchasesEntitlementInfo,
+  PurchasesOffering,
+  PurchasesOfferings,
+  PurchasesPackage,
 } from "react-native-purchases";
 import { authHeader } from "./userToken";
 import { getApiBaseUrl } from "./serverIdentity";
@@ -17,6 +17,28 @@ import { resolveSubscriptionAuthHeader } from "./subscriptionAuth";
 const REVENUECAT_TEST_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY;
 const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
 const REVENUECAT_ANDROID_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
+
+type PurchasesModule = typeof import("react-native-purchases")["default"];
+let purchasesModule: PurchasesModule | null = null;
+
+function getPurchasesModule(): PurchasesModule {
+  if (!purchasesModule) {
+    purchasesModule = require("react-native-purchases").default as PurchasesModule;
+  }
+  return purchasesModule;
+}
+
+// Metro registers the RevenueCat module in the bundle but does not evaluate
+// it until a property is read. Native reads it during startup; web reads it
+// only after an authenticated user is identified, keeping Stripe off the
+// public sign-in page.
+const Purchases = new Proxy({} as PurchasesModule, {
+  get(_target, property) {
+    const module = getPurchasesModule();
+    const value = Reflect.get(module, property);
+    return typeof value === "function" ? value.bind(module) : value;
+  },
+});
 
 // Two entitlements gate features in SNAP Life:
 //   snap_plus    -> SNAP Plus  (£6.99/mo, 1-month free trial via RC IAP offer)
@@ -182,9 +204,11 @@ function getRevenueCatApiKey(): string | undefined {
 }
 
 let initialized = false;
+let webInitializationAllowed = false;
 
 export function initializeRevenueCat() {
   if (initialized) return;
+  if (Platform.OS === "web" && !webInitializationAllowed) return;
   const apiKey = getRevenueCatApiKey();
   if (!apiKey) {
     throw new Error(
@@ -214,6 +238,18 @@ function notifyIdentified(appUserId: string | null) {
 
 /** Convenience helper: log a user in / out so RevenueCat ties purchases to the right person. */
 export async function identifyRevenueCatUser(appUserId: string | null) {
+  // On web, defer loading RevenueCat's Stripe-backed SDK until a real user is
+  // authenticated. This keeps the public sign-in page fast and avoids setting
+  // third-party payment cookies before they are needed.
+  if (!initialized && Platform.OS === "web" && appUserId) {
+    webInitializationAllowed = true;
+    try {
+      initializeRevenueCat();
+    } catch {
+      notifyIdentified(appUserId);
+      return;
+    }
+  }
   if (!initialized) {
     notifyIdentified(appUserId);
     return;

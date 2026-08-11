@@ -42,6 +42,7 @@
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
+const zlib = require("zlib");
 
 const projectRoot = path.resolve(__dirname, "..");
 const WEB_ROOT = path.join(projectRoot, "static-build", "web");
@@ -98,22 +99,28 @@ function startStaticServer() {
 
       const ext = path.extname(filePath).toLowerCase();
       const contentType = MIME_TYPES[ext] || "application/octet-stream";
-      const stat = fs.statSync(filePath);
+      const acceptsGzip = /\bgzip\b/.test(req.headers["accept-encoding"] || "");
+      const compressible = /^(?:text\/|application\/(?:javascript|json|manifest\+json))/.test(
+        contentType,
+      );
+      const useGzip = acceptsGzip && compressible;
       const headers = {
         "content-type": contentType,
-        "content-length": stat.size,
         "cache-control":
           ext === ".html" ||
           pathname === "/sw.js" ||
           pathname === "/manifest.webmanifest"
             ? "no-cache, no-store, must-revalidate"
-            : "public, max-age=300",
+            : "public, max-age=31536000, immutable",
+        ...(useGzip ? { "content-encoding": "gzip", vary: "accept-encoding" } : {}),
         ...(pathname === "/sw.js"
           ? { "service-worker-allowed": "/" }
           : {}),
       };
       res.writeHead(200, headers);
-      fs.createReadStream(filePath).pipe(res);
+      const source = fs.createReadStream(filePath);
+      if (useGzip) source.pipe(zlib.createGzip()).pipe(res);
+      else source.pipe(res);
     });
 
     server.on("error", reject);

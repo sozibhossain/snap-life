@@ -6,15 +6,20 @@ be guaranteed by the application repository alone.
 
 ## 1. Repository validation
 
-- [ ] Run `pnpm run typecheck` from the repository root.
-- [ ] Run `pnpm -F @workspace/mobile test`.
+- [x] Run `pnpm run typecheck` from the repository root. (Passed 11 Aug 2026.)
+- [x] Run `pnpm -F @workspace/mobile test`. (219/219 passed.)
 - [ ] Run `pnpm -F @workspace/api-server test` with `DATABASE_URL` available
-  when an integration suite requires it.
-- [ ] Run `pnpm -F @workspace/api-server build`.
-- [ ] From `artifacts/mobile`, run `pnpm exec expo config --type public` in an
+  when an integration suite requires it. (394/394 non-destructive tests and
+  11/11 mocked hard-delete tests passed; rerun the destructive hard-delete
+  integration only against a verified isolated staging database.)
+- [x] Run `pnpm -F @workspace/admin test`. (99/99 passed.)
+- [x] Run `pnpm -F @workspace/api-server build`.
+- [x] Run `pnpm -F @workspace/admin build`.
+- [x] From `artifacts/mobile`, run `pnpm exec expo config --type public` in an
   environment where the Expo CLI is available and inspect the iOS splash and
-  bundle identifiers.
-- [ ] Confirm the TestFlight build uses iOS build number 13 or later.
+  bundle identifiers. (`contain`, 180px, `com.snaplife.ltd` verified.)
+- [x] Repository config uses iOS build number 13.
+- [ ] Confirm the uploaded TestFlight build uses iOS build number 13 or later.
 
 ## 2. Database and API deployment
 
@@ -22,7 +27,8 @@ be guaranteed by the application repository alone.
 - [ ] Apply the current schema with `pnpm -F @workspace/db push` using the
   production `DATABASE_URL`.
 - [ ] Deploy the API server after the schema update.
-- [ ] Confirm `GET /api/admin/community-insights` returns the new contract and
+- [ ] Confirm `GET /api/admin/metrics/community-insights` returns
+  `analyticsVersion: community-v2` and
   the admin Community Insights screen renders without its legacy-contract
   warning.
 - [ ] Confirm `GET /api/events/weekly` returns both aggregate `totals` and

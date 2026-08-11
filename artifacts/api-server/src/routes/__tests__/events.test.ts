@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 
 interface InsertedEvent {
   appUserId: string;
+  clientEventId: string | null;
   kind: string;
   payload: Record<string, unknown>;
   occurredAtMs: number | null;
@@ -37,6 +38,7 @@ vi.mock("@workspace/db", () => {
     appUserId: { __col: "appUserId" },
     kind: { __col: "kind" },
     occurredAtMs: { __col: "occurredAtMs" },
+    clientEventId: { __col: "clientEventId" },
     receivedAt: { __col: "receivedAt" },
   } as const;
   const userTokensTable = {
@@ -146,12 +148,24 @@ vi.mock("@workspace/db", () => {
   const db = {
     select: (_cols?: unknown) => selectChain(),
     insert: (_tbl: unknown) => ({
-      values: async (row: InsertedEvent) => {
-        if (insertControl.fail) {
-          throw new Error("simulated db failure");
-        }
-        insertedEvents.push(row);
-      },
+      values: (row: InsertedEvent) => ({
+        onConflictDoNothing: async () => {
+          if (insertControl.fail) {
+            throw new Error("simulated db failure");
+          }
+          if (
+            row.clientEventId &&
+            insertedEvents.some(
+              (event) =>
+                event.appUserId === row.appUserId &&
+                event.clientEventId === row.clientEventId,
+            )
+          ) {
+            return;
+          }
+          insertedEvents.push(row);
+        },
+      }),
     }),
     // Auth's best-effort `lastUsedAt` refresh is fire-and-forget; return a
     // thenable chain that swallows the trailing `.catch(() => {})`.
@@ -271,6 +285,38 @@ describe("POST /events — auth gate", () => {
       { token: "definitely-not-a-real-token" },
     );
     expect(res.status).toBe(401);
+    expect(insertedEvents).toHaveLength(0);
+  });
+});
+
+describe("POST /events — idempotent client retries", () => {
+  it("stores a valid clientEventId", async () => {
+    const res = await postEvent({
+      clientEventId: "evt-20260811-abc123",
+      kind: "lesson_completed",
+      payload: { lessonId: "lesson-1" },
+    });
+    expect(res.status).toBe(200);
+    expect(insertedEvents[0]?.clientEventId).toBe("evt-20260811-abc123");
+  });
+
+  it("deduplicates a repeated clientEventId", async () => {
+    const body = {
+      clientEventId: "evt-20260811-duplicate",
+      kind: "lesson_completed",
+      payload: { lessonId: "lesson-1" },
+    };
+    expect((await postEvent(body)).status).toBe(200);
+    expect((await postEvent(body)).status).toBe(200);
+    expect(insertedEvents).toHaveLength(1);
+  });
+
+  it("rejects malformed clientEventId values", async () => {
+    const res = await postEvent({
+      clientEventId: "bad id!",
+      kind: "lesson_completed",
+    });
+    expect(res.status).toBe(400);
     expect(insertedEvents).toHaveLength(0);
   });
 });

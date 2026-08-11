@@ -1,4 +1,4 @@
-import { pgTable, text, bigint, timestamp, jsonb, index, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, bigint, timestamp, jsonb, index, uniqueIndex, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -25,6 +25,8 @@ export const interactionEventsTable = pgTable(
   {
     id: serial("id").primaryKey(),
     appUserId: text("app_user_id").notNull(),
+    /** Stable mobile-generated id used to make queued retries idempotent. */
+    clientEventId: text("client_event_id"),
     kind: text("kind").notNull(),
     payload: jsonb("payload").notNull().default({}),
     /**
@@ -51,6 +53,10 @@ export const interactionEventsTable = pgTable(
       t.occurredAtMs,
     ),
     kindIdx: index("interaction_events_kind_idx").on(t.kind),
+    clientEventIdx: uniqueIndex("interaction_events_user_client_event_uidx").on(
+      t.appUserId,
+      t.clientEventId,
+    ),
   }),
 );
 

@@ -25,6 +25,7 @@ import {
   SyncPaths,
 } from "@/lib/syncClient";
 import { runSyncMigration, syncMigrationKey } from "@/lib/syncMigration";
+import { flushInteractionEvents } from "@/lib/events";
 
 /**
  * Tell the PWA service worker to purge every per-user `/api/*` cache
@@ -764,6 +765,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const flush = () => {
       if (cancelled) return;
       void flushQueue({ appUserId: userId, apiBaseUrl, getAuthHeader });
+      void flushInteractionEvents(userId);
     };
     // Drain anything left over from the last session right after sign-in.
     flush();

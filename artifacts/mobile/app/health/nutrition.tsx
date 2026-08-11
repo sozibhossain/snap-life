@@ -37,6 +37,9 @@ import { useColors } from "@/hooks/useColors";
 const NUTRIENT_COLORS = {
   calcium:   "#3ABBD4",   // brand primary teal — mineral/bone
   vitaminD:  "#F59E0B",   // warm amber - sunshine / vitamin D awareness
+  vitaminK2: "#A78BFA",   // violet — calcium direction / bone metabolism
+  zinc:      "#60A5FA",
+  omega3:    "#2DD4BF",
   protein:   "#22c55e",   // brand success green — muscle strength
   magnesium: "#FB923C",   // amber-orange blend
   calories:  "#F47530",   // brand accent orange — energy
@@ -227,6 +230,7 @@ export default function NutritionScreen() {
   const GOALS = useMemo(() => ({
     calcium:   targets?.calcium   || 700,
     vitaminD:  targets?.vitaminD  || 400,
+    vitaminK2: 90,
     protein:   targets?.protein   || 45,
     magnesium: targets?.magnesium || 270,
     calories:  targets?.calories  || 2000,
@@ -234,8 +238,11 @@ export default function NutritionScreen() {
 
   const [calcium,   setCalcium]   = useState("");
   const [vitaminD,  setVitaminD]  = useState("");
+  const [vitaminK2, setVitaminK2] = useState("");
   const [protein,   setProtein]   = useState("");
   const [magnesium, setMagnesium] = useState("");
+  const [zinc,       setZinc]       = useState("");
+  const [omega3,     setOmega3]     = useState("");
   const [calories,  setCalories]  = useState("");
 
   const [prefillId, setPrefillId] = useState<string | null>(null);
@@ -244,8 +251,11 @@ export default function NutritionScreen() {
     if (id === prefillId) return;
     setCalcium  (todayNutrition?.calcium   ? String(Math.round(todayNutrition.calcium))   : "");
     setVitaminD (todayNutrition?.vitaminD  ? String(Math.round(todayNutrition.vitaminD))  : "");
+    setVitaminK2(todayNutrition?.vitaminK2 ? String(Math.round(todayNutrition.vitaminK2)) : "");
     setProtein  (todayNutrition?.protein   ? String(Math.round(todayNutrition.protein))   : "");
     setMagnesium(todayNutrition?.magnesium ? String(Math.round(todayNutrition.magnesium)) : "");
+    setZinc(todayNutrition?.otherNutrients?.zinc ? String(todayNutrition.otherNutrients.zinc) : "");
+    setOmega3(todayNutrition?.otherNutrients?.omega3 ? String(todayNutrition.otherNutrients.omega3) : "");
     setCalories (todayNutrition?.calories  ? String(Math.round(todayNutrition.calories))  : "");
     setPrefillId(id);
   }, [todayNutrition, prefillId]);
@@ -255,15 +265,18 @@ export default function NutritionScreen() {
 
   const ca   = parseFloat(calcium)   || 0;
   const vd   = parseFloat(vitaminD)  || 0;
+  const vk2  = parseFloat(vitaminK2) || 0;
   const pr   = parseFloat(protein)   || 0;
   const mg   = parseFloat(magnesium) || 0;
+  const zn   = parseFloat(zinc) || 0;
+  const o3   = parseFloat(omega3) || 0;
   const kcal = parseFloat(calories)  || 0;
 
   const planContributed =
     todayNutrition?.source === "meal_plan" || todayNutrition?.source === "manual+plan";
 
   async function handleSave() {
-    if (!calcium && !vitaminD && !protein && !magnesium && !calories) {
+    if (!calcium && !vitaminD && !vitaminK2 && !protein && !magnesium && !zinc && !omega3 && !calories) {
       setError("Please enter at least one value");
       return;
     }
@@ -271,7 +284,8 @@ export default function NutritionScreen() {
     setIsLoading(true);
     try {
       await upsertTodayNutrition({
-        calcium: ca, vitaminD: vd, protein: pr, magnesium: mg, calories: kcal,
+        calcium: ca, vitaminD: vd, vitaminK2: vk2, protein: pr, magnesium: mg, calories: kcal,
+        otherNutrients: { zinc: zn, omega3: o3 },
         source: planContributed ? "manual+plan" : "manual",
       });
       if (Platform.OS !== "web") {
@@ -456,6 +470,20 @@ export default function NutritionScreen() {
             whyMatters="Adequate protein supports muscle mass and strength - essential for fall and fracture prevention."
           />
           <NutrientField
+            icon="shuffle"
+            label="Vitamin K2"
+            goalRange={`Supportive reference: ${GOALS.vitaminK2} mcg/day`}
+            goal={GOALS.vitaminK2}
+            unit="mcg"
+            color={NUTRIENT_COLORS.vitaminK2}
+            value={vitaminK2}
+            onChange={setVitaminK2}
+            step={15}
+            safeMax={0}
+            unitNote="mcg = micrograms. Log Vitamin K2 from food here; supplements remain in Today's Intake."
+            whyMatters="Vitamin K supports normal bone metabolism and works alongside calcium and Vitamin D. Follow professional advice if you take anticoagulant medication."
+          />
+          <NutrientField
             icon="zap"
             label="Magnesium"
             goalRange={`Goal: ${GOALS.magnesium} mg/day`}
@@ -468,6 +496,34 @@ export default function NutritionScreen() {
             safeMax={400}
             unitNote="mg = milligrams. The safe upper limit applies to magnesium from supplements; dietary magnesium has no upper limit."
             whyMatters="Magnesium works with calcium and vitamin D to maintain healthy bones and muscle function."
+          />
+          <NutrientField
+            icon="hexagon"
+            label="Zinc"
+            goalRange="Supportive reference: 8–11 mg/day"
+            goal={10}
+            unit="mg"
+            color={NUTRIENT_COLORS.zinc}
+            value={zinc}
+            onChange={setZinc}
+            step={1}
+            safeMax={40}
+            unitNote="mg = milligrams. Log estimated zinc from food here."
+            whyMatters="Zinc contributes to normal bone maintenance, protein synthesis and tissue repair."
+          />
+          <NutrientField
+            icon="wind"
+            label="Omega-3"
+            goalRange="Track your daily food intake"
+            goal={250}
+            unit="mg"
+            color={NUTRIENT_COLORS.omega3}
+            value={omega3}
+            onChange={setOmega3}
+            step={50}
+            safeMax={0}
+            unitNote="mg = milligrams. Use the food label or nutrition information where available."
+            whyMatters="Omega-3 intake is tracked as part of the wider nutrition picture; it is not a treatment target."
             isLast
           />
         </LinearGradient>

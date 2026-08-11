@@ -7,7 +7,8 @@ SNAP Life Community Insights is an opt-in, aggregate-only reporting surface. It 
 - Community analytics and approved research use are separate, explicit choices. Both default to off.
 - Research use cannot be enabled unless community analytics is enabled.
 - Withdrawing community analytics also withdraws research use and excludes the user from future reports.
-- Reports use only users whose current `analytics_consent.community_analytics` value is `true`.
+- Community reports use only users whose current `analytics_consent.community_analytics` value is `true`.
+- Research reports require both `community_analytics=true` and `research_use=true`; use `?purpose=research` to request that stricter cohort.
 - The report is blank until the global consented cohort meets `COMMUNITY_MIN_COHORT_SIZE` (default `10`, hard minimum `3`).
 - Smaller category cells are combined under `Other / suppressed`; their labels are not returned.
 - Event totals require the minimum number of distinct users, not merely the minimum number of rows.
@@ -20,7 +21,7 @@ Users can review or change consent during onboarding or from **Settings → Priv
 
 - Profile: age, gender, country, journey stage, diagnosis year, goals, coexisting conditions, and fracture history.
 - Bone health: DEXA/T-score, BMI, FRAX and risk factors.
-- Nutrition: calcium, vitamin D, protein, magnesium and calories.
+- Nutrition: calcium, vitamin D, vitamin K2, protein, magnesium, zinc, omega-3, phosphorus and calories.
 - Medication and supplements: current list, taken events and missed medication events.
 - Exercise: steps, active minutes and selected exercise categories.
 - Learning/wellness: completed lessons, learning time, breathing/meditation activity and streaks.
@@ -30,9 +31,11 @@ Outcome check-ins are append-only and sync through `POST /sync/outcomes`. Struct
 
 ## Admin use
 
-Open **Admin → Community Insights**. The page shows privacy status, population overview, clinical and lifestyle trends, outcomes and aggregate impact totals. Use **Export aggregate CSV** for analysis outside the dashboard.
+Open **Admin → Community Insights**. The page shows privacy status and charts/tables for population, prevention, clinical and lifestyle trends, medication/supplement adherence, learning, Bone Buddy topic taxonomy, wellbeing, behaviour change, outcomes, community impact and data coverage. Use **Export aggregate CSV** for the community-consented cohort or **Export research CSV** for the stricter research-consented cohort.
 
 The API endpoint is `GET /api/admin/metrics/community-insights` and still requires the existing admin authorization gate.
+
+The current response identifies itself as `analyticsVersion: "community-v2"`. Bone Buddy analytics contain only a privacy-safe topic category and lifecycle counts; raw questions and answers are never included.
 
 ## Deployment
 
@@ -43,8 +46,10 @@ The API endpoint is `GET /api/admin/metrics/community-insights` and still requir
    pnpm -F @workspace/db push
    ```
 
-3. Set `COMMUNITY_MIN_COHORT_SIZE` if the default threshold of 10 is not appropriate. Never configure a value below the built-in minimum of 3; production policy should normally use 10 or more.
+3. Set `COMMUNITY_MIN_COHORT_SIZE` if the default threshold of 10 is not appropriate. Never configure a value below the built-in minimum of 3; production policy should normally use 10 or more. The threshold applies independently to the selected community or research cohort.
 4. Deploy the API server, mobile app and admin app together so the new sync and report contracts arrive as one release.
-5. Confirm that a new account is opted out, consent changes persist, a below-threshold report is blank, and `/api/admin/chats` returns 404.
+5. Confirm that a new account is opted out, consent changes persist, a below-threshold report is blank, community export excludes opted-out users, research export excludes community-only users, and `/api/admin/chats` returns 404.
+
+The schema update also adds `interaction_events.client_event_id` and a per-user unique index. This makes offline/mobile retry delivery idempotent. Deploy the schema before deploying the mobile build that sends this field.
 
 Database schema push and deletion of historical conversation rows are operational changes and are not run automatically by the application build. Historical `bone_buddy_chat_messages` should be purged only through an approved, backed-up data-retention procedure. Account export and deletion continue to cover any legacy rows until that purge is completed.

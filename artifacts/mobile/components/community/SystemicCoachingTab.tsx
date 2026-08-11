@@ -172,7 +172,16 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
         signal: controller.signal,
       });
       if (!res.ok) {
-        setSendError("Something went wrong. Please try again or email teamsnap@snaplife.co.uk directly.");
+        let apiError: { error?: string; message?: string } | null = null;
+        try {
+          apiError = await res.json();
+        } catch {
+          apiError = null;
+        }
+        setSendError(
+          apiError?.message ??
+            "Something went wrong. Please try again or email teamsnap@snaplife.co.uk directly.",
+        );
       } else {
         logInteractionEvent({
           appUserId: user?.id,

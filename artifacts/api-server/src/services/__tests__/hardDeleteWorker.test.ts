@@ -82,6 +82,21 @@ vi.mock("@workspace/db", () => {
     analyticsConsentTable: makeTable("analytics_consent"),
     boneBuddyChatMessagesTable: makeTable("bone_buddy_chat_messages"),
     outcomeEntriesTable: makeTable("outcome_entries"),
+    referralsTable: {
+      ...makeTable("referrals"),
+      referrerAppUserId: { __col: "referrals.referrerAppUserId" },
+      refereeAppUserId: { __col: "referrals.refereeAppUserId" },
+    },
+    webPushSubscriptionsTable: {
+      ...makeTable("web_push_subscriptions"),
+      appUserId: { __col: "webPushSubscriptions.appUserId" },
+    },
+    pendingEmailsTable: {
+      ...makeTable("pending_emails"),
+      payload: { __col: "pendingEmails.payload" },
+      toAddress: { __col: "pendingEmails.toAddress" },
+      externalId: { __col: "pendingEmails.externalId" },
+    },
     // Exported so tests can reference the names; the worker must never delete these.
     auditLogsTable: makeTable("audit_logs"),
     auditEventsTable: makeTable("audit_events"),
@@ -93,6 +108,11 @@ vi.mock("drizzle-orm", () => ({
   eq: (...args: unknown[]) => ({ kind: "eq", args }),
   and: (...args: unknown[]) => ({ kind: "and", args }),
   isNotNull: (...args: unknown[]) => ({ kind: "isNotNull", args }),
+  or: (...args: unknown[]) => ({ kind: "or", args }),
+  sql: Object.assign(
+    (...args: unknown[]) => ({ kind: "sql", args }),
+    { raw: (...args: unknown[]) => ({ kind: "sql.raw", args }) },
+  ),
 }));
 
 vi.mock("../../lib/logger", () => ({
@@ -143,6 +163,9 @@ const EXPECTED_USER_DATA_TABLES = new Set([
   "analytics_consent",
   "bone_buddy_chat_messages",
   "outcome_entries",
+  "referrals",
+  "web_push_subscriptions",
+  "pending_emails",
 ]);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

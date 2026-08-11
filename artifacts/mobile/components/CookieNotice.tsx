@@ -25,6 +25,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useColors } from "@/hooks/useColors";
 
 const STORAGE_KEY = "@snaplife/cookieNotice/v1";
+const ACCESSIBLE_ACTION_COLOR = "#08758E";
 
 function readDismissed(): boolean {
   if (Platform.OS !== "web") return true;
@@ -100,7 +101,7 @@ export function CookieNotice(): React.ReactElement | null {
         <Pressable
           accessibilityLabel="Dismiss cookie notice"
           onPress={dismiss}
-          style={[styles.dismiss, { backgroundColor: colors.primary }]}
+          style={[styles.dismiss, { backgroundColor: ACCESSIBLE_ACTION_COLOR }]}
         >
           <Text style={styles.dismissText}>Got it</Text>
         </Pressable>

@@ -93,6 +93,10 @@ export interface NutritionLog {
   date: string;
   calcium: number;
   vitaminD: number;
+  /** Food-derived Vitamin K2 in micrograms; legacy logs hydrate to 0. */
+  vitaminK2?: number;
+  /** Zinc, omega-3, phosphorus and future manually tracked nutrients. */
+  otherNutrients?: Record<string, number>;
   protein: number;
   /** Magnesium in mg. Older logs persisted before this field existed are
    *  back-filled to 0 on hydration. */
@@ -456,6 +460,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
             source: dayLog.source,
             calcium: dayLog.calcium,
             vitaminD: dayLog.vitaminD,
+            vitaminK2: dayLog.vitaminK2 ?? 0,
             protein: dayLog.protein,
           },
         });
@@ -472,6 +477,8 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       date: nutrition.date,
       calcium: nutrition.calcium,
       vitaminD: nutrition.vitaminD,
+      vitaminK2: nutrition.vitaminK2 ?? 0,
+      otherNutrients: nutrition.otherNutrients ?? {},
       protein: nutrition.protein,
       calories: nutrition.calories,
       meals: nutrition.meals ?? [],
@@ -507,6 +514,8 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         date: today,
         calcium: partial.calcium ?? 0,
         vitaminD: partial.vitaminD ?? 0,
+        vitaminK2: partial.vitaminK2 ?? 0,
+        otherNutrients: partial.otherNutrients ?? {},
         protein: partial.protein ?? 0,
         magnesium: partial.magnesium ?? 0,
         calories: partial.calories ?? 0,
@@ -536,6 +545,8 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
             date: today,
             calcium: 0,
             vitaminD: 0,
+            vitaminK2: 0,
+            otherNutrients: {},
             protein: 0,
             magnesium: 0,
             calories: 0,

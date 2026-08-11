@@ -72,9 +72,14 @@ async function handleCoachingBooking(req: Request, res: Response) {
   const safeMessage = escapeHtml(message).replace(/\n/g, "<br>");
 
   if (!resend) {
-    req.log?.warn({ sessionId, name }, "coaching booking: RESEND_API_KEY not set, logging only");
-    req.log?.info({ name, email, sessionId, preferred, message }, "coaching booking request (no mailer)");
-    res.json({ ok: true });
+    req.log?.error(
+      { sessionId, name },
+      "coaching booking: RESEND_API_KEY not set — request was not delivered",
+    );
+    res.status(503).json({
+      error: "email_service_unavailable",
+      message: "Email service is temporarily unavailable. Please contact teamsnap@snaplife.co.uk directly.",
+    });
     return;
   }
 
@@ -135,6 +140,7 @@ async function handleCoachingBooking(req: Request, res: Response) {
     req.log?.info({ sessionId, name, email }, "coaching booking: email sent");
 
     // Also queue a confirmation email to the person who booked
+    let confirmationQueued = true;
     await db
       .insert(pendingEmailsTable)
       .values({
@@ -145,10 +151,11 @@ async function handleCoachingBooking(req: Request, res: Response) {
       })
       .onConflictDoNothing()
       .catch((err) => {
+        confirmationQueued = false;
         logger.warn({ err, email }, "coaching booking: failed to queue confirmation email (soft)");
       });
 
-    res.json({ ok: true });
+    res.json({ ok: true, emailDelivered: true, confirmationQueued });
   } catch (err) {
     req.log?.error({ err, sessionId }, "coaching booking: unexpected error");
     res.status(500).json({ error: "internal" });

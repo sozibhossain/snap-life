@@ -26,6 +26,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const zlib = require("zlib");
 
 const STATIC_ROOT = path.resolve(__dirname, "..", "static-build");
 const WEB_ROOT = path.join(STATIC_ROOT, "web");
@@ -114,12 +115,16 @@ function cacheControlFor(pathname, ext) {
 function writeFile(req, res, filePath, urlPath) {
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME_TYPES[ext] || "application/octet-stream";
-  const stat = fs.statSync(filePath);
+  const acceptsGzip = /\bgzip\b/.test(req.headers["accept-encoding"] || "");
+  const compressible = /^(?:text\/|application\/(?:javascript|json|manifest\+json))/.test(
+    contentType,
+  );
+  const useGzip = acceptsGzip && compressible;
 
   const headers = {
     "content-type": contentType,
-    "content-length": stat.size,
     "cache-control": cacheControlFor(urlPath, ext),
+    ...(useGzip ? { "content-encoding": "gzip", vary: "accept-encoding" } : {}),
     // Allow the SW to control the whole origin even though it lives at /sw.js.
     ...(urlPath === "/sw.js" ? { "service-worker-allowed": "/" } : {}),
   };
@@ -131,7 +136,9 @@ function writeFile(req, res, filePath, urlPath) {
   }
 
   res.writeHead(200, headers);
-  fs.createReadStream(filePath).pipe(res);
+  const source = fs.createReadStream(filePath);
+  if (useGzip) source.pipe(zlib.createGzip()).pipe(res);
+  else source.pipe(res);
 }
 
 function serveExpoManifest(platform, res) {

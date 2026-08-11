@@ -329,6 +329,7 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
 
   try {
     const now = Date.now();
+    const oneDayAgoDate = new Date(now - DAY_MS);
     const sevenDaysAgoMs = now - 7 * DAY_MS;
     const thirtyDaysAgoMs = now - 30 * DAY_MS;
     const sevenDaysAgoDate = new Date(sevenDaysAgoMs);
@@ -338,11 +339,19 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
     const minCohortSize = Number.isFinite(configuredMin)
       ? Math.max(3, Math.floor(configuredMin))
       : 10;
+    const purpose = req.query.purpose === "research" ? "research" : "community";
+    const consentCondition =
+      purpose === "research"
+        ? and(
+            eq(analyticsConsentTable.communityAnalytics, true),
+            eq(analyticsConsentTable.researchUse, true),
+          )
+        : eq(analyticsConsentTable.communityAnalytics, true);
 
     const consentRows = await db
       .select({ appUserId: analyticsConsentTable.appUserId })
       .from(analyticsConsentTable)
-      .where(eq(analyticsConsentTable.communityAnalytics, true));
+      .where(consentCondition);
     const consentedUserIds = consentRows.map((row) => row.appUserId);
 
     const suppressCount = (value: number) =>
@@ -394,11 +403,14 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
     if (consentedUserIds.length < minCohortSize) {
       res.json({
         generatedAt: new Date(now).toISOString(),
+        analyticsVersion: "community-v2",
         privacy: {
           minCohortSize,
           consentedParticipants: null,
           suppressed: true,
           consentVersion: "community-v1",
+          purpose,
+          researchUseRequired: purpose === "research",
         },
         overview: null,
         boneHealth: null,
@@ -408,6 +420,16 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
         learningAndWellness: null,
         outcomes: null,
         impact: null,
+        community: null,
+        productActivity: null,
+        wellbeingSupportNeeds7d: [],
+        topLearningPathways30d: [],
+        topBoneBuddyTopics30d: [],
+        coachingDemand30d: [],
+        expertDemand30d: [],
+        prevention: null,
+        behaviourChange: null,
+        dataQuality: null,
       });
       return;
     }
@@ -470,6 +492,31 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
       };
     };
 
+    const [
+      totalRegisteredRows,
+      newRegistered7dRows,
+      newRegistered30dRows,
+      active1dRows,
+      active7dRows,
+      active30dRows,
+    ] = await Promise.all([
+      db.select({ value: count() }).from(usersTable),
+      db.select({ value: count() }).from(usersTable).where(gte(usersTable.createdAt, sevenDaysAgoDate)),
+      db.select({ value: count() }).from(usersTable).where(gte(usersTable.createdAt, thirtyDaysAgoDate)),
+      db.select({ appUserId: interactionEventsTable.appUserId })
+        .from(interactionEventsTable)
+        .where(and(consentFilter, gte(interactionEventsTable.receivedAt, oneDayAgoDate)))
+        .groupBy(interactionEventsTable.appUserId),
+      db.select({ appUserId: interactionEventsTable.appUserId })
+        .from(interactionEventsTable)
+        .where(and(consentFilter, gte(interactionEventsTable.receivedAt, sevenDaysAgoDate)))
+        .groupBy(interactionEventsTable.appUserId),
+      db.select({ appUserId: interactionEventsTable.appUserId })
+        .from(interactionEventsTable)
+        .where(and(consentFilter, gte(interactionEventsTable.receivedAt, thirtyDaysAgoDate)))
+        .groupBy(interactionEventsTable.appUserId),
+    ]);
+
     const wellbeingMoodRows = await db
       .select({
         kind: sql<string>`coalesce(${wellbeingEntriesTable.entry}->>'kind', 'other')`,
@@ -506,6 +553,50 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
       .groupBy(sql`coalesce(${interactionEventsTable.payload}->>'pathway', 'Unknown')`)
       .orderBy(desc(count()))
       .limit(10);
+
+    const topBoneBuddyTopics = await db
+      .select({
+        topic: sql<string>`coalesce(${interactionEventsTable.payload}->>'topic', 'general_support')`,
+        count: count(),
+        users: sql<number>`count(distinct ${interactionEventsTable.appUserId})`,
+      })
+      .from(interactionEventsTable)
+      .where(
+        and(
+          eq(interactionEventsTable.kind, "bone_buddy_message_sent"),
+          consentFilter,
+          gte(interactionEventsTable.receivedAt, thirtyDaysAgoDate),
+        ),
+      )
+      .groupBy(sql`coalesce(${interactionEventsTable.payload}->>'topic', 'general_support')`)
+      .orderBy(desc(count()))
+      .limit(10);
+
+    const habitKinds = [
+      "medication_taken",
+      "medication_missed",
+      "supplement_taken",
+      "nutrition_logged",
+      "activity_logged",
+      "lesson_completed",
+      "breathing_session_completed",
+      "meditation_session_completed",
+    ];
+    const habitEvents30d = await db
+      .select({
+        appUserId: interactionEventsTable.appUserId,
+        kind: interactionEventsTable.kind,
+        occurredAtMs: interactionEventsTable.occurredAtMs,
+        receivedAt: interactionEventsTable.receivedAt,
+      })
+      .from(interactionEventsTable)
+      .where(
+        and(
+          consentFilter,
+          inArray(interactionEventsTable.kind, habitKinds),
+          gte(interactionEventsTable.receivedAt, thirtyDaysAgoDate),
+        ),
+      );
 
     const coachingBySession = await db
       .select({
@@ -549,6 +640,7 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
       outcomeRows,
       learningRows,
       lifetimeEventRows,
+      lifetimeLearningRows,
     ] = await Promise.all([
       db
         .select({
@@ -558,6 +650,7 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
           condition: userProfileTable.condition,
           country: userProfileTable.country,
           diagnosisYear: userProfileTable.diagnosisYear,
+          joinedAt: userProfileTable.joinedAt,
           goals: userProfileTable.goals,
           coexistingConditions: userProfileTable.coexistingConditions,
           fractureHistory: userProfileTable.fractureHistory,
@@ -588,6 +681,7 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
       db
         .select({
           appUserId: activityLogsTable.appUserId,
+          day: activityLogsTable.day,
           log: activityLogsTable.log,
         })
         .from(activityLogsTable)
@@ -641,11 +735,25 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
         .from(interactionEventsTable)
         .where(consentFilter)
         .groupBy(interactionEventsTable.kind),
+      db
+        .select({
+          seconds: sql<number>`coalesce(sum(case when (${interactionEventsTable.payload}->>'durationSec') ~ '^[0-9]+(\\.[0-9]+)?$' then (${interactionEventsTable.payload}->>'durationSec')::numeric else 0 end), 0)`,
+          users: sql<number>`count(distinct ${interactionEventsTable.appUserId})`,
+        })
+        .from(interactionEventsTable)
+        .where(
+          and(
+            consentFilter,
+            eq(interactionEventsTable.kind, "lesson_completed"),
+          ),
+        ),
     ]);
 
     const ageGroups = new Map<string, number>();
     const genderGroups = new Map<string, number>();
     const conditionGroups = new Map<string, number>();
+    const preventionCohorts = new Map<string, number>();
+    const preventionCohortByUser = new Map<string, string>();
     const countryGroups = new Map<string, number>();
     const goalGroups = new Map<string, number>();
     const coexistGroups = new Map<string, number>();
@@ -661,6 +769,16 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
       }
       increment(genderGroups, profile.gender?.trim() || "Not provided");
       increment(conditionGroups, profile.condition?.trim() || "Not provided");
+      const condition = profile.condition?.trim().toLowerCase() ?? "";
+      const cohort = condition.includes("osteoporosis")
+        ? "Joined with Osteoporosis"
+        : condition.includes("osteopenia")
+          ? "Joined with Osteopenia"
+          : condition.includes("prevention") || condition.includes("no diagnosis") || !condition
+            ? "Joined before diagnosis / prevention"
+            : "Other bone-health cohort";
+      increment(preventionCohorts, cohort);
+      preventionCohortByUser.set(profile.appUserId, cohort);
       increment(countryGroups, profile.country?.trim() || "Not provided");
       for (const goal of stringArray(profile.goals)) increment(goalGroups, goal);
       for (const item of stringArray(profile.coexistingConditions)) increment(coexistGroups, item);
@@ -739,7 +857,7 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
     previousFractures = previousFractureUsers.size;
 
     const nutrientValues: Record<string, number[]> = {
-      calcium: [], protein: [], vitaminD: [], magnesium: [], calories: [],
+      calcium: [], protein: [], vitaminD: [], vitaminK2: [], magnesium: [], zinc: [], omega3: [], phosphorus: [], calories: [],
     };
     const nutrientUsers: Record<string, Set<string>> = Object.fromEntries(
       Object.keys(nutrientValues).map((key) => [key, new Set<string>()]),
@@ -747,7 +865,8 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
     for (const row of nutritionRows) {
       const log = asRecord(row.log);
       for (const key of Object.keys(nutrientValues)) {
-        const value = finite(log[key]);
+        const otherNutrients = asRecord(log.otherNutrients);
+        const value = finite(log[key] ?? otherNutrients[key]);
         if (value !== null) {
           nutrientValues[key]!.push(value);
           nutrientUsers[key]!.add(row.appUserId);
@@ -759,16 +878,27 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
     const medicationNames = new Map<string, number>();
     let currentTaken = 0;
     let currentTracked = 0;
+    let supplementTakenCurrent = 0;
+    let supplementTrackedCurrent = 0;
+    let medicationTakenCurrent = 0;
+    let medicationTrackedCurrent = 0;
     for (const row of supplementRows) {
       const items = asRecord(row.state).supplements;
       if (!Array.isArray(items)) continue;
       for (const rawItem of items) {
         const item = asRecord(rawItem);
         const name = typeof item.name === "string" ? item.name.trim() : "Unknown";
-        const target = item.category === "medication" ? medicationNames : supplementNames;
+        const isMedication = item.category === "medication";
+        const target = isMedication ? medicationNames : supplementNames;
         increment(target, name || "Unknown");
         currentTracked += 1;
-        if (item.taken === true) currentTaken += 1;
+        if (isMedication) medicationTrackedCurrent += 1;
+        else supplementTrackedCurrent += 1;
+        if (item.taken === true) {
+          currentTaken += 1;
+          if (isMedication) medicationTakenCurrent += 1;
+          else supplementTakenCurrent += 1;
+        }
       }
     }
 
@@ -778,6 +908,11 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
     const activeMinuteUsers = new Set<string>();
     const exerciseTypes = new Map<string, number>();
     const exerciseTypeUsers = new Map<string, Set<string>>();
+    const exerciseParticipants = new Set<string>();
+    const activityWeekUsers = new Map<string, Set<string>>();
+    const activityWeekSessions = new Map<string, number>();
+    let totalExerciseSessions = 0;
+    let totalExerciseMinutes = 0;
     for (const row of activityRows) {
       const log = asRecord(row.log);
       const step = finite(log.steps);
@@ -792,11 +927,24 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
       }
       if (Array.isArray(log.exerciseSessions)) {
         for (const session of log.exerciseSessions) {
-          const kind = asRecord(session).kind;
+          const sessionRecord = asRecord(session);
+          const kind = sessionRecord.kind;
           if (typeof kind === "string") {
+            exerciseParticipants.add(row.appUserId);
+            totalExerciseSessions += 1;
+            totalExerciseMinutes += finite(sessionRecord.durationMinutes) ?? 0;
             const users = exerciseTypeUsers.get(kind) ?? new Set<string>();
             users.add(row.appUserId);
             exerciseTypeUsers.set(kind, users);
+            const daysAgo = Math.max(
+              0,
+              Math.floor((now - new Date(`${row.day}T00:00:00Z`).getTime()) / DAY_MS),
+            );
+            const weekLabel = daysAgo < 7 ? "Current 7 days" : daysAgo < 14 ? "8–14 days ago" : daysAgo < 21 ? "15–21 days ago" : "22–30 days ago";
+            const weekUsers = activityWeekUsers.get(weekLabel) ?? new Set<string>();
+            weekUsers.add(row.appUserId);
+            activityWeekUsers.set(weekLabel, weekUsers);
+            activityWeekSessions.set(weekLabel, (activityWeekSessions.get(weekLabel) ?? 0) + 1);
           }
         }
       }
@@ -807,6 +955,9 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
 
     const lessonNames = new Map<string, number>();
     const lessonUsers = new Map<string, Set<string>>();
+    const learningUsers = new Set<string>();
+    const maxLessonIndexByUser = new Map<string, number>();
+    let knownTotalLessons = 9;
     let learningDurationSec = 0;
     for (const row of learningRows) {
       const payload = asRecord(row.payload);
@@ -814,6 +965,15 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
       const users = lessonUsers.get(title) ?? new Set<string>();
       users.add(row.appUserId);
       lessonUsers.set(title, users);
+      learningUsers.add(row.appUserId);
+      const lessonIndex = finite(payload.lessonIndex);
+      if (lessonIndex !== null) {
+        maxLessonIndexByUser.set(
+          row.appUserId,
+          Math.max(maxLessonIndexByUser.get(row.appUserId) ?? 0, lessonIndex),
+        );
+      }
+      knownTotalLessons = Math.max(knownTotalLessons, finite(payload.totalLessons) ?? 0);
       learningDurationSec += finite(payload.durationSec) ?? 0;
     }
     for (const [title, users] of lessonUsers) {
@@ -821,10 +981,18 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
     }
 
     const latestOutcomeByUser = new Map<string, { at: number; entry: Record<string, unknown> }>();
+    const earliestOutcomeByUser = new Map<string, { at: number; entry: Record<string, unknown> }>();
     for (const row of outcomeRows) {
       const prior = latestOutcomeByUser.get(row.appUserId);
       if (!prior || row.recordedAtMs > prior.at) {
         latestOutcomeByUser.set(row.appUserId, {
+          at: row.recordedAtMs,
+          entry: asRecord(row.entry),
+        });
+      }
+      const earliest = earliestOutcomeByUser.get(row.appUserId);
+      if (!earliest || row.recordedAtMs < earliest.at) {
+        earliestOutcomeByUser.set(row.appUserId, {
           at: row.recordedAtMs,
           entry: asRecord(row.entry),
         });
@@ -841,11 +1009,22 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
       "qualityOfLife",
     ];
     const outcomeAverages: Record<string, number | null> = {};
+    const outcomeAverageChange: Record<string, number | null> = {};
     for (const dimension of outcomeDimensions) {
       const values = [...latestOutcomeByUser.values()]
         .map((v) => finite(v.entry[dimension]))
         .filter((v): v is number => v !== null);
       outcomeAverages[dimension] = suppressAverage(values);
+      const changes = [...latestOutcomeByUser.entries()]
+        .map(([appUserId, latest]) => {
+          const earliest = earliestOutcomeByUser.get(appUserId);
+          if (!earliest || earliest.at === latest.at) return null;
+          const first = finite(earliest.entry[dimension]);
+          const last = finite(latest.entry[dimension]);
+          return first === null || last === null ? null : last - first;
+        })
+        .filter((value): value is number => value !== null);
+      outcomeAverageChange[dimension] = suppressAverage(changes);
     }
     const falls = [...latestOutcomeByUser.values()]
       .map((v) => finite(v.entry.fallsLast90Days))
@@ -866,14 +1045,97 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
       values.every((value): value is number => value !== null)
         ? values.reduce((sum, value) => sum + value, 0)
         : null;
+    const medicationTaken30d = byKind30d.get("medication_taken") ?? { count: 0, users: 0 };
+    const medicationMissed30d = byKind30d.get("medication_missed") ?? { count: 0, users: 0 };
+    const medicationDecisionCount = medicationTaken30d.count + medicationMissed30d.count;
+    const medicationAdherence30d =
+      Math.max(medicationTaken30d.users, medicationMissed30d.users) >= minCohortSize && medicationDecisionCount > 0
+        ? Number((medicationTaken30d.count / medicationDecisionCount).toFixed(3))
+        : null;
+    let communityMilestones = 0;
+    const milestoneUsers = new Set<string>();
+    for (const row of gamificationRows) {
+      const achievements = asRecord(row.state).achievements;
+      if (!Array.isArray(achievements)) continue;
+      const earned = achievements.filter((item) => asRecord(item).earned === true).length;
+      if (earned > 0) {
+        communityMilestones += earned;
+        milestoneUsers.add(row.appUserId);
+      }
+    }
+    const habitDays = new Map<string, Map<string, Set<string>>>();
+    const habitTimestamp = (row: { occurredAtMs?: number | null; receivedAt?: Date | null }) =>
+      row.occurredAtMs != null
+        ? row.occurredAtMs
+        : row.receivedAt instanceof Date
+          ? row.receivedAt.getTime()
+          : now;
+    for (const row of habitEvents30d) {
+      const byUser = habitDays.get(row.kind) ?? new Map<string, Set<string>>();
+      const days = byUser.get(row.appUserId) ?? new Set<string>();
+      days.add(new Date(habitTimestamp(row)).toISOString().slice(0, 10));
+      byUser.set(row.appUserId, days);
+      habitDays.set(row.kind, byUser);
+    }
+    const averageActiveDays30d = (kind: string): number | null => {
+      const users = habitDays.get(kind);
+      if (!users || users.size < minCohortSize) return null;
+      return Number(
+        ([...users.values()].reduce((sum, days) => sum + days.size, 0) / users.size).toFixed(2),
+      );
+    };
+    const persistentUsers30d = (kind: string, minimumDays: number): number | null => {
+      const users = habitDays.get(kind);
+      if (!users || users.size < minCohortSize) return null;
+      return users ? [...users.values()].filter((days) => days.size >= minimumDays).length : null;
+    };
+    const adherenceForRange = (minimumDaysAgo: number, maximumDaysAgo: number): number | null => {
+      let taken = 0;
+      let missed = 0;
+      const participants = new Set<string>();
+      for (const row of habitEvents30d) {
+        if (row.kind !== "medication_taken" && row.kind !== "medication_missed") continue;
+        const daysAgo = (now - habitTimestamp(row)) / DAY_MS;
+        if (daysAgo < minimumDaysAgo || daysAgo >= maximumDaysAgo) continue;
+        participants.add(row.appUserId);
+        if (row.kind === "medication_taken") taken += 1;
+        else missed += 1;
+      }
+      return participants.size >= minCohortSize && taken + missed > 0
+        ? Number((taken / (taken + missed)).toFixed(3))
+        : null;
+    };
+    const medicationAdherenceCurrent7d = adherenceForRange(0, 7);
+    const medicationAdherencePrevious7d = adherenceForRange(7, 14);
+    const cohortEngagement = (kinds: string[]): ReturnType<typeof grouped> => {
+      const usersByCohort = new Map<string, Set<string>>();
+      for (const row of habitEvents30d) {
+        if (!kinds.includes(row.kind)) continue;
+        const cohort = preventionCohortByUser.get(row.appUserId);
+        if (!cohort) continue;
+        const users = usersByCohort.get(cohort) ?? new Set<string>();
+        users.add(row.appUserId);
+        usersByCohort.set(cohort, users);
+      }
+      return grouped(
+        new Map([...usersByCohort.entries()].map(([cohort, users]) => [cohort, users.size])),
+      );
+    };
+    const coverageRate = (participantCount: number): number | null =>
+      consentedUserIds.length >= minCohortSize
+        ? Number((participantCount / consentedUserIds.length).toFixed(3))
+        : null;
 
     res.json({
       generatedAt: new Date(now).toISOString(),
+      analyticsVersion: "community-v2",
       privacy: {
         minCohortSize,
         consentedParticipants: suppressCount(consentedUserIds.length),
         suppressed: consentedUserIds.length < minCohortSize,
         consentVersion: "community-v1",
+        purpose,
+        researchUseRequired: purpose === "research",
       },
       windows: {
         last7dStart: sevenDaysAgoDate.toISOString(),
@@ -888,6 +1150,9 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
         learning: eventStats("lesson_completed"),
         boneBuddyMessages: eventStats("bone_buddy_message_sent"),
         boneBuddyOpens: eventStats("bone_buddy_opened"),
+        recommendationsShown: eventStats("rec_shown"),
+        recommendationsCompleted: eventStats("rec_completed"),
+        recommendationsDismissed: eventStats("rec_dismissed"),
         breathing: eventStats("breathing_session_completed"),
         meditation: eventStats("meditation_session_completed"),
         nutrition: eventStats("nutrition_logged"),
@@ -907,6 +1172,14 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
       topLearningPathways30d: topLearningPathways.map((r) => ({
         pathway: Number(r.users) >= minCohortSize ? r.pathway : "suppressed",
         count: Number(r.users) >= minCohortSize ? Number(r.count) : null,
+        completionRate:
+          Number(r.users) >= minCohortSize && learningUsers.size > 0
+            ? Number((Number(r.users) / learningUsers.size).toFixed(3))
+            : null,
+      })),
+      topBoneBuddyTopics30d: topBoneBuddyTopics.map((r) => ({
+        topic: Number(r.users) >= minCohortSize ? r.topic : "suppressed",
+        count: Number(r.users) >= minCohortSize ? Number(r.count) : null,
       })),
       coachingDemand30d: coachingBySession.map((r) => ({
         sessionId: Number(r.users) >= minCohortSize ? r.sessionId : "suppressed",
@@ -917,12 +1190,33 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
         count: Number(r.users) >= minCohortSize ? Number(r.count) : null,
       })),
       overview: {
+        totalRegisteredUsers: Number(totalRegisteredRows[0]?.value ?? 0),
+        newRegistrations7d: Number(newRegistered7dRows[0]?.value ?? 0),
+        newRegistrations30d: Number(newRegistered30dRows[0]?.value ?? 0),
+        dailyActiveConsentedUsers: suppressCount(active1dRows.length),
+        weeklyActiveConsentedUsers: suppressCount(active7dRows.length),
+        monthlyActiveConsentedUsers: suppressCount(active30dRows.length),
         age: grouped(ageGroups),
         gender: grouped(genderGroups),
         condition: grouped(conditionGroups),
         country: grouped(countryGroups),
         goals: grouped(goalGroups),
         averageYearsSinceDiagnosis: suppressAverage(diagnosisYears),
+      },
+      prevention: {
+        cohorts: grouped(preventionCohorts),
+        educationEngagement30d: eventStats("lesson_completed"),
+        nutritionEngagement30d: eventStats("nutrition_logged"),
+        exerciseEngagement30d: eventStats("activity_logged"),
+        breathingEngagement30d: eventStats("breathing_session_completed"),
+        meditationEngagement30d: eventStats("meditation_session_completed"),
+        educationParticipantsByCohort30d: cohortEngagement(["lesson_completed"]),
+        nutritionParticipantsByCohort30d: cohortEngagement(["nutrition_logged"]),
+        exerciseParticipantsByCohort30d: cohortEngagement(["activity_logged"]),
+        wellnessParticipantsByCohort30d: cohortEngagement([
+          "breathing_session_completed",
+          "meditation_session_completed",
+        ]),
       },
       boneHealth: {
         averageTScore: suppressAverage(tScores, tScoreUsers.size),
@@ -948,9 +1242,28 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
         commonSupplements: grouped(supplementNames),
         commonMedications: grouped(medicationNames),
         currentAdherenceRate:
-          supplementRows.length >= minCohortSize
+          supplementRows.length >= minCohortSize && currentTracked > 0
             ? Number((currentTaken / currentTracked).toFixed(3))
             : null,
+        currentSupplementAdherenceRate:
+          supplementRows.length >= minCohortSize && supplementTrackedCurrent > 0
+            ? Number((supplementTakenCurrent / supplementTrackedCurrent).toFixed(3))
+            : null,
+        currentMedicationAdherenceRate:
+          supplementRows.length >= minCohortSize && medicationTrackedCurrent > 0
+            ? Number((medicationTakenCurrent / medicationTrackedCurrent).toFixed(3))
+            : null,
+        medicationAdherenceRate30d: medicationAdherence30d,
+        medicationAdherenceCurrent7d,
+        medicationAdherencePrevious7d,
+        medicationAdherenceChange7d:
+          medicationAdherenceCurrent7d !== null && medicationAdherencePrevious7d !== null
+            ? Number((medicationAdherenceCurrent7d - medicationAdherencePrevious7d).toFixed(3))
+            : null,
+        averageMedicationActiveDays30d: averageActiveDays30d("medication_taken"),
+        medicationPersistentUsers21Of30Days: persistentUsers30d("medication_taken", 21),
+        averageSupplementActiveDays30d: averageActiveDays30d("supplement_taken"),
+        supplementPersistentUsers21Of30Days: persistentUsers30d("supplement_taken", 21),
         supplementTaken: eventStats("supplement_taken"),
         medicationTaken: eventStats("medication_taken"),
         medicationMissed: eventStats("medication_missed"),
@@ -962,6 +1275,19 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
           activeMinuteUsers.size,
         ),
         sessionTypes30d: grouped(exerciseTypes),
+        averageSessionsPerParticipantPerWeek30d:
+          exerciseParticipants.size >= minCohortSize
+            ? Number((totalExerciseSessions / exerciseParticipants.size / (30 / 7)).toFixed(2))
+            : null,
+        averageExerciseMinutesPerParticipantPerWeek30d:
+          exerciseParticipants.size >= minCohortSize
+            ? Number((totalExerciseMinutes / exerciseParticipants.size / (30 / 7)).toFixed(2))
+            : null,
+        weeklySessionTrend30d: [...activityWeekSessions.entries()].map(([label, rawCount]) => ({
+          label,
+          count: (activityWeekUsers.get(label)?.size ?? 0) >= minCohortSize ? rawCount : null,
+          suppressed: (activityWeekUsers.get(label)?.size ?? 0) < minCohortSize,
+        })),
       },
       learningAndWellness: {
         mostCompletedLessons30d: grouped(lessonNames).slice(0, 10),
@@ -970,11 +1296,36 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
           new Set(learningRows.map((row) => row.appUserId)).size >= minCohortSize
             ? Number((learningDurationSec / 3600).toFixed(1))
             : null,
+        averageLearningMinutesPerParticipant30d:
+          learningUsers.size >= minCohortSize
+            ? Number((learningDurationSec / 60 / learningUsers.size).toFixed(1))
+            : null,
+        averageLessonsCompletedPerParticipant30d:
+          learningUsers.size >= minCohortSize
+            ? Number((learningRows.length / learningUsers.size).toFixed(2))
+            : null,
+        averageLearningProgressPercent:
+          maxLessonIndexByUser.size >= minCohortSize
+            ? Number((
+                [...maxLessonIndexByUser.values()].reduce((sum, value) => sum + value, 0) /
+                maxLessonIndexByUser.size /
+                knownTotalLessons *
+                100
+              ).toFixed(1))
+            : null,
         averageCommunityStreak: suppressAverage(streaks),
+        maximumCommunityStreak:
+          streaks.length >= minCohortSize ? Math.max(...streaks) : null,
+        breathingSessions: eventStats("breathing_session_completed"),
+        meditationSessions: eventStats("meditation_session_completed"),
+        sleepQuality: outcomeAverages.sleepQuality,
+        stressManagement: outcomeAverages.stressLevel,
+        emotionalWellbeing: outcomeAverages.qualityOfLife,
       },
       outcomes: {
         participantCount: suppressCount(latestOutcomeByUser.size),
         averages: outcomeAverages,
+        averageChangeFromFirstCheckIn: outcomeAverageChange,
         averageFallsLast90Days: suppressAverage(falls),
         averageFracturesLast12Months: suppressAverage(fractures),
       },
@@ -988,8 +1339,52 @@ router.get("/admin/metrics/community-insights", async (req, res): Promise<void> 
         supplementsLogged: lifetimeCount("supplement_taken"),
         exerciseLogs: lifetimeCount("activity_logged"),
         boneBuddyMessages: lifetimeCount("bone_buddy_message_sent"),
+        boneBuddyConversations: lifetimeCount("bone_buddy_opened"),
         outcomeCheckIns: lifetimeCount("outcome_checkin_completed"),
         achievementStates: suppressCount(gamificationRows.length),
+        communityMilestones:
+          milestoneUsers.size >= minCohortSize ? communityMilestones : null,
+        totalLearningHours30d:
+          learningUsers.size >= minCohortSize
+            ? Number((learningDurationSec / 3600).toFixed(1))
+            : null,
+        totalLearningHours:
+          Number(lifetimeLearningRows[0]?.users ?? 0) >= minCohortSize
+            ? Number((Number(lifetimeLearningRows[0]?.seconds ?? 0) / 3600).toFixed(1))
+            : null,
+        averageCommunityStreak: suppressAverage(streaks),
+      },
+      behaviourChange: {
+        medicationAdherenceRate30d: medicationAdherence30d,
+        medicationAdherenceCurrent7d,
+        medicationAdherencePrevious7d,
+        medicationAdherenceChange7d:
+          medicationAdherenceCurrent7d !== null && medicationAdherencePrevious7d !== null
+            ? Number((medicationAdherenceCurrent7d - medicationAdherencePrevious7d).toFixed(3))
+            : null,
+        medicationActiveDays30d: averageActiveDays30d("medication_taken"),
+        supplementActiveDays30d: averageActiveDays30d("supplement_taken"),
+        nutritionActiveDays30d: averageActiveDays30d("nutrition_logged"),
+        exerciseActiveDays30d: averageActiveDays30d("activity_logged"),
+        learningActiveDays30d: averageActiveDays30d("lesson_completed"),
+        breathingActiveDays30d: averageActiveDays30d("breathing_session_completed"),
+        meditationActiveDays30d: averageActiveDays30d("meditation_session_completed"),
+        supplementParticipation: eventStats("supplement_taken"),
+        nutritionConsistency: eventStats("nutrition_logged"),
+        exerciseConsistency: eventStats("activity_logged"),
+        learningConsistency: eventStats("lesson_completed"),
+        breathingConsistency: eventStats("breathing_session_completed"),
+        meditationConsistency: eventStats("meditation_session_completed"),
+        outcomeChange: outcomeAverageChange,
+      },
+      dataQuality: {
+        profileCoverageRate: coverageRate(new Set(profiles.map((row) => row.appUserId)).size),
+        dexaCoverageRate: coverageRate(tScoreUsers.size),
+        fraxCoverageRate: coverageRate(new Set([...fraxMajorUsers, ...fraxHipUsers]).size),
+        nutrition30dCoverageRate: coverageRate(new Set(nutritionRows.map((row) => row.appUserId)).size),
+        activity30dCoverageRate: coverageRate(new Set(activityRows.map((row) => row.appUserId)).size),
+        learning30dCoverageRate: coverageRate(learningUsers.size),
+        outcomesCoverageRate: coverageRate(latestOutcomeByUser.size),
       },
     });
   } catch (err) {

@@ -15,6 +15,7 @@ export interface NutritionStreakLog {
   date: string;
   calcium: number;
   vitaminD: number;
+  vitaminK2?: number;
   protein: number;
   magnesium: number;
   calories: number;
@@ -27,6 +28,7 @@ export function hasNonZeroTotals(log: NutritionStreakLog): boolean {
   return (
     log.calcium > 0 ||
     log.vitaminD > 0 ||
+    (log.vitaminK2 ?? 0) > 0 ||
     log.protein > 0 ||
     log.magnesium > 0 ||
     log.calories > 0

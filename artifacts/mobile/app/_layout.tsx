@@ -15,7 +15,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { Platform, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -50,11 +50,13 @@ Notifications.setNotificationHandler({
   }),
 });
 
-try {
-  initializeRevenueCat();
-} catch (err) {
-  // Missing API keys are expected until the seed script has been run.
-  console.warn("[SNAP Life] RevenueCat unavailable:", (err as Error)?.message);
+if (Platform.OS !== "web") {
+  try {
+    initializeRevenueCat();
+  } catch (err) {
+    // Missing API keys are expected until the seed script has been run.
+    console.warn("[SNAP Life] RevenueCat unavailable:", (err as Error)?.message);
+  }
 }
 
 const queryClient = new QueryClient();
@@ -83,6 +85,8 @@ function RootLayoutNav() {
         },
       });
     };
+
+    if (Platform.OS === "web") return;
 
     const subscription = Notifications.addNotificationResponseReceivedListener(openResponse);
     void Notifications.getLastNotificationResponseAsync().then((response) => {

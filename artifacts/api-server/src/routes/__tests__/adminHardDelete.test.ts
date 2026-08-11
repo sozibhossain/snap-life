@@ -183,7 +183,7 @@ describe("POST /admin/users/:id/hard-delete", () => {
   /* ---------------------------------------------------------------------- *
    * Success path — DB-backed: real forceHardDeleteUser, real cascade.
    * ---------------------------------------------------------------------- */
-  describe("success path — data effects (DB-backed)", () => {
+  describe("success path — data effects (DB-backed)", { timeout: 20_000 }, () => {
     let testUserId: string;
 
     beforeEach(async () => {

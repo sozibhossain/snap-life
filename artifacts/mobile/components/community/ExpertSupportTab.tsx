@@ -142,9 +142,8 @@ function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalP
           message: apiError?.message,
         });
         setSendError(
-          res.status === 502 && apiError?.error === "email_delivery_failed"
-            ? "We couldn't send your request by email right now. Please contact teamsnap@snaplife.co.uk."
-            : "Something went wrong. Please try again or contact teamsnap@snaplife.co.uk.",
+          apiError?.message ??
+            "Something went wrong. Please try again or contact teamsnap@snaplife.co.uk.",
         );
       } else {
         logInteractionEvent({

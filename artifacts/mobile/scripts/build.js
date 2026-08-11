@@ -6,6 +6,23 @@ const { pipeline } = require("stream/promises");
 
 let metroProcess = null;
 
+function spawnPnpm(args, options) {
+  // pnpm exposes the JavaScript entrypoint of the currently running CLI.
+  // Invoking it with Node avoids Windows' inability to direct-spawn .cmd
+  // shims while retaining the normal `pnpm` fallback outside lifecycle runs.
+  if (process.env.npm_execpath) {
+    const execPath = process.env.npm_execpath;
+    if (/\.(?:cjs|mjs|js)$/i.test(execPath)) {
+      return spawn(process.execPath, [execPath, ...args], options);
+    }
+    return spawn(execPath, args, options);
+  }
+  return spawn(process.platform === "win32" ? "pnpm.cmd" : "pnpm", args, {
+    ...options,
+    shell: process.platform === "win32",
+  });
+}
+
 const projectRoot = path.resolve(__dirname, "..");
 
 function findWorkspaceRoot(startDir) {
@@ -137,7 +154,20 @@ function patchWebHtml() {
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
     <link rel="shortcut icon" href="/favicon.ico">
     <style id="snap-life-pwa-bg">
-      html, body, #root { background-color: #0f172a; }
+      html, body, #root { background-color: #0f172a; min-height: 100%; }
+      #root { position: relative; z-index: 1; min-height: 100vh; }
+      #snap-app-shell {
+        position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center; box-sizing: border-box; padding: 24px;
+        color: #fff; text-align: center;
+        background: linear-gradient(180deg, #1C3A4A 0%, #0D2530 100%);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      #snap-app-shell img { width: 85px; height: auto; margin-bottom: 18px; }
+      #snap-app-shell strong { font-size: 48px; line-height: 1.04; letter-spacing: -1px; }
+      #snap-app-shell strong span { color: #55C7DE; display: block; }
+      #snap-app-shell p { margin: 14px 0 0; color: #D8EDF2; font-size: 16px; }
       @media (prefers-color-scheme: light) {
         html, body, #root { background-color: #F7FAFB; }
       }
@@ -147,10 +177,15 @@ function patchWebHtml() {
   // Tighten the viewport so iOS standalone mode covers the notch.
   html = html.replace(
     /<meta name="viewport"[^>]*>/,
-    '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
   );
 
   html = html.replace("</head>", `${headInject}  </head>`);
+
+  html = html.replace(
+    /<body([^>]*)>/,
+    `<body$1><div id="snap-app-shell" aria-hidden="true"><img src="/icon-192.png" alt=""><strong>Bone Health<span>Movement</span></strong><p>Bone health for life and longevity</p></div>`,
+  );
 
   const bodyInject = `
     <script>
@@ -196,8 +231,7 @@ function buildWebBundle(expoPublicDomain, expoPublicReplId) {
         "",
     };
 
-    const child = spawn(
-      "pnpm",
+    const child = spawnPnpm(
       [
         "exec",
         "expo",
@@ -320,8 +354,7 @@ async function startMetro(expoPublicDomain, expoPublicReplId) {
     );
   }
 
-  metroProcess = spawn(
-    "pnpm",
+  metroProcess = spawnPnpm(
     [
       "exec",
       "expo",

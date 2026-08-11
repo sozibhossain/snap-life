@@ -10,6 +10,8 @@ export type NutritionSource = "manual" | "meal_plan" | "manual+plan";
 export interface NutritionTotals {
   calcium: number;
   vitaminD: number;
+  /** Vitamin K2 in micrograms. Optional on legacy meal-plan payloads. */
+  vitaminK2?: number;
   protein: number;
   magnesium: number;
   calories: number;
@@ -18,12 +20,15 @@ export interface NutritionTotals {
 export const ZERO_TOTALS: NutritionTotals = {
   calcium: 0,
   vitaminD: 0,
+  vitaminK2: 0,
   protein: 0,
   magnesium: 0,
   calories: 0,
 };
 
 export interface BridgeNutritionLog extends NutritionTotals {
+  /** Optional manually tracked nutrients that are not part of meal-plan maths. */
+  otherNutrients?: Record<string, number>;
   source: NutritionSource;
   mealsCompleted: Partial<Record<NutritionMealKey, boolean>>;
   meals: { name: string; items: string[] }[];
@@ -49,6 +54,7 @@ export interface BridgeNutritionLog extends NutritionTotals {
 export interface MealContribution {
   calcium?: number;
   vitaminD?: number;
+  vitaminK2?: number;
   protein?: number;
   magnesium?: number;
   calories?: number;
@@ -58,6 +64,7 @@ export interface MealContribution {
 export const EMPTY_LOG: BridgeNutritionLog = {
   calcium: 0,
   vitaminD: 0,
+  vitaminK2: 0,
   protein: 0,
   magnesium: 0,
   calories: 0,
@@ -85,6 +92,10 @@ export function scaleContribution(
       contribution.vitaminD != null
         ? contribution.vitaminD * portionMultiplier
         : undefined,
+    vitaminK2:
+      contribution.vitaminK2 != null
+        ? contribution.vitaminK2 * portionMultiplier
+        : undefined,
     protein:
       contribution.protein != null
         ? contribution.protein * portionMultiplier
@@ -109,6 +120,7 @@ export function deriveManualTotals(log: BridgeNutritionLog): NutritionTotals {
   return {
     calcium: Math.max(0, log.calcium - log.planTotals.calcium),
     vitaminD: Math.max(0, log.vitaminD - log.planTotals.vitaminD),
+    vitaminK2: Math.max(0, (log.vitaminK2 ?? 0) - (log.planTotals.vitaminK2 ?? 0)),
     protein: Math.max(0, log.protein - log.planTotals.protein),
     magnesium: Math.max(0, log.magnesium - log.planTotals.magnesium),
     calories: Math.max(0, log.calories - log.planTotals.calories),
@@ -147,18 +159,21 @@ export function applyMealToggle(
 
   const subC = prevSnapshot?.calcium ?? 0;
   const subVD = prevSnapshot?.vitaminD ?? 0;
+  const subVK2 = prevSnapshot?.vitaminK2 ?? 0;
   const subP = prevSnapshot?.protein ?? 0;
   const subM = prevSnapshot?.magnesium ?? 0;
   const subK = prevSnapshot?.calories ?? 0;
 
   const addC = newSnapshot?.calcium ?? 0;
   const addVD = newSnapshot?.vitaminD ?? 0;
+  const addVK2 = newSnapshot?.vitaminK2 ?? 0;
   const addP = newSnapshot?.protein ?? 0;
   const addM = newSnapshot?.magnesium ?? 0;
   const addK = newSnapshot?.calories ?? 0;
 
   const calcium = Math.max(0, existing.calcium - subC + addC);
   const vitaminD = Math.max(0, existing.vitaminD - subVD + addVD);
+  const vitaminK2 = Math.max(0, (existing.vitaminK2 ?? 0) - subVK2 + addVK2);
   const protein = Math.max(0, existing.protein - subP + addP);
   const magnesium = Math.max(0, existing.magnesium - subM + addM);
   const calories = Math.max(0, existing.calories - subK + addK);
@@ -170,6 +185,7 @@ export function applyMealToggle(
   const planTotals: NutritionTotals = {
     calcium: Math.max(0, existing.planTotals.calcium - subC + addC),
     vitaminD: Math.max(0, existing.planTotals.vitaminD - subVD + addVD),
+    vitaminK2: Math.max(0, (existing.planTotals.vitaminK2 ?? 0) - subVK2 + addVK2),
     protein: Math.max(0, existing.planTotals.protein - subP + addP),
     magnesium: Math.max(0, existing.planTotals.magnesium - subM + addM),
     calories: Math.max(0, existing.planTotals.calories - subK + addK),
@@ -224,6 +240,7 @@ export function applyMealToggle(
     ...existing,
     calcium,
     vitaminD,
+    vitaminK2,
     protein,
     magnesium,
     calories,
@@ -256,10 +273,15 @@ export function hydrateNutritionLog(raw: any): BridgeNutritionLog & {
     date: String(raw?.date ?? todayLocalISO()),
     calcium: Number(raw?.calcium ?? 0),
     vitaminD: Number(raw?.vitaminD ?? 0),
+    vitaminK2: Number(raw?.vitaminK2 ?? 0),
     protein: Number(raw?.protein ?? 0),
     magnesium: Number(raw?.magnesium ?? 0),
     calories: Number(raw?.calories ?? 0),
     meals: Array.isArray(raw?.meals) ? raw.meals : [],
+    otherNutrients:
+      raw?.otherNutrients && typeof raw.otherNutrients === "object"
+        ? raw.otherNutrients
+        : {},
     source:
       raw?.source === "meal_plan" || raw?.source === "manual+plan"
         ? raw.source
@@ -271,6 +293,7 @@ export function hydrateNutritionLog(raw: any): BridgeNutritionLog & {
     planTotals: {
       calcium: Number(planTotalsRaw.calcium ?? 0),
       vitaminD: Number(planTotalsRaw.vitaminD ?? 0),
+      vitaminK2: Number(planTotalsRaw.vitaminK2 ?? 0),
       protein: Number(planTotalsRaw.protein ?? 0),
       magnesium: Number(planTotalsRaw.magnesium ?? 0),
       calories: Number(planTotalsRaw.calories ?? 0),

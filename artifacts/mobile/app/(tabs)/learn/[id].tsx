@@ -123,6 +123,8 @@ export default function LessonScreen() {
           title: lesson!.title,
           pathway: lesson!.pathway,
           xpReward: lesson!.xpReward,
+          durationSec: (Number.parseInt(lesson!.duration, 10) || 0) * 60,
+          totalLessons: LESSONS.length,
         },
       });
       setShowModal(true);

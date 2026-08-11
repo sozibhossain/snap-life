@@ -129,6 +129,12 @@ const state = {
   auditEvents: [] as AuditEventRow[],
   boneBuddyChatMessages: [] as BoneBuddyChatMessageRow[],
   analyticsConsent: [] as Array<Record<string, unknown>>,
+  assessmentResults: [] as Array<Record<string, unknown>>,
+  nutritionLogs: [] as Array<Record<string, unknown>>,
+  activityLogs: [] as Array<Record<string, unknown>>,
+  supplementState: [] as Array<Record<string, unknown>>,
+  gamificationState: [] as Array<Record<string, unknown>>,
+  outcomeEntries: [] as Array<Record<string, unknown>>,
 };
 
 function reset() {
@@ -144,6 +150,12 @@ function reset() {
   state.auditEvents.length = 0;
   state.boneBuddyChatMessages.length = 0;
   state.analyticsConsent.length = 0;
+  state.assessmentResults.length = 0;
+  state.nutritionLogs.length = 0;
+  state.activityLogs.length = 0;
+  state.supplementState.length = 0;
+  state.gamificationState.length = 0;
+  state.outcomeEntries.length = 0;
 }
 
 /* -------------------------------------------------------------------------- *
@@ -213,6 +225,12 @@ const TABLE_KEYS = {
   auditEvents: "auditEvents",
   boneBuddyChatMessages: "boneBuddyChatMessages",
   analyticsConsent: "analyticsConsent",
+  assessmentResults: "assessmentResults",
+  nutritionLogs: "nutritionLogs",
+  activityLogs: "activityLogs",
+  supplementState: "supplementState",
+  gamificationState: "gamificationState",
+  outcomeEntries: "outcomeEntries",
 } as const;
 
 function makeTableProxy(tableName: string): unknown {
@@ -238,6 +256,12 @@ const userProfileTable = makeTableProxy(TABLE_KEYS.userProfile);
 const auditEventsTable = makeTableProxy(TABLE_KEYS.auditEvents);
 const boneBuddyChatMessagesTable = makeTableProxy(TABLE_KEYS.boneBuddyChatMessages);
 const analyticsConsentTable = makeTableProxy(TABLE_KEYS.analyticsConsent);
+const assessmentResultsTable = makeTableProxy(TABLE_KEYS.assessmentResults);
+const nutritionLogsTable = makeTableProxy(TABLE_KEYS.nutritionLogs);
+const activityLogsTable = makeTableProxy(TABLE_KEYS.activityLogs);
+const supplementStateTable = makeTableProxy(TABLE_KEYS.supplementState);
+const gamificationStateTable = makeTableProxy(TABLE_KEYS.gamificationState);
+const outcomeEntriesTable = makeTableProxy(TABLE_KEYS.outcomeEntries);
 
 interface Cond {
   kind: string;
@@ -268,6 +292,18 @@ function rowsFor(t: string): Array<Record<string, unknown>> {
       return state.boneBuddyChatMessages as unknown as Array<Record<string, unknown>>;
     case TABLE_KEYS.analyticsConsent:
       return state.analyticsConsent;
+    case TABLE_KEYS.assessmentResults:
+      return state.assessmentResults;
+    case TABLE_KEYS.nutritionLogs:
+      return state.nutritionLogs;
+    case TABLE_KEYS.activityLogs:
+      return state.activityLogs;
+    case TABLE_KEYS.supplementState:
+      return state.supplementState;
+    case TABLE_KEYS.gamificationState:
+      return state.gamificationState;
+    case TABLE_KEYS.outcomeEntries:
+      return state.outcomeEntries;
     default:
       return [];
   }
@@ -534,6 +570,12 @@ vi.mock("@workspace/db", () => {
     auditEventsTable,
     boneBuddyChatMessagesTable,
     analyticsConsentTable,
+    assessmentResultsTable,
+    nutritionLogsTable,
+    activityLogsTable,
+    supplementStateTable,
+    gamificationStateTable,
+    outcomeEntriesTable,
   };
 });
 
@@ -664,6 +706,49 @@ describe("GET /admin/metrics/community-insights", () => {
     });
     expect(body.overview).toBeNull();
     expect(body.impact).toBeNull();
+  });
+
+  it("requires explicit research consent for a research export", async () => {
+    for (let i = 1; i <= 10; i += 1) {
+      state.analyticsConsent.push({
+        appUserId: `community-user-${i}`,
+        communityAnalytics: true,
+        researchUse: false,
+      });
+    }
+    const response = await fetch(
+      `${baseUrl}/admin/metrics/community-insights?purpose=research`,
+    );
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as Record<string, any>;
+    expect(body.privacy).toMatchObject({
+      purpose: "research",
+      researchUseRequired: true,
+      suppressed: true,
+      consentedParticipants: null,
+    });
+  });
+
+  it("returns the expanded aggregate contract at the privacy threshold", async () => {
+    for (let i = 1; i <= 10; i += 1) {
+      state.analyticsConsent.push({
+        appUserId: `community-user-${i}`,
+        communityAnalytics: true,
+        researchUse: true,
+      });
+    }
+    const response = await fetch(`${baseUrl}/admin/metrics/community-insights`);
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as Record<string, any>;
+    expect(body.privacy).toMatchObject({
+      purpose: "community",
+      suppressed: false,
+      consentedParticipants: 10,
+    });
+    expect(body).toHaveProperty("prevention.cohorts");
+    expect(body).toHaveProperty("behaviourChange");
+    expect(body).toHaveProperty("topBoneBuddyTopics30d");
+    expect(body.overview).toHaveProperty("dailyActiveConsentedUsers");
   });
 });
 

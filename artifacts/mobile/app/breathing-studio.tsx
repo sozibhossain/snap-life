@@ -208,6 +208,7 @@ export default function BreathingStudioScreen() {
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fadeRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const playRetryRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const triedTrackUrlsRef = useRef<Set<string>>(new Set());
   const stateRef = useRef({ phaseIdx: 0, timeLeft: 0 });
   const orbTargetRef = useRef(0);
 
@@ -252,6 +253,7 @@ export default function BreathingStudioScreen() {
   // and stays stable for the whole session so the player never reinitialises mid-session.
   // Storing the full AudioTrack (not just URL) so credits display stays accurate.
   const [activeTrack, setActiveTrack] = useState<import("@/lib/wellbeingAudio").AudioTrack | null>(null);
+  const [audioUnavailable, setAudioUnavailable] = useState(false);
   const audioSource = useMemo(
     () => (activeTrack ? { uri: activeTrack.url } : null),
     [activeTrack],
@@ -325,6 +327,8 @@ export default function BreathingStudioScreen() {
     const history = await getTrackHistory(s.musicKey);
     const track = pickTrack(pool, history, getTimeOfDay());
     recordTrackPlay(s.musicKey, track.url).catch(() => {});
+    triedTrackUrlsRef.current = new Set([track.url]);
+    setAudioUnavailable(false);
     setActiveTrack(track);
 
     setActiveState(s);
@@ -366,8 +370,21 @@ export default function BreathingStudioScreen() {
       } catch {
         playing = false;
       }
-      if (playing || attempts >= 10) {
+      if (playing) {
         clearPlayRetry();
+        return;
+      }
+      if (attempts >= 20) {
+        clearPlayRetry();
+        const pool = BREATHING_POOLS[activeState.musicKey] ?? BREATHING_POOLS.calm;
+        const fallback = pool.find((track) => !triedTrackUrlsRef.current.has(track.url));
+        if (fallback) {
+          triedTrackUrlsRef.current.add(fallback.url);
+          recordTrackPlay(activeState.musicKey, fallback.url).catch(() => {});
+          setActiveTrack(fallback);
+        } else {
+          setAudioUnavailable(true);
+        }
         return;
       }
       try {
@@ -688,6 +705,11 @@ export default function BreathingStudioScreen() {
               {activeTrack?.artist ?? ""}
             </Text>
           </View>
+          {audioUnavailable && soundOn && (
+            <Text style={styles.sessionTip}>
+              Background music could not load. Voice and breathing guidance will continue.
+            </Text>
+          )}
         </View>
 
         <Pressable style={styles.endBtn} onPress={abortSession}>

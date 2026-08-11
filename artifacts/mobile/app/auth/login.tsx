@@ -24,6 +24,7 @@ import { requestPasswordOnlySignInTicket } from "@/lib/serverIdentity";
 
 const SNAP_ICON = require("@/assets/images/snap-icon.png");
 const PASSWORD_ONLY_EMAIL = "rabby.raziul@gmail.com";
+const ACCESSIBLE_ACTION_COLOR = "#08758E";
 
 const HERO_PILLS = [
   { icon: "message-circle" as const, label: "Bone Buddy AI" },
@@ -394,6 +395,7 @@ export default function LoginScreen() {
               onPress={() => setRememberMe((v) => !v)}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: rememberMe }}
+              aria-checked={rememberMe}
             >
               <View
                 style={[
@@ -422,7 +424,7 @@ export default function LoginScreen() {
 
             <TouchableOpacity
               activeOpacity={0.8}
-              style={[styles.loginBtn, { backgroundColor: colors.primary, opacity: isLoading ? 0.75 : 1 }]}
+              style={[styles.loginBtn, { backgroundColor: ACCESSIBLE_ACTION_COLOR, opacity: isLoading ? 0.75 : 1 }]}
               onPressIn={Keyboard.dismiss}
               onPress={handleLogin}
               disabled={isLoading}
@@ -473,7 +475,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   logoIcon: {
-    width: 80,
+    width: 85,
     height: 80,
     marginBottom: 4,
   },

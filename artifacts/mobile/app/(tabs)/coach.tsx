@@ -968,6 +968,17 @@ export default function CoachScreen() {
           surface: "coach_tab",
           source: text ? "quick_reply" : "composer",
           length: msgText.length,
+          topic: (() => {
+            const value = msgText.toLowerCase();
+            if (/dexa|t-score|frax|fracture|bone density/.test(value)) return "bone_health";
+            if (/food|calcium|protein|vitamin|nutrition|meal/.test(value)) return "nutrition";
+            if (/supplement|magnesium|k2|d3/.test(value)) return "supplements";
+            if (/medication|medicine|alendron|denosumab|hrt/.test(value)) return "medication";
+            if (/walk|exercise|movement|strength|balance|yoga|pilates|tai chi/.test(value)) return "exercise";
+            if (/sleep|stress|anxious|mood|breath|meditat/.test(value)) return "wellbeing";
+            if (/learn|lesson|pathway/.test(value)) return "learning";
+            return "general_support";
+          })(),
         },
       });
     }

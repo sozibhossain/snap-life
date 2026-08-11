@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.snaplife.ltd",
-      "buildNumber": "13",
+      "buildNumber": "14",
       "infoPlist": {
         "CFBundleDisplayName": "SNAPLife",
         "ITSAppUsesNonExemptEncryption": false
@@ -48,7 +48,10 @@
       [
         "expo-router",
         {
-          "origin": "https://replit.com/"
+          "origin": "https://replit.com/",
+          "asyncRoutes": {
+            "web": "production"
+          }
         }
       ],
       "expo-font",

@@ -55,6 +55,7 @@ const MAX_PAYLOAD_BYTES = 4_096;
 const DAY_MS = 86_400_000;
 
 interface ValidatedEvent {
+  clientEventId: string | null;
   kind: string;
   payload: Record<string, unknown>;
   occurredAtMs: number | null;
@@ -65,6 +66,18 @@ interface ValidatedEvent {
 function validate(body: unknown): { ok: true; data: ValidatedEvent } | { ok: false; error: string } {
   if (!body || typeof body !== "object") return { ok: false, error: "body required" };
   const b = body as Record<string, unknown>;
+  let clientEventId: string | null = null;
+  if (b.clientEventId != null) {
+    if (
+      typeof b.clientEventId !== "string" ||
+      b.clientEventId.length < 8 ||
+      b.clientEventId.length > 128 ||
+      !/^[A-Za-z0-9_-]+$/.test(b.clientEventId)
+    ) {
+      return { ok: false, error: "clientEventId invalid" };
+    }
+    clientEventId = b.clientEventId;
+  }
   if (typeof b.kind !== "string" || !ALLOWED_KINDS.has(b.kind)) {
     return { ok: false, error: "kind not allowed" };
   }
@@ -91,7 +104,10 @@ function validate(body: unknown): { ok: true; data: ValidatedEvent } | { ok: fal
   }
   const claimedUserId =
     typeof b.appUserId === "string" && b.appUserId.length > 0 ? b.appUserId : null;
-  return { ok: true, data: { kind: b.kind, payload, occurredAtMs, claimedUserId } };
+  return {
+    ok: true,
+    data: { clientEventId, kind: b.kind, payload, occurredAtMs, claimedUserId },
+  };
 }
 
 /**
@@ -110,12 +126,16 @@ router.post("/events", async (req, res) => {
   }
   if (assertSelf(res, appUserId, result.data.claimedUserId)) return;
   try {
-    await db.insert(interactionEventsTable).values({
-      appUserId,
-      kind: result.data.kind,
-      payload: result.data.payload,
-      occurredAtMs: result.data.occurredAtMs,
-    });
+    await db
+      .insert(interactionEventsTable)
+      .values({
+        appUserId,
+        clientEventId: result.data.clientEventId,
+        kind: result.data.kind,
+        payload: result.data.payload,
+        occurredAtMs: result.data.occurredAtMs,
+      })
+      .onConflictDoNothing();
     res.json({ ok: true });
   } catch (err) {
     req.log?.error({ err }, "interaction event insert failed");

@@ -1,6 +1,16 @@
 import { useAuth } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, ShieldCheck } from "lucide-react";
+import { Download, FlaskConical, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import { AdminLayout } from "@/components/AdminLayout";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -23,15 +33,25 @@ type EventStats = {
   count30d: number | null;
   users30d: number | null;
 };
+type NamedCount = { count: number | null } & Record<string, string | number | null>;
 type Insights = {
   generatedAt: string;
+  analyticsVersion?: string;
   privacy: {
     minCohortSize: number;
     consentedParticipants: number | null;
     suppressed: boolean;
     consentVersion: string;
+    purpose?: "community" | "research";
+    researchUseRequired?: boolean;
   };
   overview: null | {
+    totalRegisteredUsers?: number;
+    newRegistrations7d?: number;
+    newRegistrations30d?: number;
+    dailyActiveConsentedUsers?: number | null;
+    weeklyActiveConsentedUsers?: number | null;
+    monthlyActiveConsentedUsers?: number | null;
     age: Group[];
     gender: Group[];
     condition: Group[];
@@ -50,6 +70,15 @@ type Insights = {
   outcomes: Record<string, unknown> | null;
   impact: Record<string, number | null> | null;
   productActivity?: Record<string, EventStats>;
+  community?: Record<string, EventStats> | null;
+  prevention?: Record<string, unknown> | null;
+  behaviourChange?: Record<string, unknown> | null;
+  dataQuality?: Record<string, unknown> | null;
+  wellbeingSupportNeeds7d?: NamedCount[];
+  topLearningPathways30d?: NamedCount[];
+  topBoneBuddyTopics30d?: NamedCount[];
+  coachingDemand30d?: NamedCount[];
+  expertDemand30d?: NamedCount[];
 };
 
 function parseInsightsResponse(value: unknown): Insights {
@@ -101,18 +130,35 @@ function downloadAggregateCsv(data: Insights) {
   );
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `snap-community-insights-${data.generatedAt.slice(0, 10)}.csv`;
+  const purpose = data.privacy.purpose === "research" ? "research-insights" : "community-insights";
+  anchor.download = `snap-${purpose}-${data.generatedAt.slice(0, 10)}.csv`;
   anchor.click();
   URL.revokeObjectURL(url);
 }
 
 function GroupTable({ title, rows }: { title: string; rows: Group[] }) {
+  const chartRows = rows
+    .filter((row): row is Group & { count: number } => row.count != null)
+    .slice(0, 8);
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
+        {chartRows.length > 0 && (
+          <div className="mb-5 h-56" aria-label={`${title} chart`}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartRows} margin={{ top: 4, right: 8, bottom: 45, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" angle={-30} textAnchor="end" interval={0} height={70} tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} width={35} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#3ABBD4" radius={[5, 5, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
@@ -141,6 +187,33 @@ function GroupTable({ title, rows }: { title: string; rows: Group[] }) {
         </Table>
       </CardContent>
     </Card>
+  );
+}
+
+function NamedCountTable({
+  title,
+  rows,
+  labelKey,
+  rateKey,
+}: {
+  title: string;
+  rows: NamedCount[];
+  labelKey: string;
+  rateKey?: string;
+}) {
+  return (
+    <GroupTable
+      title={title}
+      rows={rows.map((row) => ({
+        label: `${String(row[labelKey] ?? "Unknown")}${
+          rateKey && typeof row[rateKey] === "number"
+            ? ` (${Math.round(Number(row[rateKey]) * 100)}%)`
+            : ""
+        }`,
+        count: row.count,
+        suppressed: row.count == null,
+      }))}
+    />
   );
 }
 
@@ -222,27 +295,31 @@ function MetricSection({
 
 export default function CommunityInsights() {
   const { getToken } = useAuth();
+  const [researchExporting, setResearchExporting] = useState(false);
+  const [researchExportError, setResearchExportError] = useState<string | null>(null);
+  const fetchInsights = async (purpose: "community" | "research") => {
+    const token = await getToken();
+    const suffix = purpose === "research" ? "?purpose=research" : "";
+    const response = await fetch(`/api/admin/metrics/community-insights${suffix}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    const body: unknown = await response.json().catch(() => null);
+    if (!response.ok) {
+      const serverMessage =
+        body && typeof body === "object" && "error" in body
+          ? String((body as { error?: unknown }).error ?? "")
+          : "";
+      throw new Error(
+        serverMessage
+          ? `Insights request failed (${response.status}): ${serverMessage}`
+          : `Insights request failed (${response.status})`,
+      );
+    }
+    return parseInsightsResponse(body);
+  };
   const query = useQuery({
     queryKey: ["admin", "community-insights"],
-    queryFn: async () => {
-      const token = await getToken();
-      const response = await fetch("/api/admin/metrics/community-insights", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const body: unknown = await response.json().catch(() => null);
-      if (!response.ok) {
-        const serverMessage =
-          body && typeof body === "object" && "error" in body
-            ? String((body as { error?: unknown }).error ?? "")
-            : "";
-        throw new Error(
-          serverMessage
-            ? `Insights request failed (${response.status}): ${serverMessage}`
-            : `Insights request failed (${response.status})`,
-        );
-      }
-      return parseInsightsResponse(body);
-    },
+    queryFn: () => fetchInsights("community"),
     refetchInterval: 60_000,
   });
 
@@ -260,15 +337,42 @@ export default function CommunityInsights() {
               Buddy conversations are included.
             </p>
           </div>
-          <Button
-            variant="outline"
-            disabled={!data}
-            onClick={() => data && downloadAggregateCsv(data)}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export aggregate CSV
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              disabled={!data}
+              onClick={() => data && downloadAggregateCsv(data)}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export aggregate CSV
+            </Button>
+            <Button
+              variant="outline"
+              disabled={researchExporting}
+              onClick={async () => {
+                setResearchExporting(true);
+                setResearchExportError(null);
+                try {
+                  downloadAggregateCsv(await fetchInsights("research"));
+                } catch (error) {
+                  setResearchExportError(error instanceof Error ? error.message : "Research export failed");
+                } finally {
+                  setResearchExporting(false);
+                }
+              }}
+            >
+              <FlaskConical className="mr-2 h-4 w-4" />
+              {researchExporting ? "Preparing…" : "Export research CSV"}
+            </Button>
+          </div>
         </div>
+
+        {researchExportError && (
+          <Alert variant="destructive">
+            <AlertTitle>Could not export research report</AlertTitle>
+            <AlertDescription>{researchExportError}</AlertDescription>
+          </Alert>
+        )}
 
         {query.isError && (
           <Alert variant="destructive">
@@ -336,24 +440,13 @@ export default function CommunityInsights() {
                 </CardContent>
               </Card>
             </div>
-            {data.overview && (
-              <div className="grid gap-4 lg:grid-cols-2">
-                {(
-                  ["age", "gender", "condition", "country", "goals"] as const
-                ).map((key) => (
-                  <GroupTable
-                    key={key}
-                    title={key[0].toUpperCase() + key.slice(1)}
-                    rows={data.overview![key]}
-                  />
-                ))}
-              </div>
-            )}
+            <MetricSection title="Community overview" values={data.overview} />
             <MetricSection title="Bone health" values={data.boneHealth} />
             <MetricSection
               title="Product activity"
               values={data.productActivity ?? null}
             />
+            <MetricSection title="Community engagement" values={data.community ?? null} />
             <MetricSection
               title="Nutrition (30 days)"
               values={data.nutrition}
@@ -372,6 +465,19 @@ export default function CommunityInsights() {
               values={data.outcomes}
             />
             <MetricSection title="Impact totals" values={data.impact} />
+            <MetricSection title="Prevention cohorts" values={data.prevention ?? null} />
+            <MetricSection title="Behaviour change" values={data.behaviourChange ?? null} />
+            <MetricSection title="Data quality and coverage" values={data.dataQuality ?? null} />
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold">Demand and topic trends</h2>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <NamedCountTable title="Learning pathways (30 days)" rows={data.topLearningPathways30d ?? []} labelKey="pathway" rateKey="completionRate" />
+                <NamedCountTable title="Bone Buddy topics (30 days)" rows={data.topBoneBuddyTopics30d ?? []} labelKey="topic" />
+                <NamedCountTable title="Wellbeing support needs (7 days)" rows={data.wellbeingSupportNeeds7d ?? []} labelKey="mood" />
+                <NamedCountTable title="Coaching demand (30 days)" rows={data.coachingDemand30d ?? []} labelKey="sessionId" />
+                <NamedCountTable title="Expert demand (30 days)" rows={data.expertDemand30d ?? []} labelKey="consultantId" />
+              </div>
+            </section>
           </>
         )}
       </div>

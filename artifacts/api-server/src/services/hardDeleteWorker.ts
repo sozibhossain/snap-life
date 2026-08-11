@@ -12,7 +12,7 @@
  * already safe to run concurrently.
  */
 
-import { lt, eq, and, isNotNull } from "drizzle-orm";
+import { lt, eq, and, isNotNull, or, sql } from "drizzle-orm";
 import {
   db,
   usersTable,
@@ -34,6 +34,9 @@ import {
   analyticsConsentTable,
   boneBuddyChatMessagesTable,
   outcomeEntriesTable,
+  referralsTable,
+  webPushSubscriptionsTable,
+  pendingEmailsTable,
 } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { insertAuditLog } from "../lib/audit";
@@ -84,6 +87,30 @@ async function hardDeleteUserCascade(appUserId: string, purgedAt: Date): Promise
     db
       .delete(outcomeEntriesTable)
       .where(eq(outcomeEntriesTable.appUserId, appUserId)),
+    db
+      .delete(webPushSubscriptionsTable)
+      .where(eq(webPushSubscriptionsTable.appUserId, appUserId)),
+    db
+      .delete(referralsTable)
+      .where(
+        or(
+          eq(referralsTable.referrerAppUserId, appUserId),
+          eq(referralsTable.refereeAppUserId, appUserId),
+        ),
+      ),
+    // Email queue rows can retain an address or display name after the user
+    // row has been anonymised. Every user-scoped producer stores appUserId in
+    // the payload; the other predicates cover legacy/idempotency formats.
+    db
+      .delete(pendingEmailsTable)
+      .where(
+        or(
+          sql`${pendingEmailsTable.payload}->>'appUserId' = ${appUserId}`,
+          eq(pendingEmailsTable.toAddress, appUserId),
+          sql`${pendingEmailsTable.externalId} LIKE ${`%:${appUserId}:%`}`,
+          sql`${pendingEmailsTable.externalId} LIKE ${`%:${appUserId}`}`,
+        ),
+      ),
   ]);
   await db.delete(usersTable).where(eq(usersTable.appUserId, appUserId));
   // Non-fatal audit entry — written after the delete succeeds.

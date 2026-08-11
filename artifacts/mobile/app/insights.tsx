@@ -480,6 +480,11 @@ function ConsistencyCard() {
     (weeklyEvents.community_tab_opened ?? 0) +
     (weeklyEvents.coaching_booking_requested ?? 0) +
     (weeklyEvents.expert_support_requested ?? 0);
+  const mealPlanCount = weeklyEvents.meal_plan_completed ?? 0;
+  const medicationMissedCount = weeklyEvents.medication_missed ?? 0;
+  const boneScanCount =
+    (weeklyEvents.dexa_logged ?? 0) + (weeklyEvents.frax_logged ?? 0);
+  const outcomeCount = weeklyEvents.outcome_checkin_completed ?? 0;
 
   const rows: Array<{ label: string; color: string; checks: boolean[] }> = [
     { label: "Nutrition", color: colors.xpGold,  checks: dayISOs.map((d) => nutritionSet.has(d)) },
@@ -488,9 +493,13 @@ function ConsistencyCard() {
     { label: "Meditate",  color: "#a78bfa",        checks: dayISOs.map((d) => meditationSet.has(d)) },
     { label: "Supplements", color: "#f59e0b", checks: eventChecks("supplement_taken") },
     { label: "Medication", color: "#ef4444", checks: eventChecks("medication_taken") },
+    { label: "Med missed", color: "#f97316", checks: eventChecks("medication_missed") },
+    { label: "Meal plan", color: "#84cc16", checks: eventChecks("meal_plan_completed") },
     { label: "Learning",  color: colors.accent, checks: eventChecks("lesson_completed") },
     { label: "Buddy", color: colors.success, checks: eventChecks("bone_buddy_message_sent", "bone_buddy_opened") },
     { label: "Community", color: "#fb7185", checks: eventChecks("community_tab_opened", "coaching_booking_requested", "expert_support_requested") },
+    { label: "Bone scans", color: "#38bdf8", checks: eventChecks("dexa_logged", "frax_logged") },
+    { label: "Outcomes", color: "#8b5cf6", checks: eventChecks("outcome_checkin_completed") },
   ];
 
   const hasAnyData =
@@ -501,7 +510,11 @@ function ConsistencyCard() {
     medicationItems.length > 0 ||
     learningCount > 0 ||
     boneBuddyCount > 0 ||
-    communityCount > 0;
+    communityCount > 0 ||
+    mealPlanCount > 0 ||
+    medicationMissedCount > 0 ||
+    boneScanCount > 0 ||
+    outcomeCount > 0;
   if (!hasAnyData) return null;
 
   return (
