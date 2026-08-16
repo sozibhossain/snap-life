@@ -15,6 +15,7 @@ interface InsertCall {
 }
 
 const inserts: InsertCall[] = [];
+const deletes: Array<{ table: string; condition: unknown }> = [];
 const selectsByTable: Map<string, unknown[]> = new Map();
 
 vi.mock("@workspace/db", () => {
@@ -142,6 +143,11 @@ vi.mock("@workspace/db", () => {
     }),
 
     insert: (tbl: unknown) => makeInsertBuilder(nameOf(tbl)),
+    delete: (tbl: unknown) => ({
+      where: async (condition: unknown) => {
+        deletes.push({ table: nameOf(tbl), condition });
+      },
+    }),
   };
 
   return { db, ...tableRegistry };
@@ -149,6 +155,7 @@ vi.mock("@workspace/db", () => {
 
 vi.mock("drizzle-orm", () => ({
   eq: (...args: unknown[]) => ({ kind: "eq", args }),
+  and: (...args: unknown[]) => ({ kind: "and", args }),
 }));
 
 const { default: syncRouter } = await import("../sync");
@@ -178,6 +185,7 @@ beforeEach(() => {
   userTokensState.tokens.set("valid-token", "user-1");
   userTokensState.tokens.set("user-2-token", "user-2");
   inserts.length = 0;
+  deletes.length = 0;
   selectsByTable.clear();
 });
 
@@ -209,6 +217,7 @@ describe("/sync/* — auth gates", () => {
     ["PUT", "/sync/gamification", { state: {} }],
     ["POST", "/sync/wellbeing", { entryId: "x", entry: {}, completedAtMs: 1 }],
     ["POST", "/sync/assessment", { resultId: "x", kind: "dexa", payload: {}, takenAtMs: 1 }],
+    ["DELETE", "/sync/assessment/x", undefined],
     ["POST", "/sync/outcomes", { entryId: "x", entry: {}, recordedAtMs: 1 }],
     ["GET", "/sync/snapshot", undefined],
   ];
@@ -337,7 +346,7 @@ describe("/sync/* — happy paths source identity from the bearer token", () => 
     expect(vals.entryId).toBe("w-1");
   });
 
-  it("POST /sync/assessment uses ON CONFLICT DO NOTHING (idempotent on resultId)", async () => {
+  it("POST /sync/assessment upserts an existing result for edit sync", async () => {
     const r = await call("POST", "/sync/assessment", {
       body: {
         resultId: "d-1",
@@ -349,7 +358,15 @@ describe("/sync/* — happy paths source identity from the bearer token", () => 
     expect(r.status).toBe(200);
     expect(inserts).toHaveLength(1);
     expect(inserts[0].table).toBe("assessment_results");
-    expect(inserts[0].conflict?.kind).toBe("nothing");
+    expect(inserts[0].conflict?.kind).toBe("update");
+  });
+
+  it("DELETE /sync/assessment/:resultId removes only a user-owned result", async () => {
+    const r = await call("DELETE", "/sync/assessment/d-1");
+    expect(r.status).toBe(200);
+    expect(deletes).toHaveLength(1);
+    expect(deletes[0].table).toBe("assessment_results");
+    expect(deletes[0].condition).toMatchObject({ kind: "and" });
   });
 
   it("POST /sync/outcomes appends an idempotent structured check-in", async () => {

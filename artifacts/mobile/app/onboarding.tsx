@@ -525,7 +525,7 @@ export default function OnboardingScreen() {
 
               <View style={[styles.perksCard, { backgroundColor: colors.primary + "10", borderColor: colors.primary + "30" }]}>
                 {[
-                  { icon: "book-open"      as const, text: "9 guided learning pathways — from basics to longevity" },
+                  { icon: "book-open"      as const, text: "Guided learning pathways — from basics to longevity" },
                   { icon: "message-circle" as const, text: "Bone Buddy AI coaching, personalised to your health data" },
                   { icon: "wind"           as const, text: "Breathing Studio and guided meditations" },
                   { icon: "activity"       as const, text: "DEXA tracking, bone scores and FRAX risk calculator" },

@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { fetch } from "expo/fetch";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { hasBoneBuddyAiConsent, recordBoneBuddyAiConsent } from "@/lib/aiConsent";
 import { markCoachOpenedToday } from "@/lib/coachBadge";
 import { logInteractionEvent } from "@/lib/events";
 import { useSubscription } from "@/lib/revenuecat";
@@ -15,6 +16,7 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -183,6 +185,17 @@ interface UserContextPayload {
     hipFractureRisk: number;
     date: string;
   } | null;
+  /** Longitudinal values permitted for neutral trend discussion. */
+  fraxHistory?: Array<{
+    date: string;
+    majorFractureRisk: number;
+    hipFractureRisk: number;
+  }>;
+  dexaHistory?: Array<{
+    date: string;
+    spineTScore?: number;
+    hipTScore?: number;
+  }>;
   /** Activity in the last 7 days — steps + active minutes per day. */
   recentActivity?: Array<{
     date: string;
@@ -240,6 +253,26 @@ export default function CoachScreen() {
   const [isHydrated, setIsHydrated] = useState(false);
   /** Tracks whether we've already attempted the AI welcome for this session. */
   const [welcomeAttempted, setWelcomeAttempted] = useState(false);
+
+  // ─── Third-party AI data-sharing consent ──────────────────────────────
+  // null = not yet loaded, false = loaded and not yet granted, true = granted.
+  // Nothing (kickoff, check-ins, or a typed message) may reach OpenAI until
+  // this is true — see lib/aiConsent.ts.
+  const [aiConsent, setAiConsent] = useState<boolean | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void hasBoneBuddyAiConsent(user?.id).then((granted) => {
+      if (!cancelled) setAiConsent(granted);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  async function acceptAiConsent() {
+    await recordBoneBuddyAiConsent(user?.id);
+    setAiConsent(true);
+  }
 
   // ─── Bone Buddy voice — distinct from wellness sessions. ──────────────────
   // "buddy" persona: Karen / Emma / Aria family, slightly faster + warmer
@@ -614,6 +647,20 @@ export default function CoachScreen() {
             date: fraxResults[0].date,
           }
         : null,
+      fraxHistory: fraxResults.slice(0, 12).map((result) => ({
+        date: result.date,
+        majorFractureRisk: result.majorFractureRisk,
+        hipFractureRisk: result.hipFractureRisk,
+      })),
+      dexaHistory: dexaScans.slice(0, 12).map((scan) => ({
+        date: scan.date,
+        spineTScore: scan.spineTScore ?? (scan.site === "lumbar_spine" ? scan.tScore : undefined),
+        hipTScore: scan.hipTScore ?? (
+          scan.site === "total_hip" || scan.site === "femoral_neck"
+            ? scan.tScore
+            : undefined
+        ),
+      })),
       // Activity — last 7 days (skip days with no steps)
       recentActivity: (() => {
         const cutoff = new Date();
@@ -679,6 +726,9 @@ export default function CoachScreen() {
    *    into user B's chat.
    */
   async function generateWelcome() {
+    // Never contact OpenAI before the user has agreed to the AI
+    // data-sharing disclosure — see the aiConsent gate above.
+    if (aiConsent !== true) return;
     // In-flight guard: refuse to start a second kickoff if one is already
     // running for this same key (StrictMode dev double-invoke protection).
     if (welcomeForKeyRef.current === historyKey) return;
@@ -767,6 +817,7 @@ export default function CoachScreen() {
   // greet first. Only triggers once per (user, fresh-chat) cycle — guarded
   // by `welcomeAttempted` so it can't loop or re-fire mid-stream.
   useEffect(() => {
+    if (aiConsent !== true) return;
     if (!isHydrated) return;
     if (welcomeAttempted) return;
     if (messages.length > 0) return;
@@ -774,7 +825,7 @@ export default function CoachScreen() {
     setWelcomeAttempted(true);
     generateWelcome();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHydrated, welcomeAttempted, messages.length, isSending]);
+  }, [aiConsent, isHydrated, welcomeAttempted, messages.length, isSending]);
 
   /**
    * Daily check-in pre-fill — used when the user already has chat
@@ -785,6 +836,7 @@ export default function CoachScreen() {
    * shape as `generateWelcome`.
    */
   async function generateDailyCheckIn() {
+    if (aiConsent !== true) return;
     if (welcomeForKeyRef.current === historyKey) return;
     const startedForKey = historyKey;
     const controller = new AbortController();
@@ -858,6 +910,7 @@ export default function CoachScreen() {
    * weeklyCheckIn:true so the server uses the dedicated kickoff instruction.
    */
   async function generateWeeklyCheckIn() {
+    if (aiConsent !== true) return;
     if (welcomeForKeyRef.current === historyKey) return;
     const startedForKey = historyKey;
     const controller = new AbortController();
@@ -922,6 +975,7 @@ export default function CoachScreen() {
   }
 
   async function sendMessage(text?: string) {
+    if (aiConsent !== true) return;
     const msgText = (text ?? input).trim();
     if (!msgText || isSending) return;
     setInput("");
@@ -1032,7 +1086,7 @@ export default function CoachScreen() {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content:
-          fullContent || "I'm here whenever you want to chat — how are you feeling today?",
+          fullContent || "I couldn't generate a complete answer to that just now. Please try sending the same question again.",
         timestamp: new Date().toISOString(),
       };
 
@@ -1046,7 +1100,7 @@ export default function CoachScreen() {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content:
-          "I'm having a bit of trouble reaching you right now. Give it another try in a moment, and in the meantime — how have you been feeling today?",
+          "I'm having trouble answering that question right now. Please try it again in a moment — your message is still here.",
         timestamp: new Date().toISOString(),
       };
       const updated = [...currentMessages, errorMsg];
@@ -1403,12 +1457,98 @@ export default function CoachScreen() {
           </Text>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Third-party AI data-sharing consent — blocks Bone Buddy until the
+          user explicitly agrees. Required before ANY message, kickoff
+          greeting, or check-in reaches OpenAI. */}
+      <Modal
+        visible={aiConsent === false}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View style={styles.consentBackdrop}>
+          <View
+            style={[
+              styles.consentCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <View style={[styles.consentIcon, { backgroundColor: colors.primary + "18" }]}>
+              <Feather name="shield" size={22} color={colors.primary} />
+            </View>
+            <Text style={[styles.consentTitle, { color: colors.foreground }]}>
+              Before you chat with Bone Buddy
+            </Text>
+            <Text style={[styles.consentBody, { color: colors.mutedForeground }]}>
+              Bone Buddy is powered by OpenAI. To generate a reply, your messages
+              and the relevant health context you've saved in SNAP Life (such as
+              your condition, DEXA/FRAX results, nutrition and wellbeing data)
+              are sent to OpenAI for processing. OpenAI does not use this data to
+              train its models. See our{" "}
+              <Text
+                style={{ color: colors.primary, fontFamily: "Inter_600SemiBold" }}
+                onPress={() => router.push("/settings/privacy-policy")}
+              >
+                Privacy Policy
+              </Text>{" "}
+              for details.
+            </Text>
+            <Pressable
+              style={[styles.consentPrimaryBtn, { backgroundColor: colors.primary }]}
+              onPress={acceptAiConsent}
+            >
+              <Text style={styles.consentPrimaryBtnText}>Agree & start chatting</Text>
+            </Pressable>
+            <Pressable onPress={() => router.push("/(tabs)")} hitSlop={8}>
+              <Text style={[styles.consentSecondaryText, { color: colors.mutedForeground }]}>
+                Not now
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  consentBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  consentCard: {
+    width: "100%",
+    maxWidth: 380,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 22,
+    gap: 12,
+    alignItems: "center",
+  },
+  consentIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  consentTitle: { fontSize: 17, fontFamily: "Inter_700Bold", textAlign: "center" },
+  consentBody: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 19 },
+  consentPrimaryBtn: {
+    alignSelf: "stretch",
+    height: 48,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  consentPrimaryBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" },
+  consentSecondaryText: { fontSize: 13, fontFamily: "Inter_500Medium", paddingVertical: 4 },
   header: {
     flexDirection: "row",
     alignItems: "center",

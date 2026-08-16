@@ -13,9 +13,10 @@
  * clinical export features are added later.
  */
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -29,7 +30,18 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { classifyTScore, useHealth } from "@/context/HealthContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import {
+  calculateBmi,
+  cmToFeetInches,
+  feetInchesToCm,
+  isValidAssessmentDate,
+  kgToPounds,
+  poundsToKg,
+  type HeightUnit,
+  type WeightUnit,
+} from "@/lib/assessmentUtils";
 
 // ─── First-time guide card ─────────────────────────────────────────────────────
 // Shown when the user has no previous DEXA scans and hasn't dismissed it.
@@ -259,7 +271,10 @@ export default function LogDexaScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { addDexaScan, dexaScans } = useHealth();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const { user } = useAuth();
+  const { addDexaScan, updateDexaScan, dexaScans } = useHealth();
+  const editingScan = params.id ? dexaScans.find((scan) => scan.id === params.id) : undefined;
 
   const isFirstScan = dexaScans.length === 0;
   const [showGuide, setShowGuide] = useState(true);
@@ -269,7 +284,12 @@ export default function LogDexaScreen() {
   const [hipTScore, setHipTScore] = useState("");
   const [majorFractureRisk, setMajorFractureRisk] = useState("");
   const [hipFractureRisk, setHipFractureRisk] = useState("");
-  const [bmi, setBmi] = useState("");
+  const [heightUnit, setHeightUnit] = useState<HeightUnit>("cm");
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>("kg");
+  const [heightCmInput, setHeightCmInput] = useState("");
+  const [heightFeet, setHeightFeet] = useState("");
+  const [heightInches, setHeightInches] = useState("");
+  const [weightInput, setWeightInput] = useState("");
   const [notes, setNotes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -282,7 +302,61 @@ export default function LogDexaScreen() {
   const hasSpine = !isNaN(spineVal);
   const hasHip = !isNaN(hipVal);
 
+  const unitPreferenceKey = `@snaplife/dexa-units/v1:${user?.id ?? "anon"}`;
+  const heightCm = heightUnit === "cm"
+    ? parseFloat(heightCmInput)
+    : feetInchesToCm(parseFloat(heightFeet), parseFloat(heightInches || "0"));
+  const weightKg = weightUnit === "kg"
+    ? parseFloat(weightInput)
+    : poundsToKg(parseFloat(weightInput));
+  const hasAnyHeight = heightCmInput.trim().length > 0 || heightFeet.trim().length > 0 || heightInches.trim().length > 0;
+  const hasAnyWeight = weightInput.trim().length > 0;
+  const bmi = calculateBmi(heightCm, weightKg);
+
+  useEffect(() => {
+    if (editingScan) {
+      setDate(editingScan.date);
+      setSpineTScore(editingScan.spineTScore?.toString() ?? "");
+      setHipTScore(editingScan.hipTScore?.toString() ?? "");
+      setMajorFractureRisk(editingScan.majorFractureRisk?.toString() ?? "");
+      setHipFractureRisk(editingScan.hipFractureRisk?.toString() ?? "");
+      setNotes(editingScan.notes ?? "");
+      const nextHeightUnit = editingScan.heightUnit ?? "cm";
+      const nextWeightUnit = editingScan.weightUnit ?? "kg";
+      setHeightUnit(nextHeightUnit);
+      setWeightUnit(nextWeightUnit);
+      if (editingScan.heightCm) {
+        if (nextHeightUnit === "cm") setHeightCmInput(editingScan.heightCm.toFixed(1));
+        else {
+          const imperial = cmToFeetInches(editingScan.heightCm);
+          setHeightFeet(String(imperial.feet));
+          setHeightInches(String(imperial.inches));
+        }
+      }
+      if (editingScan.weightKg) {
+        setWeightInput(nextWeightUnit === "kg"
+          ? editingScan.weightKg.toFixed(1)
+          : kgToPounds(editingScan.weightKg).toFixed(1));
+      }
+      return;
+    }
+    AsyncStorage.getItem(unitPreferenceKey).then((raw) => {
+      if (!raw) return;
+      try {
+        const saved = JSON.parse(raw) as { heightUnit?: HeightUnit; weightUnit?: WeightUnit };
+        if (saved.heightUnit) setHeightUnit(saved.heightUnit);
+        if (saved.weightUnit) setWeightUnit(saved.weightUnit);
+      } catch {
+        // A malformed preference should never block the clinical form.
+      }
+    });
+  }, [editingScan?.id, unitPreferenceKey]);
+
   async function handleSave() {
+    if (!isValidAssessmentDate(date)) {
+      setError("Please enter a valid scan date in YYYY-MM-DD format.");
+      return;
+    }
     if (!hasSpine && !hasHip) {
       setError("Please enter at least one T-score (Spine or Hip).");
       return;
@@ -290,7 +364,6 @@ export default function LogDexaScreen() {
 
     const majorRisk = majorFractureRisk ? parseFloat(majorFractureRisk) : undefined;
     const hipRisk = hipFractureRisk ? parseFloat(hipFractureRisk) : undefined;
-    const bmiVal = bmi ? parseFloat(bmi) : undefined;
 
     if (majorFractureRisk && (isNaN(majorRisk!) || majorRisk! < 0 || majorRisk! > 100)) {
       setError("Major fracture risk must be a percentage between 0 and 100.");
@@ -300,23 +373,42 @@ export default function LogDexaScreen() {
       setError("Hip fracture risk must be a percentage between 0 and 100.");
       return;
     }
-    if (bmi && isNaN(bmiVal!)) {
-      setError("Please enter a valid BMI.");
+    if (hasAnyHeight && (!Number.isFinite(heightCm) || heightCm < 80 || heightCm > 250)) {
+      setError("Please enter a valid height (80–250 cm, or the equivalent in feet and inches).");
+      return;
+    }
+    if (heightUnit === "ft_in" && heightInches && (parseFloat(heightInches) < 0 || parseFloat(heightInches) >= 12)) {
+      setError("Inches must be between 0 and 11.9.");
+      return;
+    }
+    if (hasAnyWeight && (!Number.isFinite(weightKg) || weightKg < 25 || weightKg > 350)) {
+      setError("Please enter a valid weight (25–350 kg, or the equivalent in pounds).");
+      return;
+    }
+    if (hasAnyHeight !== hasAnyWeight) {
+      setError("Enter both height and weight to calculate BMI, or leave both blank.");
       return;
     }
 
     setError("");
     setIsLoading(true);
     try {
-      await addDexaScan({
+      const scan = {
         date,
         spineTScore: hasSpine ? spineVal : undefined,
         hipTScore: hasHip ? hipVal : undefined,
         majorFractureRisk: majorRisk,
         hipFractureRisk: hipRisk,
-        bmi: bmiVal,
+        heightCm: hasAnyHeight ? Math.round(heightCm * 10) / 10 : undefined,
+        weightKg: hasAnyWeight ? Math.round(weightKg * 10) / 10 : undefined,
+        heightUnit,
+        weightUnit,
+        bmi: bmi ?? undefined,
         notes: notes.trim() || undefined,
-      });
+      };
+      if (editingScan) await updateDexaScan(editingScan.id, scan);
+      else await addDexaScan(scan);
+      await AsyncStorage.setItem(unitPreferenceKey, JSON.stringify({ heightUnit, weightUnit }));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch {
@@ -336,7 +428,9 @@ export default function LogDexaScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="x" size={22} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Log DEXA Scan</Text>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>
+          {editingScan ? "Edit DEXA Scan" : "Log DEXA Scan"}
+        </Text>
         <Pressable
           onPress={handleSave}
           disabled={isLoading}
@@ -472,16 +566,72 @@ export default function LogDexaScreen() {
 
         {/* ── Additional (optional) ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Additional (Optional)</Text>
-          <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>BMI</Text>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Height, Weight & BMI (Optional)</Text>
+          <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Your selected units are remembered. Values are stored in metric units for consistent comparisons.</Text>
+
+          <View style={styles.measureHeader}>
+            <Text style={[styles.inputLabel, { color: colors.mutedForeground, marginBottom: 0 }]}>Height</Text>
+            <View style={[styles.unitToggle, { backgroundColor: colors.muted }]}>
+              {(["cm", "ft_in"] as HeightUnit[]).map((unit) => (
+                <Pressable key={unit} onPress={() => setHeightUnit(unit)} style={[styles.unitOption, heightUnit === unit && { backgroundColor: colors.card }]}>
+                  <Text style={[styles.unitText, { color: heightUnit === unit ? colors.primary : colors.mutedForeground }]}>{unit === "cm" ? "cm" : "ft / in"}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          {heightUnit === "cm" ? (
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
+              value={heightCmInput}
+              onChangeText={setHeightCmInput}
+              placeholder="e.g. 168"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="decimal-pad"
+            />
+          ) : (
+            <View style={styles.inputRow}>
+              <TextInput
+                style={[styles.input, styles.flexInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
+                value={heightFeet}
+                onChangeText={setHeightFeet}
+                placeholder="Feet"
+                placeholderTextColor={colors.mutedForeground}
+                keyboardType="number-pad"
+              />
+              <TextInput
+                style={[styles.input, styles.flexInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
+                value={heightInches}
+                onChangeText={setHeightInches}
+                placeholder="Inches"
+                placeholderTextColor={colors.mutedForeground}
+                keyboardType="decimal-pad"
+              />
+            </View>
+          )}
+
+          <View style={styles.measureHeader}>
+            <Text style={[styles.inputLabel, { color: colors.mutedForeground, marginBottom: 0 }]}>Weight</Text>
+            <View style={[styles.unitToggle, { backgroundColor: colors.muted }]}>
+              {(["kg", "lb"] as WeightUnit[]).map((unit) => (
+                <Pressable key={unit} onPress={() => setWeightUnit(unit)} style={[styles.unitOption, weightUnit === unit && { backgroundColor: colors.card }]}>
+                  <Text style={[styles.unitText, { color: weightUnit === unit ? colors.primary : colors.mutedForeground }]}>{unit}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
           <TextInput
             style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-            value={bmi}
-            onChangeText={setBmi}
-            placeholder="e.g. 24.5"
+            value={weightInput}
+            onChangeText={setWeightInput}
+            placeholder={weightUnit === "kg" ? "e.g. 70" : "e.g. 154"}
             placeholderTextColor={colors.mutedForeground}
             keyboardType="decimal-pad"
           />
+
+          <View style={[styles.bmiCard, { backgroundColor: colors.primary + "10", borderColor: colors.primary + "28" }]}>
+            <Text style={[styles.bmiLabel, { color: colors.mutedForeground }]}>Calculated BMI</Text>
+            <Text style={[styles.bmiValue, { color: colors.primary }]}>{bmi?.toFixed(1) ?? "—"}</Text>
+          </View>
           <Text style={[styles.inputLabel, { color: colors.mutedForeground, marginTop: 8 }]}>Clinical Notes</Text>
           <TextInput
             style={[styles.textarea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
@@ -549,6 +699,14 @@ const styles = StyleSheet.create({
   legendText: { fontSize: 12, fontFamily: "Inter_400Regular" },
 
   inputRow: { flexDirection: "row", gap: 12 },
+  flexInput: { flex: 1 },
+  measureHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  unitToggle: { flexDirection: "row", padding: 3, borderRadius: 9 },
+  unitOption: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7 },
+  unitText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  bmiCard: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderRadius: 12, borderWidth: 1, padding: 12 },
+  bmiLabel: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  bmiValue: { fontSize: 18, fontFamily: "Inter_700Bold" },
   inputLabel: { fontSize: 13, fontFamily: "Inter_500Medium", marginBottom: 6 },
   input: {
     height: 48, borderRadius: 12, borderWidth: 1,

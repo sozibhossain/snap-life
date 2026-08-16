@@ -40,7 +40,7 @@ export interface SyncQueueItem {
    */
   key: string;
   /** HTTP method to use when flushing. */
-  method: "PUT" | "POST";
+  method: "PUT" | "POST" | "DELETE";
   /** Path relative to the api-server `/api` base, e.g. `/sync/profile`. */
   path: string;
   /** Body payload. Stored as-is; serialised on flush. */
@@ -60,7 +60,7 @@ export const BACKOFF_SCHEDULE_MS = [1_000, 2_000, 4_000, 8_000, 16_000, 30_000];
 export interface EnqueueInput {
   domain: SyncDomain;
   key: string;
-  method: "PUT" | "POST";
+  method: "PUT" | "POST" | "DELETE";
   path: string;
   body: unknown;
 }

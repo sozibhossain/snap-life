@@ -1,7 +1,7 @@
 /**
  * Rate-limit middleware for the SNAP Life API.
  *
- * Three named limiters cover the public abuse surfaces:
+ * Named limiters cover the public abuse surfaces:
  *   - `authLimiter`  : 5 requests / minute / IP on `/api/auth/*`. Limits
  *     legacy bearer-token bootstrap + Clerk linking. Keyed by IP because
  *     these are pre-auth surfaces.
@@ -10,6 +10,8 @@
  *   - `chatLimiter`  : 20 requests / minute / user on `POST /api/chat/bone-buddy`.
  *     OpenAI is expensive; the mobile client is conversational, not
  *     scripted.
+ *   - `serviceRequestLimiter`: 10 requests / 10 minutes / verified user or IP
+ *     for coaching and expert-support email/payment handoffs.
  *
  * Keying strategy (security-critical):
  *   The user-keyed limiters partition by *verified* principal:
@@ -152,5 +154,12 @@ export const eventsLimiter: RateLimitRequestHandler | RequestHandler = makeLimit
 export const chatLimiter: RateLimitRequestHandler | RequestHandler = makeLimiter({
   windowMs: MINUTE_MS,
   limit: 20,
+  keyGenerator: userKey,
+});
+
+/** 10 / 10 min / verified-user (or IP) for external service requests. */
+export const serviceRequestLimiter: RateLimitRequestHandler | RequestHandler = makeLimiter({
+  windowMs: 10 * MINUTE_MS,
+  limit: 10,
   keyGenerator: userKey,
 });

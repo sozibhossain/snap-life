@@ -25,7 +25,7 @@ const SNAP_ICON = require("@/assets/images/snap-icon.png");
 
 const HERO_PILLS = [
   { icon: "message-circle" as const, label: "Bone Buddy AI"   },
-  { icon: "book-open"      as const, label: "9 Pathways"      },
+  { icon: "book-open"      as const, label: "Guided Learning" },
   { icon: "wind"           as const, label: "Guided Wellness"  },
   { icon: "activity"       as const, label: "Progress Tracker" },
 ];

@@ -49,6 +49,16 @@ async function post(path: string, body: unknown) {
   return { status: response.status, json: await response.json() as Record<string, unknown> };
 }
 
+function expertConsent(dataShared: string[]) {
+  return {
+    acknowledged: true,
+    version: "expert-support-v1",
+    timestamp: new Date().toISOString(),
+    dataShared,
+    appDataShared: [],
+  };
+}
+
 describe("service request delivery guards", () => {
   it("does not claim a coaching request was sent when email is unavailable", async () => {
     const result = await post("/coaching/booking", {
@@ -65,6 +75,7 @@ describe("service request delivery guards", () => {
       name: "Test User",
       email: "test@example.com",
       consultantId: "maria",
+      consent: expertConsent(["name", "email"]),
     });
     expect(result.status).toBe(503);
     expect(result.json.error).toBe("email_service_unavailable");

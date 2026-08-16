@@ -30,7 +30,7 @@ import {
   supplementStateTable,
   outcomeEntriesTable,
 } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   PutSyncProfileBody,
   PutSyncNutritionDayBody,
@@ -428,15 +428,43 @@ router.post("/sync/assessment", async (req, res) => {
         payload: body.payload,
         takenAtMs: body.takenAtMs,
       })
-      .onConflictDoNothing({
+      .onConflictDoUpdate({
         target: [
           assessmentResultsTable.appUserId,
           assessmentResultsTable.resultId,
         ],
+        set: {
+          kind: body.kind,
+          payload: body.payload,
+          takenAtMs: body.takenAtMs,
+        },
       });
     res.json({ ok: true });
   } catch (err) {
     req.log?.error({ err }, "sync assessment append failed");
+    res.status(500).json({ error: "internal" });
+  }
+});
+
+/** Remove one user-owned DEXA or FRAX assessment. */
+router.delete("/sync/assessment/:resultId", async (req, res) => {
+  const appUserId = await requireUserAuth(req, res);
+  if (!appUserId) return;
+  const resultId = String(req.params.resultId ?? "");
+  if (!resultId || resultId.length > 200) {
+    res.status(400).json({ error: "invalid result id" });
+    return;
+  }
+  try {
+    await db
+      .delete(assessmentResultsTable)
+      .where(and(
+        eq(assessmentResultsTable.appUserId, appUserId),
+        eq(assessmentResultsTable.resultId, resultId),
+      ));
+    res.json({ ok: true });
+  } catch (err) {
+    req.log?.error({ err }, "sync assessment delete failed");
     res.status(500).json({ error: "internal" });
   }
 });

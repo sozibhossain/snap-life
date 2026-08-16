@@ -52,6 +52,7 @@ export interface LegacyKeys {
   activity: string;
   supplements: string;
   dexa: string;
+  frax: string;
   nutritionState: string;
   gamification: string;
   /** Preferred (per-user scoped) wellbeing key. */
@@ -74,6 +75,7 @@ export function legacyKeysFor(
     activity: `snap_activity:${appUserId}`,
     supplements: `snap_supplements:${appUserId}`,
     dexa: `snap_dexa:${appUserId}`,
+    frax: `snap_frax:${appUserId}`,
     nutritionState: `snap_nutrition_state:${appUserId}`,
     gamification: `snap_gamification:${appUserId}`,
     wellbeing: `@snaplife/wellbeing/v1:${appUserId}`,
@@ -248,6 +250,30 @@ export async function runSyncMigration(args: {
           payload: scan,
           takenAtMs: scan.date
             ? new Date(scan.date).getTime() || Date.now()
+            : Date.now(),
+        },
+      });
+    }
+  }
+
+  // --- FRAX results are stored separately on device but share the
+  // assessment table on the server. ---
+  const frax = tryParse<DexaShape[]>(await deps.readKey(k.frax));
+  if (Array.isArray(frax)) {
+    for (const result of frax) {
+      if (!result?.id) continue;
+      await enqueue({
+        appUserId,
+        domain: "assessment",
+        modifier: result.id,
+        method: "POST",
+        path: SyncPaths.assessment(),
+        body: {
+          resultId: result.id,
+          kind: "frax",
+          payload: result,
+          takenAtMs: result.date
+            ? new Date(result.date).getTime() || Date.now()
             : Date.now(),
         },
       });

@@ -5,10 +5,7 @@
  *
  * What it tracks (one tile/section per Health Hub Quick Action):
  *   - DEXA & FRAX:       latest T/Z/BMD + 7-day fracture-risk verdict,
- *                        plus a per-site delta-vs-previous mini history
- *                        so the user can see whether bone density is
- *                        improving, stable or trending down between
- *                        scans.
+ *                        plus a neutral per-site delta-vs-previous history.
  *   - Activity:          7-day total active minutes + steps with a tiny
  *                        per-day bar visualisation against a 30 min/day
  *                        guideline.
@@ -181,11 +178,7 @@ const ssr = StyleSheet.create({
 // ─── Site insights ────────────────────────────────────────────────────────────
 
 function siteInsight(label: string, cls: "Normal" | "Osteopenia" | "Osteoporosis"): string {
-  if (cls === "Normal")
-    return `Your ${label.toLowerCase()} results are in the normal range — maintaining habits is key.`;
-  if (cls === "Osteopenia")
-    return `Your ${label.toLowerCase()} results show some bone loss — consistent routines will support stability.`;
-  return `Your ${label.toLowerCase()} results indicate lower bone density — small daily steps add up over time.`;
+  return `${label} latest recorded classification: ${cls}. A qualified healthcare professional can interpret this result in context.`;
 }
 
 export default function BoneTrackerScreen() {
@@ -222,7 +215,7 @@ export default function BoneTrackerScreen() {
 
   // Per-site DEXA trend: for each site the user has scanned, take the
   // most recent two entries and compute the delta. Gives a quick
-  // "improving / stable / worsening" read without needing a chart lib.
+  // numerical latest-versus-previous comparison without clinical interpretation.
   const dexaTrend = useMemo(() => {
     type TrendEntry = {
       label: string;
@@ -720,9 +713,7 @@ export default function BoneTrackerScreen() {
                       FRAX calculator history
                     </Text>
                     {fraxResults.slice(0, 3).map((fr, idx) => {
-                      const majorColor =
-                        fr.majorFractureRisk < 10 ? colors.success :
-                        fr.majorFractureRisk < 20 ? colors.warning : colors.destructive;
+                      const majorColor = colors.foreground;
                       return (
                         <View
                           key={fr.id}
@@ -784,25 +775,16 @@ export default function BoneTrackerScreen() {
                 {dexaTrend.length > 0 && (
                   <View style={styles.trendList}>
                     <Text style={[styles.trendHeading, { color: colors.mutedForeground }]}>
-                      T-score trend by site
+                      T-score history by site
                     </Text>
                     {dexaTrend.map((t) => {
-                      const dir =
-                        t.delta == null
-                          ? "flat"
-                          : t.delta > 0.05
-                          ? "up"
-                          : t.delta < -0.05
-                          ? "down"
-                          : "flat";
-                      const dirColor =
-                        dir === "up" ? colors.success :
-                        dir === "down" ? colors.destructive :
-                        colors.mutedForeground;
-                      const arrow =
-                        dir === "up" ? "trending-up" :
-                        dir === "down" ? "trending-down" :
-                        "minus";
+                      const comparison = t.delta == null
+                        ? "first scan"
+                        : t.delta > 0
+                        ? `${Math.abs(t.delta).toFixed(1)} higher than previous`
+                        : t.delta < 0
+                        ? `${Math.abs(t.delta).toFixed(1)} lower than previous`
+                        : "unchanged from previous";
                       return (
                         <View key={t.label} style={styles.trendRow}>
                           <Text style={[styles.trendSite, { color: colors.foreground }]}>
@@ -812,11 +794,9 @@ export default function BoneTrackerScreen() {
                             {t.score.toFixed(1)}
                           </Text>
                           <View style={styles.trendDelta}>
-                            <Feather name={arrow as never} size={14} color={dirColor} />
-                            <Text style={[styles.trendDeltaText, { color: dirColor }]}>
-                              {t.delta == null
-                                ? "first scan"
-                                : `${t.delta > 0 ? "+" : ""}${t.delta.toFixed(1)} vs last`}
+                            <Feather name="minus" size={14} color={colors.mutedForeground} />
+                            <Text style={[styles.trendDeltaText, { color: colors.mutedForeground }]}>
+                              {comparison}
                             </Text>
                           </View>
                         </View>

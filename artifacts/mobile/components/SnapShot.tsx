@@ -1,13 +1,18 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useRef, useState } from "react";
 import {
+  FlatList,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
+  type ViewToken,
 } from "react-native";
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/context/AuthContext";
+import { useGamification } from "@/context/GamificationContext";
+import { logInteractionEvent } from "@/lib/events";
 
 interface SnapShotItem {
   id: string;
@@ -71,7 +76,44 @@ const SNAP_SHOTS: SnapShotItem[] = [
 
 export function SnapShot() {
   const colors = useColors();
+  const { user } = useAuth();
+  const { refreshProgress } = useGamification();
   const [saved, setSaved] = useState<Set<string>>(new Set());
+  const viewedThisMount = useRef(new Set<string>());
+  const recordTipRef = useRef<(id: string) => void>(() => {});
+
+  recordTipRef.current = (id: string) => {
+    if (viewedThisMount.current.has(id)) return;
+    viewedThisMount.current.add(id);
+    void (async () => {
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const key = `snap_tip_reads:${user?.id ?? "anon"}:${today}`;
+      try {
+        const raw = await AsyncStorage.getItem(key);
+        const existing = raw ? JSON.parse(raw) as string[] : [];
+        const next = [...new Set([...(Array.isArray(existing) ? existing : []), id])];
+        await AsyncStorage.setItem(key, JSON.stringify(next));
+        logInteractionEvent({
+          appUserId: user?.id,
+          kind: "snap_shot_read",
+          payload: { tipId: id },
+        });
+        await refreshProgress();
+      } catch {
+        // Reading a tip must remain available even if local persistence fails.
+      }
+    })();
+  };
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: Array<ViewToken<SnapShotItem>> }) => {
+      for (const token of viewableItems) {
+        if (token.isViewable && token.item?.id) recordTipRef.current(token.item.id);
+      }
+    },
+  ).current;
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60, minimumViewTime: 800 }).current;
 
   function toggleSave(id: string) {
     setSaved((prev) => {
@@ -83,14 +125,16 @@ export function SnapShot() {
 
   return (
     <View>
-      <ScrollView
+      <FlatList
+        data={SNAP_SHOTS}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
-      >
-        {SNAP_SHOTS.map((item) => (
+        keyExtractor={(item) => item.id}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        renderItem={({ item }) => (
           <View
-            key={item.id}
             style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
           >
             <View style={styles.topRow}>
@@ -113,8 +157,8 @@ export function SnapShot() {
               {item.body}
             </Text>
           </View>
-        ))}
-      </ScrollView>
+        )}
+      />
     </View>
   );
 }

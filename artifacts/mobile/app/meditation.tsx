@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useAudioPlayer } from "expo-audio";
+import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import * as Speech from "expo-speech";
 import { useSpeechVoice } from "@/lib/useSpeechVoice";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -268,6 +268,11 @@ const MEDITATIONS: Meditation[] = [
   },
 ];
 
+/** Professional files resolve as `${base}/{session-id}.mp3`. */
+const NARRATION_BASE_URL = (process.env.EXPO_PUBLIC_MEDITATION_NARRATION_BASE_URL ?? "")
+  .trim()
+  .replace(/\/+$/, "");
+
 /**
  * Music level steps. Voice plays at volume 1.0, so even the loudest step
  * keeps the bed at 30% of the voice — voice always dominates per the
@@ -364,6 +369,7 @@ export default function MeditationScreen() {
   // session so the player never reinitialises mid-meditation.
   const [activeTrackUrl, setActiveTrackUrl] = useState<string | null>(null);
   const [musicUnavailable, setMusicUnavailable] = useState(false);
+  const [narrationFailed, setNarrationFailed] = useState(false);
   const musicSource = useMemo(() => {
     if (!activeTrackUrl) return null;
     return { uri: activeTrackUrl };
@@ -371,6 +377,40 @@ export default function MeditationScreen() {
 
   // expo-audio's hook always needs to be called the same way; pass undefined when no source.
   const player = useAudioPlayer(musicSource ?? undefined);
+  const narrationSource = useMemo(() => {
+    if (!active || !NARRATION_BASE_URL) return null;
+    return { uri: `${NARRATION_BASE_URL}/${active.id}.mp3` };
+  }, [active]);
+  const narrationPlayer = useAudioPlayer(narrationSource ?? undefined, { updateInterval: 500 });
+  const narrationStatus = useAudioPlayerStatus(narrationPlayer);
+  const professionalNarration = Boolean(narrationSource && !narrationFailed);
+
+  useEffect(() => setNarrationFailed(false), [narrationSource]);
+
+  useEffect(() => {
+    if (!narrationSource || narrationStatus.isLoaded || narrationFailed) return;
+    const timeout = setTimeout(() => setNarrationFailed(true), 8_000);
+    return () => clearTimeout(timeout);
+  }, [narrationSource, narrationStatus.isLoaded, narrationFailed]);
+
+  useEffect(() => {
+    if (!narrationFailed || !active) return;
+    // Professional playback may fail after the session has begun. Re-arm
+    // only the most recent cue so the fallback continues naturally instead
+    // of replaying every earlier line or leaving the user in silence.
+    const latestCue = active.script.reduce<number | null>(
+      (latest, line, index) => line.at <= elapsed ? index : latest,
+      null,
+    );
+    if (latestCue != null) spokenIdsRef.current.delete(latestCue);
+    // Run once on the failure transition; later cues should remain marked
+    // normally by the session timer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [narrationFailed]);
+
+  useEffect(() => {
+    if (professionalNarration) setVoiceActive(narrationStatus.playing && voiceOn);
+  }, [professionalNarration, narrationStatus.playing, voiceOn]);
 
   useEffect(() => {
     if (!player || !active) return;
@@ -480,7 +520,7 @@ export default function MeditationScreen() {
   const { speak: speakWellness } = useSpeechVoice("wellness");
 
   function speakLine(text: string) {
-    if (!voiceOn) return;
+    if (!voiceOn || professionalNarration) return;
     // Rate 0.47 on iOS sits in the "professional audiobook narrator" zone:
     // unhurried enough to feel guided, natural enough not to sound robotic.
     // Sentence-final punctuation gives the engine its own pause points.
@@ -549,6 +589,7 @@ export default function MeditationScreen() {
     // Restart is the ONLY action that re-arms scripted lines.
     spokenIdsRef.current = new Set();
     setElapsed(0);
+    if (professionalNarration) void narrationPlayer.seekTo(0);
     setIsPlaying(true);
   }
 
@@ -557,6 +598,7 @@ export default function MeditationScreen() {
     Speech.stop();
     setElapsed((s) => {
       const next = Math.max(0, Math.min(active.duration, s + seconds));
+      if (professionalNarration) void narrationPlayer.seekTo(next);
       // Forward-skip: mark any lines we leapfrogged past as already spoken
       // so they don't all queue up at the new position.
       // Backward-skip: keep the existing spoken set untouched so previously
@@ -580,6 +622,11 @@ export default function MeditationScreen() {
     }
     try {
       player?.pause();
+    } catch {
+      // ignore
+    }
+    try {
+      narrationPlayer.pause();
     } catch {
       // ignore
     }
@@ -628,6 +675,11 @@ export default function MeditationScreen() {
       clearPlayRetry();
       try {
         player?.pause();
+      } catch {
+        // ignore
+      }
+      try {
+        narrationPlayer.pause();
       } catch {
         // ignore
       }
@@ -697,6 +749,17 @@ export default function MeditationScreen() {
       }, 250);
     }
 
+    if (professionalNarration && voiceOn) {
+      try {
+        narrationPlayer.volume = 1;
+        void narrationPlayer.seekTo(elapsed)
+          .then(() => narrationPlayer.play())
+          .catch(() => setNarrationFailed(true));
+      } catch {
+        setNarrationFailed(true);
+      }
+    }
+
     // Speak any line at current `elapsed` immediately.
     active.script.forEach((line, idx) => {
       if (line.at <= elapsed && !spokenIdsRef.current.has(idx)) {
@@ -729,7 +792,7 @@ export default function MeditationScreen() {
       tickRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage, active, isPlaying]);
+  }, [stage, active, isPlaying, professionalNarration]);
 
   // When pausing, pause music + speech.
   useEffect(() => {
@@ -745,6 +808,11 @@ export default function MeditationScreen() {
       } catch {
         // ignore
       }
+      try {
+        narrationPlayer.pause();
+      } catch {
+        // ignore
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, stage]);
@@ -754,9 +822,16 @@ export default function MeditationScreen() {
   useEffect(() => {
     if (!voiceOn) {
       Speech.stop();
+      try {
+        narrationPlayer.pause();
+      } catch {
+        // ignore
+      }
       setVoiceActive(false);
+    } else if (professionalNarration && stage === "active" && isPlaying) {
+      void narrationPlayer.seekTo(elapsed).then(() => narrationPlayer.play()).catch(() => setNarrationFailed(true));
     }
-  }, [voiceOn]);
+  }, [voiceOn, professionalNarration, stage, isPlaying]);
 
   async function handleMoodLogged(mood: Mood) {
     if (!active) return;
@@ -860,7 +935,9 @@ export default function MeditationScreen() {
 
           <Text style={styles.tipText}>
             {voiceOn
-              ? "Let the voice carry you. Breathe naturally."
+              ? professionalNarration
+                ? "Professional narration · Breathe naturally."
+                : "Enhanced device narration · Breathe naturally."
               : "Voice off — sit with the music."}
           </Text>
           {musicUnavailable && musicOn && (
@@ -1017,8 +1094,7 @@ export default function MeditationScreen() {
         )}
 
         <Text style={[styles.footnote, { color: colors.mutedForeground }]}>
-          Voice guidance uses your device's built-in speech engine. Licensed royalty-free music is
-          selected for each session and rotates to avoid repetition.
+          Professionally recorded narration is used when available, with enhanced device narration as a resilient fallback. Licensed royalty-free music rotates to avoid repetition.
         </Text>
       </ScrollView>
     </View>

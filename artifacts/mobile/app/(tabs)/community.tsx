@@ -26,7 +26,7 @@ const TABS = ["Leaderboard", "Progress", "Coaching", "Experts"];
 export default function CommunityScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { leaderboard, achievements, challenges, completChallenge } =
+  const { leaderboard, achievements, challenges, refreshProgress } =
     useGamification();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
@@ -49,6 +49,7 @@ export default function CommunityScreen() {
         tab: TABS[activeTab] ?? "Unknown",
       },
     });
+    if (activeTab === 1) void refreshProgress();
   }, [activeTab, user?.id]);
 
   return (
@@ -77,6 +78,9 @@ export default function CommunityScreen() {
             style={[styles.tabItem, activeTab === i && styles.tabItemActive]}
           >
             <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.78}
               style={[
                 styles.tabText,
                 {
@@ -253,14 +257,7 @@ export default function CommunityScreen() {
                     {c.progress.toLocaleString()} / {c.target.toLocaleString()}
                   </Text>
                   {!c.completed && (
-                    <Pressable
-                      onPress={() => completChallenge(c.id)}
-                      style={[styles.markDoneBtn, { backgroundColor: colors.primary + "18" }]}
-                    >
-                      <Text style={[styles.markDoneText, { color: colors.primary }]}>
-                        Mark done
-                      </Text>
-                    </Pressable>
+                    <Text style={[styles.progressLabel, { color: colors.mutedForeground }]}>Updates automatically</Text>
                   )}
                 </View>
               </Card>
@@ -440,7 +437,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   tabItemActive: {},
-  tabText: { fontSize: 13, textAlign: "center" },
+  tabText: { fontSize: 13, lineHeight: 17, textAlign: "center" },
   tabIndicator: { height: 2, borderRadius: 1, marginTop: 4, width: "60%" },
 
   scrollContent: { paddingHorizontal: 16, paddingTop: 12 },

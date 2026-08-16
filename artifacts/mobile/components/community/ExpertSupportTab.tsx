@@ -31,7 +31,15 @@ interface Consultant {
   title: string;
   specialisms: string[];
   supports: string[];
-  bio: string;
+  bio: string[];
+  tagline?: string;
+  services?: Array<{
+    id: string;
+    name: string;
+    duration: string;
+    price: string;
+    details: string[];
+  }>;
   initials: string;
   gradientColors: readonly [string, string];
   accentColor: string;
@@ -49,23 +57,60 @@ const CONSULTANTS: Consultant[] = [
       "Healthy ageing support",
       "Supportive wellbeing conversations",
     ],
-    bio: "Maria is a dedicated Bone Health Consultant with specialist expertise in osteoporosis awareness and healthy ageing. She provides warm, evidence-informed guidance to help you understand and support your bone health journey with confidence.",
+    bio: ["Maria is a dedicated Bone Health Consultant with specialist expertise in osteoporosis awareness and healthy ageing. She provides warm, evidence-informed guidance to help you understand and support your bone health journey with confidence."],
     initials: "M",
     gradientColors: ["#1C3A4A", "#3ABBD4"],
     accentColor: "#3ABBD4",
   },
   {
     id: "faye",
-    name: "Faye",
-    title: "Nutritionist — Lift Nutrition",
-    specialisms: ["Nutritionist", "Healthy Ageing Nutrition"],
+    name: "Faye Thompson",
+    title: "Nutritional Therapist – Lift Nutrition & Wellness",
+    specialisms: ["Healthy ageing nutrition", "Bone health & longevity"],
     supports: [
-      "Bone-supportive nutrition",
-      "Protein intake & muscle health",
-      "Menopause nutrition guidance",
-      "Supplement & lifestyle support",
+      "Personalised bone-supportive nutrition",
+      "Protein & muscle health",
+      "Gut health & nutrient absorption",
+      "Menopause & healthy ageing",
+      "Supplements & lifestyle strategies",
+      "Additional functional testing – genetic, microbiome, hormones, vitamin status etc.",
     ],
-    bio: "Faye is a specialist nutritionist at Lift Nutrition, focused on healthy ageing, bone health, and menopause support. She helps you build a practical, nourishing approach to nutrition that works for your body and your life.",
+    tagline: "Turn information into a plan that works for you.",
+    bio: [
+      "Faye takes a whole-person approach, bringing together the different factors that can influence your bone health – from nutrition, digestion and gut health to immunity, hormones and lifestyle.",
+      "She helps you to make sense of the bigger picture and turn it into practical and nourishing, personalised actions – not just what to do, but how to do it consistently in a way that fits your body and your lifestyle.",
+    ],
+    services: [
+      {
+        id: "discovery",
+        name: "Discovery session",
+        duration: "20 minutes",
+        price: "Free",
+        details: ["Explore working with me to find out how I can support you."],
+      },
+      {
+        id: "power_hour",
+        name: "Power Hour",
+        duration: "60 minutes",
+        price: "£125",
+        details: [
+          "Diet, lifestyle & medical history assessment",
+          "Some targeted practical steps to build better habits that support your bone health goals",
+        ],
+      },
+      {
+        id: "jump_programme",
+        name: "Jump Programme",
+        duration: "90 minutes (initial) + 45 minutes (follow-up)",
+        price: "£325",
+        details: [
+          "In-depth analysis of your diet, lifestyle, medical history and your personalised app information",
+          "Written plan emailed after both sessions",
+          "Includes supplement review",
+          "Accountability follow-up, 3–4 weeks later",
+        ],
+      },
+    ],
     initials: "F",
     gradientColors: ["#F47530", "#FFB07A"],
     accentColor: "#F47530",
@@ -90,6 +135,7 @@ function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalP
   const [email, setEmail]           = useState(user?.email ?? "");
   const [phone, setPhone]           = useState("");
   const [consultantId, setConsultantId] = useState(preselectedConsultant?.id ?? CONSULTANTS[0].id);
+  const [serviceId, setServiceId]       = useState("");
   const [preferred, setPreferred]   = useState("");
   const [reason, setReason]         = useState("");
   const [consent, setConsent]       = useState(false);
@@ -101,6 +147,7 @@ function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalP
   React.useEffect(() => {
     if (visible && preselectedConsultant) {
       setConsultantId(preselectedConsultant.id);
+      setServiceId(preselectedConsultant.services?.[0]?.id ?? "");
     }
   }, [visible, preselectedConsultant]);
 
@@ -125,8 +172,23 @@ function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalP
           email: email.trim(),
           phone: phone.trim(),
           consultantId,
+          serviceId: serviceId || undefined,
           preferred: preferred.trim(),
           reason: reason.trim(),
+          consent: {
+            acknowledged: true,
+            version: "expert-support-v1",
+            timestamp: new Date().toISOString(),
+            dataShared: [
+              "name",
+              "email",
+              ...(phone.trim() ? ["phone"] : []),
+              ...(preferred.trim() ? ["preferred_times"] : []),
+              ...(reason.trim() ? ["user_entered_reason"] : []),
+              ...(serviceId ? ["selected_service"] : []),
+            ],
+            appDataShared: [],
+          },
         }),
       });
       if (!res.ok) {
@@ -171,6 +233,7 @@ function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalP
     setPhone("");
     setPreferred("");
     setReason("");
+    setServiceId("");
     setConsent(false);
     onClose();
   }
@@ -259,7 +322,10 @@ function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalP
                             backgroundColor: consultantId === c.id ? c.accentColor + "0F" : colors.background,
                           },
                         ]}
-                        onPress={() => setConsultantId(c.id)}
+                        onPress={() => {
+                          setConsultantId(c.id);
+                          setServiceId(c.services?.[0]?.id ?? "");
+                        }}
                       >
                         <LinearGradient
                           colors={c.gradientColors}
@@ -282,6 +348,33 @@ function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalP
                     ))}
                   </View>
                 </View>
+
+                {selectedConsultant.services && (
+                  <View style={styles.fieldGroup}>
+                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Service</Text>
+                    <View style={styles.consultantSelector}>
+                      {selectedConsultant.services.map((service) => (
+                        <Pressable
+                          key={service.id}
+                          onPress={() => setServiceId(service.id)}
+                          style={[
+                            styles.serviceOption,
+                            {
+                              borderColor: serviceId === service.id ? accentColor : colors.border,
+                              backgroundColor: serviceId === service.id ? accentColor + "0F" : colors.background,
+                            },
+                          ]}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.serviceName, { color: colors.foreground }]}>{service.name}</Text>
+                            <Text style={[styles.serviceMeta, { color: colors.mutedForeground }]}>{service.duration}</Text>
+                          </View>
+                          <Text style={[styles.servicePrice, { color: accentColor }]}>{service.price}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
 
                 <RequestField
                   label="Full name"
@@ -323,6 +416,11 @@ function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalP
                 />
 
                 {/* Consent */}
+                <View style={[styles.dataPreview, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                  <Text style={[styles.dataPreviewTitle, { color: colors.foreground }]}>What will be shared</Text>
+                  <Text style={[styles.dataPreviewText, { color: colors.mutedForeground }]}>Your name, email, any optional contact details, any selected service, preferred time, and the reason you type above.</Text>
+                  <Text style={[styles.noShareText, { color: colors.success }]}>No SNAP health, activity, nutrition, DEXA, FRAX or Bone Buddy data is shared automatically.</Text>
+                </View>
                 <Pressable
                   style={styles.consentRow}
                   onPress={() => setConsent((v) => !v)}
@@ -341,7 +439,7 @@ function RequestModal({ visible, preselectedConsultant, onClose }: RequestModalP
                     {consent && <Feather name="check" size={12} color="#fff" />}
                   </View>
                   <Text style={[styles.consentText, { color: colors.mutedForeground }]}>
-                    I consent to my details being shared with the selected consultant and the SNAP Life team for the purpose of this support request.
+                    I have reviewed the data listed above and consent to it being shared with the selected consultant and SNAP Life team for this support request.
                   </Text>
                 </Pressable>
               </View>
@@ -487,9 +585,10 @@ function ConsultantCard({
       </View>
 
       {/* Bio */}
-      <Text style={[styles.consultantCardBio, { color: colors.mutedForeground }]}>
-        {consultant.bio}
-      </Text>
+      {consultant.tagline && <Text style={[styles.tagline, { color: consultant.accentColor }]}>{consultant.tagline}</Text>}
+      {consultant.bio.map((paragraph) => (
+        <Text key={paragraph} style={[styles.consultantCardBio, { color: colors.mutedForeground }]}>{paragraph}</Text>
+      ))}
 
       {/* Areas of support */}
       <View style={styles.supportsBlock}>
@@ -501,6 +600,27 @@ function ConsultantCard({
           </View>
         ))}
       </View>
+
+      {consultant.services && (
+        <View style={styles.servicesBlock}>
+          <Text style={[styles.supportsTitle, { color: colors.foreground }]}>Services</Text>
+          {consultant.services.map((service) => (
+            <View key={service.id} style={[styles.serviceCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View style={styles.serviceCardHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.serviceName, { color: colors.foreground }]}>{service.name}</Text>
+                  <Text style={[styles.serviceMeta, { color: colors.mutedForeground }]}>{service.duration}</Text>
+                </View>
+                <Text style={[styles.servicePrice, { color: consultant.accentColor }]}>{service.price}</Text>
+              </View>
+              {service.details.map((detail) => <Text key={detail} style={[styles.serviceDetail, { color: colors.mutedForeground }]}>• {detail}</Text>)}
+            </View>
+          ))}
+          {consultant.id === "faye" && (
+            <Text style={[styles.serviceDataNote, { color: colors.mutedForeground }]}>“Personalised app information” is not included in this enquiry and is never shared automatically. Any future sharing requires a separately approved, secure process and your explicit choice and consent.</Text>
+          )}
+        </View>
+      )}
 
       {/* CTA */}
       <Pressable
@@ -675,13 +795,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     lineHeight: 20,
-    marginBottom: 14,
+    marginBottom: 8,
   },
+  tagline: { fontSize: 14, fontFamily: "Inter_700Bold", lineHeight: 20, marginBottom: 10 },
   supportsBlock: { marginBottom: 16 },
   supportsTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", marginBottom: 8 },
   supportRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 6 },
   supportDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7 },
   supportText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 19 },
+  servicesBlock: { marginBottom: 16, gap: 8 },
+  serviceCard: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 6 },
+  serviceCardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  serviceName: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  serviceMeta: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
+  servicePrice: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  serviceDetail: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
+  serviceDataNote: { fontSize: 11, fontFamily: "Inter_500Medium", lineHeight: 16, marginTop: 2 },
   consultantCta: {
     flexDirection: "row",
     alignItems: "center",
@@ -741,6 +870,7 @@ const styles = StyleSheet.create({
   consultantOptionInitial: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#fff" },
   consultantOptionName: { fontSize: 14, fontFamily: "Inter_600SemiBold", marginBottom: 1 },
   consultantOptionTitle: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  serviceOption: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, borderWidth: 1.5 },
   // Consent
   consentRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   consentBox: {
@@ -754,6 +884,10 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   consentText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18 },
+  dataPreview: { borderRadius: 10, borderWidth: 1, padding: 12, gap: 6 },
+  dataPreviewTitle: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  dataPreviewText: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
+  noShareText: { fontSize: 12, fontFamily: "Inter_600SemiBold", lineHeight: 17 },
   // Privacy / error
   privacyBox: {
     flexDirection: "row",

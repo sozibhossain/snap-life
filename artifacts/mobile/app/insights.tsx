@@ -27,6 +27,7 @@ import { useHealth, classifyTScore, worstTScore } from "@/context/HealthContext"
 import { useWellbeing } from "@/context/WellbeingContext";
 import { useColors } from "@/hooks/useColors";
 import { PremiumGate } from "@/components/PremiumGate";
+import { MyBoneJourneyCard } from "@/components/MyBoneJourneyCard";
 import { useSubscription } from "@/lib/revenuecat";
 import {
   fetchWeeklyEventSummary,
@@ -66,48 +67,6 @@ function dateISOFromDate(d: Date): string {
 }
 
 // ─── Sparkline ────────────────────────────────────────────────────────────────
-
-interface SparkPoint { value: number; label?: string }
-function Sparkline({
-  data, height = 64, barColor, valueMin, valueMax,
-  colors,
-}: {
-  data: SparkPoint[];
-  height?: number;
-  barColor: string;
-  valueMin: number;
-  valueMax: number;
-  colors: ReturnType<typeof useColors>;
-}) {
-  const range = valueMax - valueMin || 1;
-  return (
-    <View style={{ gap: 4 }}>
-      <View style={{ flexDirection: "row", alignItems: "flex-end", height, gap: 4 }}>
-        {data.map((pt, i) => {
-          const norm = Math.max(0, Math.min(1, (pt.value - valueMin) / range));
-          const barH = Math.max(4, norm * height);
-          return (
-            <View key={i} style={{ flex: 1, height, justifyContent: "flex-end" }}>
-              <View style={{ height: barH, borderRadius: 4, backgroundColor: barColor, opacity: 0.7 + 0.3 * norm }} />
-            </View>
-          );
-        })}
-      </View>
-      {data.some((d) => d.label) && (
-        <View style={{ flexDirection: "row", gap: 4 }}>
-          {data.map((pt, i) => (
-            <Text key={i} style={[sp.label, { flex: 1, color: colors.mutedForeground }]}>
-              {pt.label ?? ""}
-            </Text>
-          ))}
-        </View>
-      )}
-    </View>
-  );
-}
-const sp = StyleSheet.create({
-  label: { fontSize: 9, fontFamily: "Inter_400Regular", textAlign: "center" },
-});
 
 // ─── T-score gauge (visual scale −4 → 0) ──────────────────────────────────────
 
@@ -153,38 +112,19 @@ const gauge = StyleSheet.create({
 function BoneHealthCard() {
   const colors = useColors();
   const router = useRouter();
-  const { dexaScans, fraxResults, getFracturRisk } = useHealth();
+  const { dexaScans, fraxResults } = useHealth();
 
   const latest     = dexaScans[0] ?? null;
-  const prev       = dexaScans[1] ?? null;
   const latestFrax = fraxResults[0] ?? null;
 
   if (!latest && !latestFrax) return null;
 
-  const risk = getFracturRisk();
-  const riskColor =
-    risk === "low"      ? colors.success :
-    risk === "moderate" ? colors.warning :
-    colors.destructive;
 
   const majorRisk = latestFrax?.majorFractureRisk ?? latest?.majorFractureRisk;
   const hipRisk   = latestFrax?.hipFractureRisk   ?? latest?.hipFractureRisk;
 
   // Use worst T-score for trend comparison
   const latestWorst = latest ? worstTScore(latest) : null;
-  const prevWorst   = prev   ? worstTScore(prev)   : null;
-
-  let statusLabel = "Stable";
-  let statusIcon: "trending-up" | "minus" | "trending-down" = "minus";
-  if (latestWorst != null && prevWorst != null) {
-    const delta = latestWorst - prevWorst;
-    if (delta > 0.1)       { statusLabel = "Improving";       statusIcon = "trending-up"; }
-    else if (delta < -0.1) { statusLabel = "Needs attention"; statusIcon = "trending-down"; }
-  }
-  const statusColor =
-    statusLabel === "Improving"       ? colors.success :
-    statusLabel === "Needs attention" ? colors.destructive :
-    colors.warning;
 
   // Per-site data for display
   const hasMultiSite = latest && (latest.spineTScore != null || latest.hipTScore != null);
@@ -204,17 +144,11 @@ function BoneHealthCard() {
             )}
           </View>
           <View style={{ gap: 6, alignItems: "flex-end" }}>
-            <View style={[bh.badge, { backgroundColor: riskColor + "28", borderColor: riskColor + "50" }]}>
-              <Text style={[bh.badgeText, { color: riskColor }]}>
-                {risk === "low" ? "Low risk" : risk === "moderate" ? "Moderate risk" : "Higher risk"}
+            <View style={[bh.badge, { backgroundColor: "rgba(255,255,255,0.10)", borderColor: "rgba(255,255,255,0.18)" }]}>
+              <Text style={[bh.badgeText, { color: "rgba(255,255,255,0.78)" }]}>
+                Latest record
               </Text>
             </View>
-            {prevWorst != null && (
-              <View style={bh.statusRow}>
-                <Feather name={statusIcon} size={12} color={statusColor} />
-                <Text style={[bh.statusText, { color: statusColor }]}>{statusLabel}</Text>
-              </View>
-            )}
           </View>
         </View>
 
@@ -281,28 +215,9 @@ function BoneHealthCard() {
           </View>
         )}
 
-        {/* Insight */}
-        {hasMultiSite && latest ? (
-          <Text style={bh.insight}>
-            {(() => {
-              const cls = latest.spineTScore != null ? classifyTScore(latest.spineTScore) : null;
-              const hipCls = latest.hipTScore != null ? classifyTScore(latest.hipTScore) : null;
-              if (cls === "Osteoporosis" || hipCls === "Osteoporosis")
-                return "Your results indicate lower bone density — consistent daily habits will support improvement.";
-              if (cls === "Osteopenia" || hipCls === "Osteopenia")
-                return "Your results show some bone loss — maintaining your routine is key to staying stable.";
-              return "Your bone density is in the normal range. Keep up the great work.";
-            })()}
-          </Text>
-        ) : (
-          <Text style={bh.insight}>
-            {risk === "low"
-              ? "Your bone health is looking positive. Keep up the great work."
-              : risk === "moderate"
-              ? "Consistent habits now make a real difference to bone strength."
-              : "Your bones need extra care — small daily steps add up."}
-          </Text>
-        )}
+        <Text style={bh.insight}>
+          These are your recorded values, shown without judging whether a change is clinically significant. Discuss interpretation with a qualified clinician.
+        </Text>
 
         <View style={bh.footer}>
           <Text style={bh.footerLabel}>View Bone Tracker</Text>
@@ -338,77 +253,6 @@ const bh = StyleSheet.create({
   insight: { fontSize: 13, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.7)", lineHeight: 19 },
   footer: { flexDirection: "row", alignItems: "center", gap: 4 },
   footerLabel: { fontSize: 12, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.5)" },
-});
-
-// ─── Progress & Trends ────────────────────────────────────────────────────────
-
-function ProgressTrendsCard() {
-  const colors = useColors();
-  const router = useRouter();
-  const { dexaScans, fraxResults } = useHealth();
-
-  if (dexaScans.length < 2 && fraxResults.length < 2) return null;
-
-  const scanPoints = useMemo(() =>
-    [...dexaScans].reverse().slice(-6)
-      .map((s) => ({ value: worstTScore(s), label: new Date(s.date).toLocaleDateString("en-GB", { month: "short" }) }))
-      .filter((p): p is { value: number; label: string } => p.value != null),
-    [dexaScans]);
-
-  const fraxPoints = useMemo(() =>
-    [...fraxResults].reverse().slice(-6).map((f) => ({
-      value: f.majorFractureRisk,
-      label: new Date(f.date).toLocaleDateString("en-GB", { month: "short" }),
-    })), [fraxResults]);
-
-  const bmiPoints = useMemo(() =>
-    [...dexaScans].reverse().slice(-6).filter((s) => s.bmi != null).map((s) => ({
-      value: s.bmi!,
-      label: new Date(s.date).toLocaleDateString("en-GB", { month: "short" }),
-    })), [dexaScans]);
-
-  return (
-    <View style={[pt.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={pt.headerRow}>
-        <View style={[pt.iconWrap, { backgroundColor: colors.primary + "18" }]}>
-          <Feather name="bar-chart-2" size={16} color={colors.primary} />
-        </View>
-        <Text style={[pt.title, { color: colors.foreground }]}>Progress & Trends</Text>
-        <Pressable onPress={() => router.push("/health/bone-tracker" as any)}>
-          <Text style={[pt.link, { color: colors.primary }]}>Details</Text>
-        </Pressable>
-      </View>
-
-      {scanPoints.length >= 2 && (
-        <View style={pt.chartSection}>
-          <Text style={[pt.chartLabel, { color: colors.mutedForeground }]}>T-SCORE TREND</Text>
-          <Sparkline data={scanPoints} barColor={colors.primary} valueMin={-4} valueMax={0} colors={colors} />
-        </View>
-      )}
-      {fraxPoints.length >= 2 && (
-        <View style={pt.chartSection}>
-          <Text style={[pt.chartLabel, { color: colors.mutedForeground }]}>MAJOR FRACTURE RISK (%)</Text>
-          <Sparkline data={fraxPoints} barColor={colors.accent} valueMin={0} valueMax={40} colors={colors} />
-        </View>
-      )}
-      {bmiPoints.length >= 2 && (
-        <View style={pt.chartSection}>
-          <Text style={[pt.chartLabel, { color: colors.mutedForeground }]}>BMI</Text>
-          <Sparkline data={bmiPoints} barColor={colors.success} valueMin={15} valueMax={40} colors={colors} />
-        </View>
-      )}
-    </View>
-  );
-}
-
-const pt = StyleSheet.create({
-  card: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 14 },
-  headerRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  iconWrap: { width: 30, height: 30, borderRadius: 9, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 15, fontFamily: "Inter_700Bold", flex: 1 },
-  link: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  chartSection: { gap: 8 },
-  chartLabel: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.8, textTransform: "uppercase" },
 });
 
 // ─── Consistency ──────────────────────────────────────────────────────────────
@@ -472,20 +316,6 @@ function ConsistencyCard() {
       kinds.some((kind) => (weeklySummary.daily[date]?.[kind] ?? 0) > 0),
     );
   };
-  const weeklyEvents = weeklySummary.counts;
-  const learningCount = weeklyEvents.lesson_completed ?? 0;
-  const boneBuddyCount =
-    (weeklyEvents.bone_buddy_message_sent ?? 0) + (weeklyEvents.bone_buddy_opened ?? 0);
-  const communityCount =
-    (weeklyEvents.community_tab_opened ?? 0) +
-    (weeklyEvents.coaching_booking_requested ?? 0) +
-    (weeklyEvents.expert_support_requested ?? 0);
-  const mealPlanCount = weeklyEvents.meal_plan_completed ?? 0;
-  const medicationMissedCount = weeklyEvents.medication_missed ?? 0;
-  const boneScanCount =
-    (weeklyEvents.dexa_logged ?? 0) + (weeklyEvents.frax_logged ?? 0);
-  const outcomeCount = weeklyEvents.outcome_checkin_completed ?? 0;
-
   const rows: Array<{ label: string; color: string; checks: boolean[] }> = [
     { label: "Nutrition", color: colors.xpGold,  checks: dayISOs.map((d) => nutritionSet.has(d)) },
     { label: "Activity",  color: colors.primary,  checks: dayISOs.map((d) => activitySet.has(d))  },
@@ -493,13 +323,6 @@ function ConsistencyCard() {
     { label: "Meditate",  color: "#a78bfa",        checks: dayISOs.map((d) => meditationSet.has(d)) },
     { label: "Supplements", color: "#f59e0b", checks: eventChecks("supplement_taken") },
     { label: "Medication", color: "#ef4444", checks: eventChecks("medication_taken") },
-    { label: "Med missed", color: "#f97316", checks: eventChecks("medication_missed") },
-    { label: "Meal plan", color: "#84cc16", checks: eventChecks("meal_plan_completed") },
-    { label: "Learning",  color: colors.accent, checks: eventChecks("lesson_completed") },
-    { label: "Buddy", color: colors.success, checks: eventChecks("bone_buddy_message_sent", "bone_buddy_opened") },
-    { label: "Community", color: "#fb7185", checks: eventChecks("community_tab_opened", "coaching_booking_requested", "expert_support_requested") },
-    { label: "Bone scans", color: "#38bdf8", checks: eventChecks("dexa_logged", "frax_logged") },
-    { label: "Outcomes", color: "#8b5cf6", checks: eventChecks("outcome_checkin_completed") },
   ];
 
   const hasAnyData =
@@ -507,14 +330,7 @@ function ConsistencyCard() {
     nutritionLogs.length > 0 ||
     wellbeingEntries.length > 0 ||
     totalSupps > 0 ||
-    medicationItems.length > 0 ||
-    learningCount > 0 ||
-    boneBuddyCount > 0 ||
-    communityCount > 0 ||
-    mealPlanCount > 0 ||
-    medicationMissedCount > 0 ||
-    boneScanCount > 0 ||
-    outcomeCount > 0;
+    medicationItems.length > 0;
   if (!hasAnyData) return null;
 
   return (
@@ -611,7 +427,7 @@ const cc = StyleSheet.create({
 
 function FeelGoodCard() {
   const colors = useColors();
-  const { activityLogs, nutritionStreak, todayActivity, supplements, dexaScans, fraxResults } = useHealth();
+  const { activityLogs, nutritionStreak, todayActivity, supplements } = useHealth();
   const { entries: wellbeingEntries, currentStreak: wellbeingStreak, weekCount: wellbeingWeek } = useWellbeing();
 
   const insights = useMemo(() => {
@@ -632,24 +448,6 @@ function FeelGoodCard() {
       out.push("All your supplements are checked off for today — well done.");
     else if (takenCount > 0 && supplements.length > 0)
       out.push(`${takenCount} of ${supplements.length} supplements taken today — stay on track.`);
-
-    if (dexaScans.length >= 2) {
-      const w0 = worstTScore(dexaScans[0]);
-      const w1 = worstTScore(dexaScans[1]);
-      if (w0 != null && w1 != null) {
-        const delta = w0 - w1;
-        if (delta > 0.05)
-          out.push("Your T-score has improved since your last scan — your routine is working.");
-        else if (Math.abs(delta) <= 0.05)
-          out.push("Your T-score is stable — consistency is key to long-term bone health.");
-      }
-    }
-
-    if (fraxResults.length >= 2) {
-      const delta = fraxResults[0].majorFractureRisk - fraxResults[1].majorFractureRisk;
-      if (delta < -1)
-        out.push("Your calculated fracture risk has decreased since your last assessment.");
-    }
 
     const thisWeekActivity = activityLogs.filter((l) => {
       const diffDays = Math.floor((Date.now() - new Date(l.date).getTime()) / 86400000);
@@ -674,7 +472,7 @@ function FeelGoodCard() {
       out.push("Every small step adds up. Today is a great day to build a healthy habit.");
 
     return out.slice(0, 4);
-  }, [nutritionStreak, todayActivity, supplements, dexaScans, fraxResults, activityLogs, wellbeingStreak, wellbeingEntries, wellbeingWeek]);
+  }, [nutritionStreak, todayActivity, supplements, activityLogs, wellbeingStreak, wellbeingEntries, wellbeingWeek]);
 
   return (
     <View style={[fg.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -851,7 +649,7 @@ export default function InsightsScreen() {
         {hasPremiumOrTrial ? (
           <>
             <BoneHealthCard />
-            <ProgressTrendsCard />
+            <MyBoneJourneyCard />
             <ConsistencyCard />
             <FeelGoodCard />
             <SnapShotCard />

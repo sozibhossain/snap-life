@@ -33,6 +33,7 @@ describe("syncMigrationKey + legacyKeysFor", () => {
     const k = legacyKeysFor("app-1", "clerk-1");
     expect(k.profile).toBe("@snaplife/profile/v1:clerk-1");
     expect(k.nutrition).toBe("snap_nutrition:app-1");
+    expect(k.frax).toBe("snap_frax:app-1");
     expect(k.wellbeing).toBe("@snaplife/wellbeing/v1:app-1");
     expect(k.wellbeingLegacy).toBe("@snaplife/wellbeing/v1");
   });
@@ -87,6 +88,9 @@ describe("runSyncMigration", () => {
       "snap_dexa:app-1": JSON.stringify([
         { id: "d1", date: "2026-05-01", site: "lumbar_spine", tScore: -1.2 },
       ]),
+      "snap_frax:app-1": JSON.stringify([
+        { id: "f1", date: "2026-05-02", majorRisk: 12, hipRisk: 4 },
+      ]),
       "snap_nutrition_state:app-1": JSON.stringify({
         plan: { date: "2026-05-02" },
         preferences: { vegetarian: true },
@@ -122,7 +126,7 @@ describe("runSyncMigration", () => {
     expect(byDomain.get("meal-plan")).toHaveLength(1);
     expect(byDomain.get("supplements")).toHaveLength(1);
     expect(byDomain.get("gamification")).toHaveLength(1);
-    expect(byDomain.get("assessment")).toHaveLength(1);
+    expect(byDomain.get("assessment")).toHaveLength(2);
     expect(byDomain.get("wellbeing")).toHaveLength(2);
 
     const supp = byDomain.get("supplements")![0];
@@ -135,6 +139,8 @@ describe("runSyncMigration", () => {
     const dexa = byDomain.get("assessment")![0];
     expect(dexa.method).toBe("POST");
     expect((dexa.body as { kind: string }).kind).toBe("dexa");
+    const frax = byDomain.get("assessment")![1];
+    expect((frax.body as { kind: string }).kind).toBe("frax");
 
     const well = byDomain.get("wellbeing")![0];
     expect(well.method).toBe("POST");

@@ -33,8 +33,10 @@ vi.mock("../../lib/logger", () => ({
 
 const previousKey = process.env.RESEND_API_KEY;
 const previousFrom = process.env.RESEND_FROM_ADDRESS;
+const previousFocusCheckout = process.env.COACHING_CHECKOUT_FOCUS_URL;
 process.env.RESEND_API_KEY = "re_test_delivery";
 process.env.RESEND_FROM_ADDRESS = "SNAP Test <verified@example.com>";
+process.env.COACHING_CHECKOUT_FOCUS_URL = "https://payments.example/focus";
 
 const { default: coachingRouter } = await import("../coaching");
 const { default: expertRouter } = await import("../expertSupport");
@@ -61,6 +63,8 @@ afterAll(async () => {
   else process.env.RESEND_API_KEY = previousKey;
   if (previousFrom === undefined) delete process.env.RESEND_FROM_ADDRESS;
   else process.env.RESEND_FROM_ADDRESS = previousFrom;
+  if (previousFocusCheckout === undefined) delete process.env.COACHING_CHECKOUT_FOCUS_URL;
+  else process.env.COACHING_CHECKOUT_FOCUS_URL = previousFocusCheckout;
 });
 
 beforeEach(() => {
@@ -75,6 +79,16 @@ async function post(path: string, body: unknown) {
     body: JSON.stringify(body),
   });
   return { status: response.status, json: await response.json() as Record<string, unknown> };
+}
+
+function expertConsent(dataShared: string[]) {
+  return {
+    acknowledged: true,
+    version: "expert-support-v1",
+    timestamp: new Date().toISOString(),
+    dataShared,
+    appDataShared: [],
+  };
 }
 
 describe("service request email delivery", () => {
@@ -98,12 +112,36 @@ describe("service request email delivery", () => {
     expect(mocks.queued[0]).toMatchObject({ kind: "coaching_confirmation" });
   });
 
+  it("returns a configured secure checkout for a paid coaching request", async () => {
+    const result = await post("/coaching/booking", {
+      name: "Alex",
+      email: "alex@example.com",
+      sessionId: "focus",
+    });
+    expect(result).toMatchObject({
+      status: 200,
+      json: {
+        ok: true,
+        nextAction: "payment",
+        paymentUrl: "https://payments.example/focus",
+      },
+    });
+    expect(mocks.queued[0]).toMatchObject({
+      kind: "coaching_confirmation",
+      payload: {
+        paymentRequired: true,
+        checkoutUrl: "https://payments.example/focus",
+      },
+    });
+  });
+
   it("delivers an expert request to Maria and the SNAP team", async () => {
     const result = await post("/expert-support/request", {
       name: "Alex <Test>",
       email: "alex@example.com",
       consultantId: "maria",
       reason: "Need <support>",
+      consent: expertConsent(["name", "email", "user_entered_reason"]),
     });
     expect(result).toMatchObject({
       status: 200,

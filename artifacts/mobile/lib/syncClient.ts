@@ -98,7 +98,7 @@ export interface EnqueueArgs {
   domain: SyncDomain;
   /** null for singleton domains, day-ISO for per-day, unique id for append-only. */
   modifier: string | null;
-  method: "PUT" | "POST";
+  method: "PUT" | "POST" | "DELETE";
   path: string;
   body: unknown;
 }
@@ -340,6 +340,7 @@ function snapshotKeys(appUserId: string, clerkUserId: string | null) {
     activity: `snap_activity:${appUserId}`,
     supplements: `snap_supplements:${appUserId}`,
     dexa: `snap_dexa:${appUserId}`,
+    frax: `snap_frax:${appUserId}`,
     nutritionState: `snap_nutrition_state:${appUserId}`,
     gamification: `snap_gamification:${appUserId}`,
     // Per-user scoped key. Pre-sync builds used a global key
@@ -447,15 +448,18 @@ export async function applySnapshotToAsyncStorage(
   }
 
   // --- DEXA / FRAX assessments → snap_dexa key on device ---
-  if (args.snapshot.assessments.length > 0) {
-    const dexa = args.snapshot.assessments
-      .filter((a) => a.kind === "dexa")
-      .sort((a, b) => b.takenAtMs - a.takenAtMs)
-      .map((a) => a.payload);
-    if (dexa.length > 0) {
-      writes.push(AsyncStorage.setItem(k.dexa, JSON.stringify(dexa)));
-    }
-  }
+  const dexa = args.snapshot.assessments
+    .filter((a) => a.kind === "dexa")
+    .sort((a, b) => b.takenAtMs - a.takenAtMs)
+    .map((a) => a.payload);
+  const frax = args.snapshot.assessments
+    .filter((a) => a.kind === "frax")
+    .sort((a, b) => b.takenAtMs - a.takenAtMs)
+    .map((a) => a.payload);
+  // Always write both stores so deleting the final remote record also
+  // clears stale data on another signed-in device.
+  writes.push(AsyncStorage.setItem(k.dexa, JSON.stringify(dexa)));
+  writes.push(AsyncStorage.setItem(k.frax, JSON.stringify(frax)));
 
   const outcomeEntries = args.snapshot.outcomes ?? [];
   if (outcomeEntries.length > 0) {
@@ -479,5 +483,6 @@ export const SyncPaths = {
   gamification: () => "/sync/gamification",
   wellbeing: () => "/sync/wellbeing",
   assessment: () => "/sync/assessment",
+  assessmentById: (resultId: string) => `/sync/assessment/${encodeURIComponent(resultId)}`,
   outcomes: () => "/sync/outcomes",
 } as const;

@@ -123,6 +123,8 @@ PERSONAL
 - Always greet by the user's first name when one is provided in USER FACTS.
 - Reference their data naturally where relevant (T-score, fracture risk band, today's calcium intake, wellbeing streak, recent moods, dietary preferences). Do not list facts at them; weave one or two in.
 - If a relevant fact is missing, gently invite them to add it (e.g. "I don't have a recent DEXA score on file — when was your last scan?"). Do not invent data.
+- Answer the user's most recent question first. Do not replace a direct answer with a greeting, generic check-in, or unrelated coaching prompt.
+- When they ask about their own progress, use the relevant dated USER FACTS. State numerical changes neutrally; never call a DEXA or FRAX change improved, deteriorated, clinically significant, or caused by their routine.
 
 CONVERSATIONAL RHYTHM
 - End most replies with one short, relevant question — to keep the conversation going and to learn more about how they're feeling.
@@ -303,6 +305,16 @@ interface ChatUserFacts {
     hipFractureRisk: number;
     date: string;
   } | null;
+  fraxHistory?: Array<{
+    date: string;
+    majorFractureRisk: number;
+    hipFractureRisk: number;
+  }>;
+  dexaHistory?: Array<{
+    date: string;
+    spineTScore?: number;
+    hipTScore?: number;
+  }>;
   /** Activity logs for the past 7 days. */
   recentActivity?: Array<{
     date: string;
@@ -489,6 +501,26 @@ export function renderUserFacts(c: ChatUserFacts | undefined): string {
     );
   }
 
+  if (c.dexaHistory?.length) {
+    const history = [...c.dexaHistory]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((scan) => {
+        const values: string[] = [];
+        if (scan.spineTScore != null) values.push(`lumbar spine ${scan.spineTScore.toFixed(1)}`);
+        if (scan.hipTScore != null) values.push(`total hip ${scan.hipTScore.toFixed(1)}`);
+        return values.length ? `${scan.date}: ${values.join(", ")}` : null;
+      })
+      .filter((entry): entry is string => entry != null);
+    if (history.length) lines.push(`DEXA history (recorded values only; keep sites separate): ${history.join("; ")}`);
+  }
+
+  if (c.fraxHistory?.length) {
+    const history = [...c.fraxHistory]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((result) => `${result.date}: major ${result.majorFractureRisk}%, hip ${result.hipFractureRisk}%`);
+    lines.push(`FRAX history (recorded values only): ${history.join("; ")}`);
+  }
+
   // DEXA fracture risk % and BMI from scan report — include date so the AI
   // knows how historical the data is (scans typically happen every 1–2 years,
   // frequency varies by country and clinical need)
@@ -640,6 +672,8 @@ router.post("/chat/bone-buddy", async (req, res) => {
 - End with a single short, open check-in question that invites them to share how they're feeling or what's on their mind.
 - Two short sentences total. No lists. No advice yet — wait until they reply.`;
     }
+  } else {
+    systemPrompt += `\n\nCURRENT-TURN PRIORITY — respond directly to the most recent user message. Use only relevant available facts. If a needed fact is absent, name the specific gap and ask one useful follow-up question; do not guess. Do not open with a fresh greeting unless the user greeted you.`;
   }
 
   // For a kickoff with no real history, give the model a tiny user-side

@@ -24,6 +24,13 @@ const EXERCISE_TYPES = [
   ["yoga", "Yoga"],
   ["pilates", "Pilates"],
   ["tai_chi", "Tai chi"],
+  ["running", "Running"],
+  ["dancing", "Dancing"],
+  ["pickleball", "Pickleball"],
+  ["tennis", "Tennis"],
+  ["padel", "Padel"],
+  ["badminton", "Badminton"],
+  ["other", "Other"],
 ] as const;
 
 export default function ActivityScreen() {

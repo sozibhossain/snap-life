@@ -20,6 +20,11 @@ import {
 import { enqueueSync, SyncPaths } from "@/lib/syncClient";
 import { logInteractionEvent } from "@/lib/events";
 import { calcFrax, type FraxInputs } from "@/lib/frax";
+import {
+  sortNewestByDate,
+  type HeightUnit,
+  type WeightUnit,
+} from "@/lib/assessmentUtils";
 export { calcFrax, type FraxInputs };
 
 export interface DexaScan {
@@ -40,6 +45,12 @@ export interface DexaScan {
   hipFractureRisk?: number;
   /** BMI at time of scan */
   bmi?: number;
+  /** Canonical metric values used for consistent BMI and longitudinal export. */
+  heightCm?: number;
+  weightKg?: number;
+  /** The units selected when the entry was made; canonical values stay metric. */
+  heightUnit?: HeightUnit;
+  weightUnit?: WeightUnit;
   notes?: string;
 }
 
@@ -81,7 +92,14 @@ export interface ActivityLog {
       | "balance"
       | "yoga"
       | "pilates"
-      | "tai_chi";
+      | "tai_chi"
+      | "running"
+      | "dancing"
+      | "pickleball"
+      | "tennis"
+      | "padel"
+      | "badminton"
+      | "other";
     durationMinutes: number;
   }>;
 }
@@ -193,7 +211,11 @@ interface HealthContextType {
    *  "Day Streak" stat. */
   nutritionStreak: number;
   addDexaScan: (scan: Omit<DexaScan, "id">) => Promise<void>;
+  updateDexaScan: (id: string, scan: Omit<DexaScan, "id">) => Promise<void>;
+  deleteDexaScan: (id: string) => Promise<void>;
   addFraxResult: (result: Omit<FraxResult, "id">) => Promise<void>;
+  updateFraxResult: (id: string, result: Omit<FraxResult, "id">) => Promise<void>;
+  deleteFraxResult: (id: string) => Promise<void>;
   logActivity: (activity: Omit<ActivityLog, "id">) => Promise<void>;
   logNutrition: (nutrition: Omit<NutritionLog, "id" | "magnesium" | "source" | "mealsCompleted"> & Partial<Pick<NutritionLog, "magnesium" | "source" | "mealsCompleted">>) => Promise<void>;
   upsertTodayNutrition: (
@@ -297,8 +319,8 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
             AsyncStorage.getItem(k.supplements),
           ]);
         if (cancelled) return;
-        setDexaScans(storedDexa ? JSON.parse(storedDexa) : []);
-        setFraxResults(storedFrax ? JSON.parse(storedFrax) : []);
+        setDexaScans(storedDexa ? sortNewestByDate(JSON.parse(storedDexa)) : []);
+        setFraxResults(storedFrax ? sortNewestByDate(JSON.parse(storedFrax)) : []);
         setActivityLogs(storedActivity ? JSON.parse(storedActivity) : []);
         setNutritionLogs(
           storedNutrition
@@ -315,6 +337,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
       } catch {
         if (cancelled) return;
         setDexaScans([]);
+        setFraxResults([]);
         setActivityLogs([]);
         setNutritionLogs([]);
         setSupplements(DEFAULT_SUPPLEMENTS);
@@ -330,12 +353,12 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
   }, [userId]);
 
   async function addDexaScan(scan: Omit<DexaScan, "id">) {
-    const newScan = { ...scan, id: Date.now().toString() };
-    const updated = [newScan, ...dexaScans];
+    const newScan = { ...scan, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` };
+    const updated = sortNewestByDate([newScan, ...dexaScans]);
     setDexaScans(updated);
     await AsyncStorage.setItem(keysFor(userId).dexa, JSON.stringify(updated));
     // Append-only on the server — POST per scan, idempotent on resultId.
-    enqueueSync({
+    await enqueueSync({
       appUserId: userId,
       domain: "assessment",
       modifier: newScan.id,
@@ -349,7 +372,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
           ? new Date(newScan.date).getTime() || Date.now()
           : Date.now(),
       },
-    });
+    }).catch((error) => console.warn("[sync] failed to queue DEXA add", error));
     logInteractionEvent({
       appUserId: userId,
       kind: "dexa_logged",
@@ -362,12 +385,48 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
+  async function updateDexaScan(id: string, scan: Omit<DexaScan, "id">) {
+    const updatedScan: DexaScan = { ...scan, id };
+    const updated = sortNewestByDate(
+      dexaScans.map((existing) => existing.id === id ? updatedScan : existing),
+    );
+    setDexaScans(updated);
+    await AsyncStorage.setItem(keysFor(userId).dexa, JSON.stringify(updated));
+    await enqueueSync({
+      appUserId: userId,
+      domain: "assessment",
+      modifier: id,
+      method: "POST",
+      path: SyncPaths.assessment(),
+      body: {
+        resultId: id,
+        kind: "dexa",
+        payload: updatedScan,
+        takenAtMs: new Date(updatedScan.date).getTime() || Date.now(),
+      },
+    }).catch((error) => console.warn("[sync] failed to queue DEXA edit", error));
+  }
+
+  async function deleteDexaScan(id: string) {
+    const updated = dexaScans.filter((scan) => scan.id !== id);
+    setDexaScans(updated);
+    await AsyncStorage.setItem(keysFor(userId).dexa, JSON.stringify(updated));
+    await enqueueSync({
+      appUserId: userId,
+      domain: "assessment",
+      modifier: id,
+      method: "DELETE",
+      path: SyncPaths.assessmentById(id),
+      body: null,
+    }).catch((error) => console.warn("[sync] failed to queue DEXA delete", error));
+  }
+
   async function addFraxResult(result: Omit<FraxResult, "id">) {
-    const newResult: FraxResult = { ...result, id: Date.now().toString() };
-    const updated = [newResult, ...fraxResults];
+    const newResult: FraxResult = { ...result, id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` };
+    const updated = sortNewestByDate([newResult, ...fraxResults]);
     setFraxResults(updated);
     await AsyncStorage.setItem(keysFor(userId).frax, JSON.stringify(updated));
-    enqueueSync({
+    await enqueueSync({
       appUserId: userId,
       domain: "assessment",
       modifier: newResult.id,
@@ -381,7 +440,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
           ? new Date(newResult.date).getTime() || Date.now()
           : Date.now(),
       },
-    });
+    }).catch((error) => console.warn("[sync] failed to queue FRAX add", error));
     logInteractionEvent({
       appUserId: userId,
       kind: "frax_logged",
@@ -392,6 +451,42 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         hipFractureRisk: newResult.hipFractureRisk,
       },
     });
+  }
+
+  async function updateFraxResult(id: string, result: Omit<FraxResult, "id">) {
+    const updatedResult: FraxResult = { ...result, id };
+    const updated = sortNewestByDate(
+      fraxResults.map((existing) => existing.id === id ? updatedResult : existing),
+    );
+    setFraxResults(updated);
+    await AsyncStorage.setItem(keysFor(userId).frax, JSON.stringify(updated));
+    await enqueueSync({
+      appUserId: userId,
+      domain: "assessment",
+      modifier: id,
+      method: "POST",
+      path: SyncPaths.assessment(),
+      body: {
+        resultId: id,
+        kind: "frax",
+        payload: updatedResult,
+        takenAtMs: new Date(updatedResult.date).getTime() || Date.now(),
+      },
+    }).catch((error) => console.warn("[sync] failed to queue FRAX edit", error));
+  }
+
+  async function deleteFraxResult(id: string) {
+    const updated = fraxResults.filter((result) => result.id !== id);
+    setFraxResults(updated);
+    await AsyncStorage.setItem(keysFor(userId).frax, JSON.stringify(updated));
+    await enqueueSync({
+      appUserId: userId,
+      domain: "assessment",
+      modifier: id,
+      method: "DELETE",
+      path: SyncPaths.assessmentById(id),
+      body: null,
+    }).catch((error) => console.warn("[sync] failed to queue FRAX delete", error));
   }
 
   async function logActivity(activity: Omit<ActivityLog, "id">) {
@@ -884,7 +979,11 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
         loggedNutritionToday,
         nutritionStreak,
         addDexaScan,
+        updateDexaScan,
+        deleteDexaScan,
         addFraxResult,
+        updateFraxResult,
+        deleteFraxResult,
         logActivity,
         logNutrition,
         upsertTodayNutrition,

@@ -29,6 +29,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import {
   LESSONS,
+  LEARNING_CHANNELS,
   TOTAL_LEARN_XP,
   EMPTY_PROGRESS,
   LearnProgress,
@@ -288,9 +289,9 @@ export default function LearnScreen() {
           <View style={[styles.headerIcon, { backgroundColor: colors.accent + "22", borderColor: colors.accent + "45" }]}>
             <Feather name="book-open" size={22} color={colors.accent} />
           </View>
-          <Text style={styles.screenTitle}>SNAP Foundations</Text>
+          <Text style={styles.screenTitle}>Learning Hub</Text>
           <Text style={styles.screenSub}>
-            Eight guided lessons across the key pillars of healthy ageing. One lesson at a time — your pace, your journey.
+            Guided lessons across the key pillars of healthy ageing. One lesson at a time — your pace, your journey.
           </Text>
         </View>
 
@@ -338,42 +339,52 @@ export default function LearnScreen() {
           YOUR JOURNEY
         </Text>
 
-        <View style={styles.roadmap}>
-          {LESSONS.map((lesson, idx) => {
-            const isCompleted = progress.completedIds.includes(lesson.id);
-            const isUnlocked  = unlocked.has(lesson.id);
-            const isPremiumLocked = isPremiumLesson(lesson) && !hasPremiumOrTrial;
-            const prevCompleted = idx === 0 ? true : progress.completedIds.includes(LESSONS[idx - 1].id);
+        {LEARNING_CHANNELS.slice().sort((a, b) => a.order - b.order).map((channel) => (
+          <React.Fragment key={channel.id}>
+            <View style={styles.channelHeader}>
+              <Text style={styles.channelTitle}>{channel.title}</Text>
+              <Text style={styles.channelSubtitle}>{channel.subtitle}</Text>
+            </View>
+            <View style={styles.roadmap}>
+              {channel.lessons.map((lesson, idx) => {
+                const isCompleted = progress.completedIds.includes(lesson.id);
+                const isUnlocked = unlocked.has(lesson.id);
+                const isPremiumLocked = isPremiumLesson(lesson) && !hasPremiumOrTrial;
+                const prevCompleted = idx === 0
+                  ? true
+                  : progress.completedIds.includes(channel.lessons[idx - 1].id);
 
-            return (
-              <RoadmapNode
-                key={lesson.id}
-                lesson={lesson}
-                isCompleted={isCompleted}
-                isUnlocked={isUnlocked}
-                isPremiumLocked={isPremiumLocked}
-                isFirst={idx === 0}
-                isLast={idx === LESSONS.length - 1}
-                prevCompleted={prevCompleted}
-                colors={colors}
-                onPress={() => {
-                  if (isPremiumLocked) {
-                    Alert.alert(
-                      "Premium Learning",
-                      "Advanced SNAP pathways are available with Premium.",
-                      [
-                        { text: "Not now", style: "cancel" },
-                        { text: "See plans", onPress: () => router.push("/subscription" as never) },
-                      ],
-                    );
-                    return;
-                  }
-                  router.push(`/learn/${lesson.id}` as never);
-                }}
-              />
-            );
-          })}
-        </View>
+                return (
+                  <RoadmapNode
+                    key={lesson.id}
+                    lesson={lesson}
+                    isCompleted={isCompleted}
+                    isUnlocked={isUnlocked}
+                    isPremiumLocked={isPremiumLocked}
+                    isFirst={idx === 0}
+                    isLast={idx === channel.lessons.length - 1}
+                    prevCompleted={prevCompleted}
+                    colors={colors}
+                    onPress={() => {
+                      if (isPremiumLocked) {
+                        Alert.alert(
+                          "Premium Learning",
+                          "Advanced SNAP pathways are available with Premium.",
+                          [
+                            { text: "Not now", style: "cancel" },
+                            { text: "See plans", onPress: () => router.push("/subscription" as never) },
+                          ],
+                        );
+                        return;
+                      }
+                      router.push(`/learn/${lesson.id}` as never);
+                    }}
+                  />
+                );
+              })}
+            </View>
+          </React.Fragment>
+        ))}
 
         {/* ── Completion banner ── */}
         {allDone && (
@@ -384,7 +395,7 @@ export default function LearnScreen() {
             style={styles.completionBanner}
           >
             <Feather name="award" size={36} color={colors.xpGold} />
-            <Text style={styles.completionTitle}>All Foundations complete!</Text>
+            <Text style={styles.completionTitle}>Learning journey complete!</Text>
             <Text style={styles.completionSub}>
               You have earned {xpEarned} XP and built the knowledge to support your healthy ageing journey. This is where it truly begins.
             </Text>
@@ -425,6 +436,9 @@ const styles = StyleSheet.create({
 
   // Roadmap label
   roadmapLabel: { fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 1.2, marginTop: 4 },
+  channelHeader: { gap: 2, marginTop: 2, marginBottom: 2 },
+  channelTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#fff" },
+  channelSubtitle: { fontSize: 13, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.58)" },
 
   // Roadmap container
   roadmap: { gap: 0 },

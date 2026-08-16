@@ -84,6 +84,26 @@ const PUSH_ERROR_COPY: Record<string, { title: string; body: string }> = {
   },
 };
 
+/**
+ * In-app consent prompt shown before the native OS permission dialog.
+ * Apple guideline 4.5.4 expects the app itself to ask for the user's
+ * consent to notifications, not just rely on the bare system dialog —
+ * this gives that explicit step, explains what the notification is
+ * for, and lets the user decline without ever seeing the OS prompt.
+ */
+function confirmNotificationIntent(title: string, message: string): Promise<boolean> {
+  if (Platform.OS === "web") {
+    if (typeof window === "undefined") return Promise.resolve(false);
+    return Promise.resolve(window.confirm(`${title}\n\n${message}`));
+  }
+  return new Promise<boolean>((resolve) => {
+    Alert.alert(title, message, [
+      { text: "Not now", style: "cancel", onPress: () => resolve(false) },
+      { text: "Allow", onPress: () => resolve(true) },
+    ]);
+  });
+}
+
 export default function NotificationsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -142,6 +162,11 @@ export default function NotificationsScreen() {
 
   async function handleWebPushToggle(next: boolean, userId: string) {
     if (next) {
+      const allowed = await confirmNotificationIntent(
+        "Turn on Bone Buddy nudges?",
+        "SNAP Life will send one personalised check-in a day. Your browser will then ask you to confirm.",
+      );
+      if (!allowed) return;
       const result = await optInToWebPush(userId);
       if (result.ok) {
         setBoneBuddyOptedIn(true);
@@ -161,6 +186,11 @@ export default function NotificationsScreen() {
 
   async function handleNativePushToggle(next: boolean, userId: string) {
     if (next) {
+      const allowed = await confirmNotificationIntent(
+        "Turn on Bone Buddy nudges?",
+        "SNAP Life will send one personalised check-in a day, never more. Your device will then ask you to confirm notification permission.",
+      );
+      if (!allowed) return;
       const result = await optInToBoneBuddyPush(userId);
       if (result.ok) {
         setBoneBuddyOptedIn(true);
@@ -180,6 +210,16 @@ export default function NotificationsScreen() {
 
   async function handleReminderToggle(id: ReminderId, next: boolean) {
     if (!user?.id || pendingReminder) return;
+    if (next) {
+      const label = NOTIFICATION_SETTINGS.find((n) => n.id === id)?.label ?? "This reminder";
+      const allowed = await confirmNotificationIntent(
+        `Turn on ${label}?`,
+        Platform.OS === "web"
+          ? "Your browser will then ask you to confirm."
+          : "Your device will then ask you to confirm notification permission.",
+      );
+      if (!allowed) return;
+    }
     setPendingReminder(id);
     const previous = settings;
     setSettings((current) => ({ ...current, [id]: next }));

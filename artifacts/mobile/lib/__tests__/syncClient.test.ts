@@ -214,7 +214,7 @@ describe("applySnapshotToAsyncStorage", () => {
     expect(memStore.get("@snaplife/wellbeing/v1")).toBeUndefined();
   });
 
-  it("filters DEXA assessments and writes them under snap_dexa", async () => {
+  it("separates DEXA and FRAX assessments into their scoped stores", async () => {
     const snapshot: SyncSnapshot = {
       appUserId: "app-1",
       profile: null,
@@ -226,7 +226,7 @@ describe("applySnapshotToAsyncStorage", () => {
       supplements: null,
       assessments: [
         { resultId: "d1", kind: "dexa", payload: { id: "d1", site: "lumbar_spine", tScore: -1.2 }, takenAtMs: 100 },
-        { resultId: "f1", kind: "frax", payload: { score: 12 }, takenAtMs: 50 },
+        { resultId: "f1", kind: "frax", payload: { id: "f1", majorRisk: 12, hipRisk: 4 }, takenAtMs: 50 },
         { resultId: "d2", kind: "dexa", payload: { id: "d2", site: "total_hip", tScore: -2.0 }, takenAtMs: 200 },
       ],
     };
@@ -237,8 +237,31 @@ describe("applySnapshotToAsyncStorage", () => {
     });
     const dexa = JSON.parse(memStore.get("snap_dexa:app-1")!);
     expect(dexa.map((d: { id: string }) => d.id)).toEqual(["d2", "d1"]);
-    // FRAX must NOT land in snap_dexa.
-    expect(dexa.find((d: { id: string }) => d.id === undefined)).toBeUndefined();
+    const frax = JSON.parse(memStore.get("snap_frax:app-1")!);
+    expect(frax).toEqual([{ id: "f1", majorRisk: 12, hipRisk: 4 }]);
+  });
+
+  it("clears stale local DEXA and FRAX records when the server has none", async () => {
+    memStore.set("snap_dexa:app-1", JSON.stringify([{ id: "old-dexa" }]));
+    memStore.set("snap_frax:app-1", JSON.stringify([{ id: "old-frax" }]));
+    const snapshot: SyncSnapshot = {
+      appUserId: "app-1",
+      profile: null,
+      nutrition: [],
+      activity: [],
+      mealPlan: [],
+      wellbeing: [],
+      gamification: null,
+      supplements: null,
+      assessments: [],
+    };
+    await applySnapshotToAsyncStorage({
+      snapshot,
+      appUserId: "app-1",
+      clerkUserId: "user_x",
+    });
+    expect(JSON.parse(memStore.get("snap_dexa:app-1")!)).toEqual([]);
+    expect(JSON.parse(memStore.get("snap_frax:app-1")!)).toEqual([]);
   });
 });
 

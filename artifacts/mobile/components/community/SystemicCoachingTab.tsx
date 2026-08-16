@@ -4,7 +4,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -146,6 +148,7 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted]   = useState(false);
   const [sendError, setSendError]   = useState<string | null>(null);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
   async function handleSubmit() {
     if (!name.trim() || !email.trim() || !session || submitting) return;
@@ -171,15 +174,14 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
         }),
         signal: controller.signal,
       });
+      const responseBody = await res.json().catch(() => null) as {
+        error?: string;
+        message?: string;
+        paymentUrl?: string | null;
+      } | null;
       if (!res.ok) {
-        let apiError: { error?: string; message?: string } | null = null;
-        try {
-          apiError = await res.json();
-        } catch {
-          apiError = null;
-        }
         setSendError(
-          apiError?.message ??
+          responseBody?.message ??
             "Something went wrong. Please try again or email teamsnap@snaplife.co.uk directly.",
         );
       } else {
@@ -191,6 +193,7 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
             sessionLabel: session.label,
           },
         });
+        setPaymentUrl(responseBody?.paymentUrl ?? null);
         setSubmitted(true);
       }
     } catch {
@@ -208,6 +211,7 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
     setEmail(user?.email ?? "");
     setPreferred("");
     setMessage("");
+    setPaymentUrl(null);
     onClose();
   }
 
@@ -244,10 +248,12 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
                 <Feather name="check" size={28} color="#fff" />
               </LinearGradient>
               <Text style={[styles.confirmTitle, { color: colors.foreground }]}>
-                Request sent
+                {session?.isFree ? "Request sent" : "Details received"}
               </Text>
               <Text style={[styles.confirmBody, { color: colors.mutedForeground }]}>
-                Thank you, {name.split(" ")[0] || "there"}. Catherine will be in touch within 24 hours to confirm your{" "}
+                Thank you, {name.split(" ")[0] || "there"}. {session?.isFree
+                  ? "Catherine will be in touch within 24 hours to confirm your "
+                  : "Continue to secure payment to complete your "}
                 <Text style={{ color: accentColor, fontFamily: "Inter_600SemiBold" }}>
                   {session?.label}
                 </Text>
@@ -260,12 +266,28 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
                 </Text>
                 .
               </Text>
+              {!session?.isFree && paymentUrl && (
+                <Text style={[styles.confirmNote, { color: colors.mutedForeground }]}>Payment is completed securely in your browser. SNAP Life does not receive or store your card details.</Text>
+              )}
               <Pressable
                 style={[styles.confirmBtn, { backgroundColor: accentColor }]}
-                onPress={handleClose}
+                onPress={async () => {
+                  if (paymentUrl) {
+                    const supported = await Linking.canOpenURL(paymentUrl);
+                    if (supported) await Linking.openURL(paymentUrl);
+                    else Alert.alert("Payment page unavailable", "Please contact teamsnap@snaplife.co.uk and quote the session name.");
+                    return;
+                  }
+                  handleClose();
+                }}
               >
-                <Text style={styles.confirmBtnText}>Close</Text>
+                <Text style={styles.confirmBtnText}>{paymentUrl ? "Continue to Secure Payment" : "Close"}</Text>
               </Pressable>
+              {paymentUrl && (
+                <Pressable onPress={handleClose} style={{ padding: 12 }}>
+                  <Text style={[styles.confirmNote, { color: colors.mutedForeground, marginBottom: 0 }]}>Pay later and close</Text>
+                </Pressable>
+              )}
             </View>
           ) : (
             /* ── Booking form ── */
@@ -357,7 +379,7 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
                         },
                       ]}
                     >
-                      {session?.isFree ? "Request Free Consultation" : "Request Session"}
+                      {session?.isFree ? "Request Free Consultation" : "Continue to Secure Payment"}
                     </Text>
                     <Feather
                       name="arrow-right"

@@ -43,7 +43,8 @@ export const privacyPolicyDocument: LegalDocument = {
     {
       title: "4. Bone Buddy AI",
       body: [
-        "Information submitted to Bone Buddy AI may be processed to generate responses, personalise support, improve user experience, and enhance platform functionality.",
+        "Bone Buddy AI is powered by OpenAI, L.L.C., a third-party artificial intelligence provider. When you use Bone Buddy, the message you send and relevant health context already saved in your SNAP Life account — such as your self-reported condition, DEXA and FRAX results, nutrition, activity, supplement and wellbeing data — are sent to OpenAI so it can generate a reply. OpenAI processes this information to return a response and, under our processing terms with OpenAI, does not use it to train OpenAI's models.",
+        "We ask for your explicit permission before any message or health context is sent to OpenAI. You will see this request the first time you open Bone Buddy, and you can decline — Bone Buddy simply won't be available if you do. You are never required to use Bone Buddy to use the rest of SNAP Life.",
         "Bone Buddy AI is an educational and wellness companion. It is not a healthcare professional and should not be relied upon for diagnosis, treatment, or medical decision-making.",
       ],
     },
@@ -57,7 +58,7 @@ export const privacyPolicyDocument: LegalDocument = {
       title: "6. Sharing information",
       body: [
         "We do not sell personal information.",
-        "We may share information with service providers including authentication, cloud hosting, analytics, email, customer support, AI, and subscription management providers.",
+        "We may share information with service providers including authentication, cloud hosting, analytics, email, customer support, and subscription management providers. This includes OpenAI, L.L.C., which processes your Bone Buddy messages and related health context (see Section 4) to generate AI responses, only after you have given your explicit permission.",
         "Where you request support from consultants, coaches, or experts, information may be shared with those professionals solely to facilitate the requested service. We may also disclose information where required by law or to protect rights, safety, or security.",
       ],
     },

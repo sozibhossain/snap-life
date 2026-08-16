@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -36,6 +37,8 @@ export default function HealthScreen() {
     getLatestDexaScore,
     getFracturRisk,
     markSupplementTaken,
+    deleteDexaScan,
+    deleteFraxResult,
   } = useHealth();
 
   const [activeTab, setActiveTab] = useState(0);
@@ -311,6 +314,29 @@ export default function HealthScreen() {
                     {scan.notes}
                   </Text>
                 )}
+                <View style={[styles.assessmentActions, { borderTopColor: colors.border }]}>
+                  <Pressable
+                    onPress={() => router.push({ pathname: "/health/log-dexa", params: { id: scan.id } })}
+                    style={styles.assessmentAction}
+                  >
+                    <Feather name="edit-2" size={14} color={colors.primary} />
+                    <Text style={[styles.assessmentActionText, { color: colors.primary }]}>Edit</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => Alert.alert(
+                      "Delete DEXA scan?",
+                      "This removes the scan from your history and synced devices.",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Delete", style: "destructive", onPress: () => void deleteDexaScan(scan.id) },
+                      ],
+                    )}
+                    style={styles.assessmentAction}
+                  >
+                    <Feather name="trash-2" size={14} color={colors.destructive} />
+                    <Text style={[styles.assessmentActionText, { color: colors.destructive }]}>Delete</Text>
+                  </Pressable>
+                </View>
               </Card>
             ))}
 
@@ -356,7 +382,7 @@ export default function HealthScreen() {
                         ...(user?.timezone ? { timeZone: user.timezone } : {}),
                       })}
                     </Text>
-                    <View style={{ flexDirection: "row", gap: 16 }}>
+                    <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
                       <View style={{ alignItems: "center" }}>
                         <Text style={[styles.metricValue, { color: colors.foreground }]}>
                           {f.majorFractureRisk}%
@@ -373,6 +399,25 @@ export default function HealthScreen() {
                           Hip fx
                         </Text>
                       </View>
+                      <Pressable
+                        onPress={() => router.push({ pathname: "/health/frax", params: { id: f.id } })}
+                        hitSlop={8}
+                      >
+                        <Feather name="edit-2" size={15} color={colors.primary} />
+                      </Pressable>
+                      <Pressable
+                        onPress={() => Alert.alert(
+                          "Delete FRAX result?",
+                          "This removes the result from your history and synced devices.",
+                          [
+                            { text: "Cancel", style: "cancel" },
+                            { text: "Delete", style: "destructive", onPress: () => void deleteFraxResult(f.id) },
+                          ],
+                        )}
+                        hitSlop={8}
+                      >
+                        <Feather name="trash-2" size={15} color={colors.destructive} />
+                      </Pressable>
                     </View>
                   </View>
                 ))}
@@ -752,6 +797,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontStyle: "italic",
   },
+  assessmentActions: { flexDirection: "row", gap: 20, borderTopWidth: 1, marginTop: 12, paddingTop: 10 },
+  assessmentAction: { flexDirection: "row", alignItems: "center", gap: 5 },
+  assessmentActionText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   activityMetrics: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 10 },
   activityMetric: { alignItems: "center", gap: 2 },
   actMetricValue: { fontSize: 14, fontFamily: "Inter_600SemiBold" },

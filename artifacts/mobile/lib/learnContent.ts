@@ -1,7 +1,7 @@
 /**
  * SNAP Foundations — lesson content and progress persistence.
  *
- * Nine sequential lessons across nine healthy-ageing pathways.
+ * Published channels and lessons across healthy-ageing pathways.
  * Voice: warm, intelligent, body-present, hope-forward. The same register
  * as the Breathing Studio — calm and reassuring, never clinical or preachy.
  *
@@ -38,9 +38,12 @@ export interface Lesson {
   sections: LessonSection[];
   ctaLabel: string;
   ctaRoute: string;
+  /** Stable channel/access metadata is assigned when the catalogue is published. */
+  channelId?: string;
+  access?: "free" | "premium";
 }
 
-export const LESSONS: Lesson[] = [
+const FOUNDATION_LESSONS: Lesson[] = [
   // ── 1 ─────────────────────────────────────────────────────────────────────
   {
     id: "lesson-1",
@@ -330,7 +333,7 @@ export const LESSONS: Lesson[] = [
       },
       {
         heading: "You have built something real",
-        body: "By working through these nine lessons, you have laid a foundation that most people never build. You understand how your bones work. You know which habits protect them. You have connected with tools — movement, breathing, nutrition, reflection — that will serve you for years. Bone Buddy is here whenever you have a question, a doubt, or just want to understand something more deeply. This is not the end of your SNAP journey. It is where it truly begins.",
+        body: "By working through this Foundations pathway, you have laid a foundation that most people never build. You understand how your bones work. You know which habits protect them. You have connected with tools — movement, breathing, nutrition, reflection — that will serve you for years. Bone Buddy is here whenever you have a question, a doubt, or just want to understand something more deeply. This is not the end of your SNAP journey. It is where it truly begins.",
       },
     ],
     ctaLabel: "View my insights",
@@ -375,11 +378,45 @@ export const LESSONS: Lesson[] = [
   },
 ];
 
+export interface LearningChannel {
+  id: string;
+  title: string;
+  subtitle: string;
+  order: number;
+  unlockMode: "sequential" | "open";
+  lessons: Lesson[];
+}
+
+/**
+ * Publishing model: add, remove or amend lessons inside a channel, or append
+ * a new channel. Screens, completion percentages and XP totals all derive
+ * from this catalogue rather than a hard-coded count.
+ */
+export const LEARNING_CHANNELS: LearningChannel[] = [
+  {
+    id: "foundations",
+    title: "SNAP Foundations",
+    subtitle: "Key pillars of healthy ageing",
+    order: 1,
+    unlockMode: "sequential",
+    lessons: FOUNDATION_LESSONS.map((lesson) => ({
+      ...lesson,
+      channelId: "foundations",
+      access: lesson.index <= 3 ? "free" : "premium",
+    })),
+  },
+];
+
+export const LESSONS: Lesson[] = LEARNING_CHANNELS
+  .slice()
+  .sort((a, b) => a.order - b.order)
+  .flatMap((channel) => channel.lessons);
+
 /** Core foundations remain open to everyone; advanced pathways are Premium. */
 export const FREE_LESSON_COUNT = 3;
 
 export function isPremiumLesson(lesson: Lesson): boolean {
-  return lesson.index > FREE_LESSON_COUNT;
+  return lesson.access === "premium" || (lesson.access == null && lesson.index > FREE_LESSON_COUNT);
 }
 
 // ── Persistence ───────────────────────────────────────────────────────────────
@@ -468,11 +505,14 @@ export async function setPromptPreference(
  */
 export function unlockedLessonIds(completedIds: string[]): Set<string> {
   const unlocked = new Set<string>();
-  for (let i = 0; i < LESSONS.length; i++) {
-    if (i === 0) {
-      unlocked.add(LESSONS[i].id);
-    } else if (completedIds.includes(LESSONS[i - 1].id)) {
-      unlocked.add(LESSONS[i].id);
+  for (const channel of LEARNING_CHANNELS) {
+    for (let i = 0; i < channel.lessons.length; i++) {
+      const lesson = channel.lessons[i];
+      if (channel.unlockMode === "open" || i === 0) {
+        unlocked.add(lesson.id);
+      } else if (completedIds.includes(channel.lessons[i - 1].id)) {
+        unlocked.add(lesson.id);
+      }
     }
   }
   return unlocked;

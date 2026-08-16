@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { Resend } from "resend";
 import { db, pendingEmailsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { serviceRequestLimiter } from "../middlewares/rateLimit";
 
 const router: IRouter = Router();
 
@@ -31,7 +32,7 @@ export function escapeHtml(value: string): string {
 // mirrors this list in ExpertSupportTab.tsx.
 const CONSULTANTS: Record<
   string,
-  { label: string; title: string; email: string }
+  { label: string; title: string; email: string; services?: Record<string, string> }
 > = {
   maria: {
     label: "Maria",
@@ -39,9 +40,14 @@ const CONSULTANTS: Record<
     email: "mrigopoulou@hotmail.co.uk",
   },
   faye: {
-    label: "Faye — Lift Nutrition",
-    title: "Nutritionist & Healthy Ageing Specialist",
+    label: "Faye Thompson – Lift Nutrition & Wellness",
+    title: "Nutritional Therapist – Healthy ageing nutrition, bone health & longevity",
     email: "faye@liftnutrition.co.uk",
+    services: {
+      discovery: "Discovery session — 20 minutes — Free",
+      power_hour: "Power Hour — 60 minutes — £125",
+      jump_programme: "Jump Programme — 90 minutes (initial) + 45 minutes (follow-up) — £325",
+    },
   },
 };
 
@@ -63,6 +69,7 @@ async function handleExpertSupportRequest(req: Request, res: Response) {
   const email        = isString(b.email)         ? b.email.trim()        : "";
   const phone        = isString(b.phone)         ? b.phone.trim()        : "";
   const consultantId = isString(b.consultantId)  ? b.consultantId.trim() : "";
+  const serviceId    = isString(b.serviceId)     ? b.serviceId.trim()    : "";
   const preferred    = isString(b.preferred)     ? b.preferred.trim()    : "";
   const reason       = isString(b.reason)        ? b.reason.trim()       : "";
 
@@ -82,6 +89,42 @@ async function handleExpertSupportRequest(req: Request, res: Response) {
   const consultant = CONSULTANTS[consultantId];
   if (!consultant) {
     res.status(400).json({ error: "unknown_consultant" });
+    return;
+  }
+  if (serviceId && !consultant.services?.[serviceId]) {
+    res.status(400).json({ error: "unknown_service" });
+    return;
+  }
+
+  const consent = b.consent && typeof b.consent === "object"
+    ? b.consent as Record<string, unknown>
+    : null;
+  const dataShared = Array.isArray(consent?.dataShared)
+    ? consent.dataShared.filter(isString)
+    : [];
+  const appDataShared = Array.isArray(consent?.appDataShared)
+    ? consent.appDataShared.filter(isString)
+    : [];
+  const consentTimestamp = isString(consent?.timestamp) ? consent.timestamp : "";
+  if (
+    consent?.acknowledged !== true ||
+    consent?.version !== "expert-support-v1" ||
+    !Number.isFinite(Date.parse(consentTimestamp)) ||
+    appDataShared.length !== 0
+  ) {
+    res.status(400).json({ error: "explicit_consent_required" });
+    return;
+  }
+  const expectedDataShared = [
+    "name",
+    "email",
+    ...(phone ? ["phone"] : []),
+    ...(preferred ? ["preferred_times"] : []),
+    ...(reason ? ["user_entered_reason"] : []),
+    ...(serviceId ? ["selected_service"] : []),
+  ].sort();
+  if ([...new Set(dataShared)].sort().join("|") !== expectedDataShared.join("|")) {
+    res.status(400).json({ error: "consent_data_mismatch" });
     return;
   }
 
@@ -106,6 +149,9 @@ async function handleExpertSupportRequest(req: Request, res: Response) {
   const safePhone = escapeHtml(phone);
   const safePreferred = escapeHtml(preferred);
   const safeReason = escapeHtml(reason).replace(/\n/g, "<br>");
+  const safeService = serviceId && consultant.services
+    ? escapeHtml(consultant.services[serviceId] ?? "")
+    : "";
 
   const htmlBody = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1C3A4A;">
@@ -137,6 +183,11 @@ async function handleExpertSupportRequest(req: Request, res: Response) {
             <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Preferred time</td>
             <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;">${safePreferred}</td>
           </tr>` : ""}
+          ${safeService ? `
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Service</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px;">${safeService}</td>
+          </tr>` : ""}
           ${reason ? `
           <tr>
             <td style="padding: 10px 0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; vertical-align: top;">Reason</td>
@@ -148,6 +199,9 @@ async function handleExpertSupportRequest(req: Request, res: Response) {
         </div>
         <div style="margin-top: 12px; padding: 12px 16px; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; font-size: 12px; color: #1E40AF;">
           ⚑ This request has also been sent to ${TEAM_EMAIL} for oversight and continuity of care.
+        </div>
+        <div style="margin-top: 12px; padding: 12px 16px; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; font-size: 12px; color: #166534;">
+          Consent ${escapeHtml(consentTimestamp)} (${escapeHtml(String(consent?.version))}). Shared fields: ${dataShared.map(escapeHtml).join(", ")}. No SNAP app health data was shared automatically.
         </div>
       </div>
     </div>
@@ -200,7 +254,15 @@ async function handleExpertSupportRequest(req: Request, res: Response) {
           name,
           consultantLabel: consultant.label,
           consultantTitle: consultant.title,
+          serviceId: serviceId || null,
+          serviceLabel: serviceId && consultant.services ? consultant.services[serviceId] : null,
           preferred: preferred || null,
+          consent: {
+            version: "expert-support-v1",
+            timestamp: consentTimestamp,
+            dataShared,
+            appDataShared: [],
+          },
         },
       })
       .onConflictDoNothing()
@@ -216,7 +278,7 @@ async function handleExpertSupportRequest(req: Request, res: Response) {
   }
 }
 
-router.post("/expert-support/request", handleExpertSupportRequest);
-router.post("/api/expert-support/request", handleExpertSupportRequest);
+router.post("/expert-support/request", serviceRequestLimiter, handleExpertSupportRequest);
+router.post("/api/expert-support/request", serviceRequestLimiter, handleExpertSupportRequest);
 
 export default router;

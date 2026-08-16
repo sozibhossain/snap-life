@@ -293,14 +293,14 @@ function RootLayoutInner() {
                   <SubscriptionProvider>
                     <HealthProvider>
                       <NutritionProvider>
-                        <GamificationProvider>
-                          <WellbeingProvider>
+                        <WellbeingProvider>
+                          <GamificationProvider>
                             <RootLayoutNav />
                             <CookieNotice />
                             <StagingBanner />
                             <AdminReviewPanel />
-                          </WellbeingProvider>
-                        </GamificationProvider>
+                          </GamificationProvider>
+                        </WellbeingProvider>
                       </NutritionProvider>
                     </HealthProvider>
                   </SubscriptionProvider>

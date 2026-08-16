@@ -86,6 +86,16 @@ function p(text: string): string {
   return `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#374151;">${text}</p>`;
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[char] ?? char);
+}
+
 function cta(label: string, href: string): string {
   return `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0;">
   <tr><td style="background:#F47530;border-radius:8px;padding:14px 28px;text-align:center;">
@@ -493,30 +503,47 @@ export function renderReferralConverted(
 export function renderCoachingConfirmation(
   payload: Record<string, unknown>,
 ): RenderedEmail {
-  const name = (payload.name as string | undefined) || "there";
-  const sessionLabel = payload.sessionLabel as string | undefined;
-  const preferred = payload.preferred as string | undefined;
+  const name = escapeHtml((payload.name as string | undefined) || "there");
+  const sessionLabel = payload.sessionLabel ? escapeHtml(String(payload.sessionLabel)) : undefined;
+  const preferred = payload.preferred ? escapeHtml(String(payload.preferred)) : undefined;
+  const bookingReference = payload.bookingReference ? escapeHtml(String(payload.bookingReference)) : undefined;
+  const paymentRequired = payload.paymentRequired === true;
+  const checkoutUrl = typeof payload.checkoutUrl === "string" && /^https:\/\//i.test(payload.checkoutUrl)
+    ? escapeHtml(payload.checkoutUrl)
+    : null;
   return {
-    subject: "Your coaching request has been received — SNAP Life",
+    subject: paymentRequired
+      ? "Complete secure payment for your coaching request — SNAP Life"
+      : "Your coaching request has been received — SNAP Life",
     html: wrap(
       `
-      ${h1("Your coaching request is confirmed")}
-      ${p(`Hi ${name}, thank you for reaching out to Catherine Shaw. Your booking request has been received and she'll be in touch shortly to confirm your session.`)}
+      ${h1(paymentRequired ? "Continue to secure payment" : "Your coaching request has been received")}
+      ${p(paymentRequired
+        ? `Hi ${name}, we have received your paid-session request. Use the secure payment link below to continue. Your session is not confirmed until payment and scheduling are complete.`
+        : `Hi ${name}, thank you for reaching out to Catherine Shaw. Your free consultation request has been received and she'll be in touch shortly to confirm your session.`)}
       ${infoTable([
         ...(sessionLabel ? [["Session type", sessionLabel] as [string, string]] : []),
         ...(preferred ? [["Preferred time", preferred] as [string, string]] : []),
+        ...(bookingReference ? [["Booking reference", bookingReference] as [string, string]] : []),
+        ["Payment", paymentRequired ? "Required — not yet confirmed" : "Not required"],
         ["Coach", "Catherine Shaw, Systemic Coach"],
         ["Contact", "teamsnap@snaplife.co.uk"],
       ])}
-      <div style="background:#F0FDF4;border-left:4px solid #22C55E;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
-        <p style="margin:0;font-size:14px;color:#374151;">While you wait, why not continue tracking your bone health in the app? Every log brings you closer to stronger bones.</p>
+      <div style="background:${paymentRequired ? "#FFF7ED" : "#F0FDF4"};border-left:4px solid ${paymentRequired ? "#F47530" : "#22C55E"};border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
+        <p style="margin:0;font-size:14px;color:#374151;">${paymentRequired
+          ? "Payment is handled on the secure checkout page. SNAP Life does not collect or store your card details in the app."
+          : "Catherine or the SNAP Life team will contact you to arrange the consultation."}</p>
       </div>
-      ${cta("Open SNAP Life", "https://snaplife.co.uk/app")}
+      ${paymentRequired && checkoutUrl
+        ? cta("Continue to secure payment", checkoutUrl)
+        : cta("Open SNAP Life", "https://snaplife.co.uk/app")}
       ${divider()}
       ${p("If you have any questions in the meantime, just reply to this email.")}
       ${p('<span style="color:#9CA3AF;font-size:13px;">The SNAP Life Team</span>')}
     `,
-      "Your SNAP Life coaching request has been received — Catherine will be in touch soon.",
+      paymentRequired
+        ? "Continue to secure payment for your SNAP Life coaching request."
+        : "Your SNAP Life coaching request has been received — Catherine will be in touch soon.",
     ),
   };
 }
@@ -627,11 +654,12 @@ export function renderMonthlyNewsletter(
 export function renderExpertSupportConfirmation(
   payload: Record<string, unknown>,
 ): RenderedEmail {
-  const name = (payload.name as string | undefined) || "there";
+  const name = escapeHtml((payload.name as string | undefined) || "there");
   const firstName = name.split(" ")[0];
-  const consultantLabel = (payload.consultantLabel as string | undefined) ?? "your selected consultant";
-  const consultantTitle = (payload.consultantTitle as string | undefined) ?? "";
-  const preferred = payload.preferred as string | undefined;
+  const consultantLabel = escapeHtml((payload.consultantLabel as string | undefined) ?? "your selected consultant");
+  const consultantTitle = escapeHtml((payload.consultantTitle as string | undefined) ?? "");
+  const preferred = payload.preferred ? escapeHtml(String(payload.preferred)) : undefined;
+  const serviceLabel = payload.serviceLabel ? escapeHtml(String(payload.serviceLabel)) : undefined;
   return {
     subject: "Your support request has been received — SNAP Life",
     html: wrap(
@@ -640,6 +668,7 @@ export function renderExpertSupportConfirmation(
       ${p(`Hi ${firstName}, thank you for reaching out. Your support request has been received and a member of the SNAP Expert Support team will be in touch shortly.`)}
       ${infoTable([
         ["Consultant", `${consultantLabel}${consultantTitle ? ` — ${consultantTitle}` : ""}`],
+        ...(serviceLabel ? [["Service", serviceLabel] as [string, string]] : []),
         ...(preferred ? [["Preferred time", preferred] as [string, string]] : []),
         ["Team contact", "teamsnap@snaplife.co.uk"],
       ])}

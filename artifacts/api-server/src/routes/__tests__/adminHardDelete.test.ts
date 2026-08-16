@@ -25,8 +25,11 @@ import {
   vi,
 } from "vitest";
 
-import { db, usersTable, auditLogsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+const hasTestDatabase = Boolean(process.env.DATABASE_URL);
+let db: typeof import("@workspace/db")["db"];
+let usersTable: typeof import("@workspace/db")["usersTable"];
+let auditLogsTable: typeof import("@workspace/db")["auditLogsTable"];
+let eq: typeof import("drizzle-orm")["eq"];
 
 /* -------------------------------------------------------------------------- *
  * Auth mode state — controls what requireAdminUser returns per-test.
@@ -80,6 +83,9 @@ let baseUrl = "";
 const originalSnapLifeEnv = process.env.SNAP_LIFE_ENV;
 
 beforeAll(async () => {
+  if (!hasTestDatabase) return;
+  ({ db, usersTable, auditLogsTable } = await import("@workspace/db"));
+  ({ eq } = await import("drizzle-orm"));
   const { default: adminRouter } = await import("../admin");
   app = express();
   app.use(express.json());
@@ -92,9 +98,11 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await new Promise<void>((resolve, reject) => {
-    server.close((err) => (err ? reject(err) : resolve()));
-  });
+  if (server) {
+    await new Promise<void>((resolve, reject) => {
+      server.close((err) => (err ? reject(err) : resolve()));
+    });
+  }
   if (originalSnapLifeEnv === undefined) {
     delete process.env.SNAP_LIFE_ENV;
   } else {
@@ -123,7 +131,7 @@ function makeTestUserId(): string {
  * Tests
  * -------------------------------------------------------------------------- */
 
-describe("POST /admin/users/:id/hard-delete", () => {
+describe.skipIf(!hasTestDatabase)("POST /admin/users/:id/hard-delete", () => {
   /* ---------------------------------------------------------------------- *
    * Production guard — short-circuits before DB access; no seeding needed.
    * ---------------------------------------------------------------------- */

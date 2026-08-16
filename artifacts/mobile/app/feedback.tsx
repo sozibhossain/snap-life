@@ -62,7 +62,7 @@ export default function FeedbackScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { tier, tierLabel } = useSubscription();
-  const params = useLocalSearchParams<{ type?: string }>();
+  const params = useLocalSearchParams<{ type?: string; message?: string }>();
 
   const initialType: FeedbackType = useMemo(() => {
     const t = String(params.type ?? "general");
@@ -72,7 +72,7 @@ export default function FeedbackScreen() {
   }, [params.type]);
 
   const [type, setType] = useState<FeedbackType>(initialType);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(() => String(params.message ?? "").slice(0, 2000));
   const [tags, setTags] = useState<FeedbackTag[]>([]);
   const [allowTestimonial, setAllowTestimonial] = useState(false);
   const [submitting, setSubmitting] = useState(false);

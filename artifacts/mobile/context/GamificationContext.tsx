@@ -1,7 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useHealth } from "@/context/HealthContext";
+import { useWellbeing } from "@/context/WellbeingContext";
 import { enqueueSync, SyncPaths } from "@/lib/syncClient";
+import { deriveAchievementProgress, deriveChallengeProgress } from "@/lib/gamificationProgress";
 
 /** Per-user, per-week claim key for the Weekly SNAP Shot bonus. */
 function weeklyBonusKey(userId: string | null | undefined, isoYearWeek: string): string {
@@ -42,6 +45,8 @@ export interface Challenge {
   target: number;
   completed: boolean;
   expiresAt: string;
+  /** Day/week identity used to prevent XP replay when recurring challenges reset. */
+  cycleKey?: string;
 }
 
 export interface LeaderboardEntry {
@@ -80,6 +85,8 @@ interface GamificationContextType {
   isWeeklyBonusClaimed: (isoYearWeek: string) => Promise<boolean>;
   completChallenge: (id: string) => Promise<void>;
   redeemReward: (id: string, cost: number) => Promise<boolean>;
+  /** Re-read all historical sources and reconcile visible progress/XP. */
+  refreshProgress: () => Promise<void>;
 }
 
 const GamificationContext = createContext<GamificationContextType | null>(null);
@@ -113,19 +120,39 @@ function endOfTodayIso(): string {
   d.setHours(23, 59, 59, 999);
   return d.toISOString();
 }
-function inDaysIso(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  d.setHours(23, 59, 59, 999);
-  return d.toISOString();
+function endOfWeekIso(): string {
+  const date = new Date();
+  const day = date.getDay() || 7;
+  date.setDate(date.getDate() + (7 - day));
+  date.setHours(23, 59, 59, 999);
+  return date.toISOString();
+}
+
+function localDateISO(timestamp = Date.now()): string {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function mondayCycle(dateISO: string): string {
+  const date = new Date(`${dateISO}T00:00:00Z`);
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() - day + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function xpClaimKey(userId: string | null, kind: "achievement" | "challenge", id: string, cycle = "once"): string {
+  return `snap_xp_claim:${userId ?? "anon"}:${kind}:${id}:${cycle}`;
 }
 
 const CHALLENGE_CATALOG: Challenge[] = [
   { id: "c1", title: "Morning Mover", description: "Log 30 active minutes today", type: "daily", xpReward: 50, progress: 0, target: 30, completed: false, expiresAt: endOfTodayIso() },
   { id: "c2", title: "Calcium Boost", description: "Log 1200mg calcium today", type: "daily", xpReward: 40, progress: 0, target: 1200, completed: false, expiresAt: endOfTodayIso() },
-  { id: "c3", title: "Week Warrior", description: "Walk 50,000 steps this week", type: "weekly", xpReward: 200, progress: 0, target: 50000, completed: false, expiresAt: inDaysIso(7) },
-  { id: "c4", title: "Supplement Streak", description: "Take all supplements for 7 days", type: "weekly", xpReward: 150, progress: 0, target: 7, completed: false, expiresAt: inDaysIso(7) },
-  { id: "c5", title: "Calcium Quest", description: "Log 1200mg calcium for 3 days this week", type: "weekly", xpReward: 120, progress: 0, target: 3, completed: false, expiresAt: inDaysIso(7) },
+  { id: "c3", title: "Week Warrior", description: "Walk 50,000 steps this week", type: "weekly", xpReward: 200, progress: 0, target: 50000, completed: false, expiresAt: endOfWeekIso() },
+  { id: "c4", title: "Supplement Routine", description: "Take all scheduled supplements today", type: "daily", xpReward: 30, progress: 0, target: 1, completed: false, expiresAt: endOfTodayIso() },
+  { id: "c5", title: "Calcium Quest", description: "Log 1200mg calcium for 3 days this week", type: "weekly", xpReward: 120, progress: 0, target: 3, completed: false, expiresAt: endOfWeekIso() },
   { id: "c6", title: "Mindful Minutes", description: "Complete a breathing or meditation session today", type: "daily", xpReward: 35, progress: 0, target: 1, completed: false, expiresAt: endOfTodayIso() },
   { id: "c7", title: "SNAP Shot Scholar", description: "Read 3 SNAP Shot tips today", type: "daily", xpReward: 20, progress: 0, target: 3, completed: false, expiresAt: endOfTodayIso() },
 ];
@@ -146,6 +173,8 @@ export function GamificationProvider({
   children: React.ReactNode;
 }) {
   const { user, updateUser } = useAuth();
+  const { dexaScans, activityLogs, nutritionLogs, supplements } = useHealth();
+  const { entries: wellbeingEntries, isReady: wellbeingReady } = useWellbeing();
   const userId = user?.id ?? null;
   // Storage is scoped per-user so a fresh signup on a shared device cannot
   // inherit the previous user's progress.
@@ -155,29 +184,42 @@ export function GamificationProvider({
     useState<Achievement[]>(ACHIEVEMENT_CATALOG);
   const [challenges, setChallenges] = useState<Challenge[]>(CHALLENGE_CATALOG);
   const [rewards, setRewards] = useState<Reward[]>(REWARD_CATALOG);
+  const [hydratedFor, setHydratedFor] = useState<string | null>(null);
+  const reconcilingRef = useRef(false);
 
   // Reload (or reset to catalog defaults) whenever the active account changes.
   useEffect(() => {
     let cancelled = false;
+    setHydratedFor(null);
     (async () => {
       try {
         const stored = await AsyncStorage.getItem(storageKey);
         if (cancelled) return;
         if (stored) {
           const data = JSON.parse(stored);
-          setAchievements(data.achievements ?? ACHIEVEMENT_CATALOG);
-          setChallenges(data.challenges ?? CHALLENGE_CATALOG);
+          const storedAchievements = Array.isArray(data.achievements) ? data.achievements as Achievement[] : [];
+          setAchievements(ACHIEVEMENT_CATALOG.map((catalogItem) => ({
+            ...catalogItem,
+            ...storedAchievements.find((item) => item.id === catalogItem.id),
+          })));
+          const storedChallenges = Array.isArray(data.challenges) ? data.challenges as Challenge[] : [];
+          setChallenges(CHALLENGE_CATALOG.map((catalogItem) => ({
+            ...catalogItem,
+            ...storedChallenges.find((item) => item.id === catalogItem.id),
+          })));
           setRewards(data.rewards ?? REWARD_CATALOG);
         } else {
           setAchievements(ACHIEVEMENT_CATALOG);
           setChallenges(CHALLENGE_CATALOG);
           setRewards(REWARD_CATALOG);
         }
+        setHydratedFor(userId ?? "anon");
       } catch {
         if (cancelled) return;
         setAchievements(ACHIEVEMENT_CATALOG);
         setChallenges(CHALLENGE_CATALOG);
         setRewards(REWARD_CATALOG);
+        setHydratedFor(userId ?? "anon");
       }
     })();
     return () => {
@@ -243,6 +285,114 @@ export function GamificationProvider({
     },
     [user, updateUser],
   );
+
+  async function refreshProgress(): Promise<void> {
+    if (hydratedFor !== (userId ?? "anon") || !wellbeingReady || reconcilingRef.current) return;
+    reconcilingRef.current = true;
+    try {
+      let boneBuddyUserMessages = 0;
+      let snapShotTipsReadToday = 0;
+      const today = localDateISO();
+      try {
+        const raw = await AsyncStorage.getItem(`snap_chat_history:${userId ?? "guest"}`);
+        const messages = raw ? JSON.parse(raw) as Array<{ role?: string }> : [];
+        boneBuddyUserMessages = Array.isArray(messages)
+          ? messages.filter((message) => message?.role === "user").length
+          : 0;
+      } catch {
+        boneBuddyUserMessages = 0;
+      }
+      try {
+        const raw = await AsyncStorage.getItem(`snap_tip_reads:${userId ?? "anon"}:${today}`);
+        const tipIds = raw ? JSON.parse(raw) as string[] : [];
+        snapShotTipsReadToday = Array.isArray(tipIds) ? new Set(tipIds).size : 0;
+      } catch {
+        snapShotTipsReadToday = 0;
+      }
+
+      const scheduledSupplements = supplements.filter((item) => item.category === "supplement");
+      const facts = {
+        today,
+        dexaCount: dexaScans.length,
+        activity: activityLogs,
+        nutrition: nutritionLogs,
+        boneBuddyUserMessages,
+        supplementsCompleteToday: scheduledSupplements.length > 0 && scheduledSupplements.every((item) => item.taken) ? 1 : 0,
+        snapShotTipsReadToday,
+        wellbeing: wellbeingEntries.map((entry) => ({
+          date: localDateISO(entry.completedAt),
+          kind: entry.kind,
+          sessionName: entry.sessionName,
+        })),
+      };
+      const achievementProgress = deriveAchievementProgress(facts);
+      const challengeProgress = deriveChallengeProgress(facts);
+      const earnedAt = new Date().toISOString();
+      const newlyEarned: Achievement[] = [];
+      const nextAchievements = achievements.map((achievement) => {
+        const derived = achievementProgress[achievement.id];
+        if (derived == null) return achievement;
+        const earned = achievement.earned || derived >= (achievement.target ?? Number.POSITIVE_INFINITY);
+        const next = {
+          ...achievement,
+          progress: earned ? Math.max(derived, achievement.target ?? 0) : derived,
+          earned,
+          earnedAt: achievement.earnedAt ?? (earned ? earnedAt : undefined),
+        };
+        if (earned && !achievement.earned) newlyEarned.push(next);
+        return next;
+      });
+
+      const newlyCompleted: Array<{ challenge: Challenge; cycle: string }> = [];
+      const nextChallenges = challenges.map((challenge) => {
+        const derived = challengeProgress[challenge.id];
+        if (derived == null) return challenge;
+        const cycle = challenge.type === "daily" ? today : mondayCycle(today);
+        const completed = derived >= challenge.target;
+        const next = {
+          ...challenge,
+          progress: derived,
+          completed,
+          cycleKey: cycle,
+          expiresAt: challenge.type === "daily" ? endOfTodayIso() : endOfWeekIso(),
+        };
+        if (completed && (challenge.cycleKey !== cycle || !challenge.completed)) {
+          newlyCompleted.push({ challenge: next, cycle });
+        }
+        return next;
+      });
+
+      setAchievements(nextAchievements);
+      setChallenges(nextChallenges);
+      await save(nextAchievements, nextChallenges, rewards);
+
+      let xpToAward = 0;
+      for (const achievement of newlyEarned) {
+        const key = xpClaimKey(userId, "achievement", achievement.id);
+        if (!(await AsyncStorage.getItem(key))) {
+          await AsyncStorage.setItem(key, earnedAt);
+          xpToAward += achievement.xpReward;
+        }
+      }
+      for (const item of newlyCompleted) {
+        const key = xpClaimKey(userId, "challenge", item.challenge.id, item.cycle);
+        if (!(await AsyncStorage.getItem(key))) {
+          await AsyncStorage.setItem(key, earnedAt);
+          xpToAward += item.challenge.xpReward;
+        }
+      }
+      if (xpToAward > 0) await addXP(xpToAward);
+    } finally {
+      reconcilingRef.current = false;
+    }
+  }
+
+  useEffect(() => {
+    void refreshProgress();
+    // Reconcile only when a source domain changes; gamification state updates
+    // are intentionally not dependencies so the effect cannot self-loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydratedFor, wellbeingReady, dexaScans, activityLogs, nutritionLogs, supplements, wellbeingEntries]);
 
   const isWeeklyBonusClaimed = useCallback(
     async (isoYearWeek: string) => {
@@ -331,6 +481,7 @@ export function GamificationProvider({
         isWeeklyBonusClaimed,
         completChallenge,
         redeemReward,
+        refreshProgress,
       }}
     >
       {children}

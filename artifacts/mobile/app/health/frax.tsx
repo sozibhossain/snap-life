@@ -8,9 +8,9 @@
  */
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { calcFrax, type FraxInputs, worstTScore } from "@/context/HealthContext";
 import { useHealth } from "@/context/HealthContext";
 import { useColors } from "@/hooks/useColors";
+import { isValidAssessmentDate } from "@/lib/assessmentUtils";
 
 const TOTAL_STEPS = 3;
 
@@ -103,7 +104,9 @@ export default function FraxScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { addFraxResult, dexaScans } = useHealth();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const { addFraxResult, updateFraxResult, fraxResults, dexaScans } = useHealth();
+  const editingResult = params.id ? fraxResults.find((item) => item.id === params.id) : undefined;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -111,6 +114,7 @@ export default function FraxScreen() {
   const [step, setStep] = useState(0);
 
   // Step 1: personal info
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [age, setAge] = useState("");
   const [sex, setSex] = useState<"female" | "male">("female");
   const [weight, setWeight] = useState("");
@@ -140,10 +144,31 @@ export default function FraxScreen() {
 
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (!editingResult) return;
+    const inputs = editingResult.inputs;
+    setDate(editingResult.date);
+    setAge(String(inputs.age));
+    setSex(inputs.sex);
+    setWeight(String(inputs.weight));
+    setHeight(String(inputs.height));
+    setPreviousFracture(inputs.previousFracture);
+    setParentHipFracture(inputs.parentHipFracture);
+    setSmoking(inputs.smoking);
+    setAlcohol(inputs.alcohol);
+    setGlucocorticoids(inputs.glucocorticoids);
+    setRheumatoidArthritis(inputs.rheumatoidArthritis);
+    setSecondaryOsteoporosis(inputs.secondaryOsteoporosis);
+    setUseBmd(inputs.tScore != null);
+    setTScoreInput(inputs.tScore?.toString() ?? "");
+    setResult({ major: editingResult.majorFractureRisk, hip: editingResult.hipFractureRisk });
+  }, [editingResult?.id]);
+
   function validateStep1() {
     const a = parseInt(age, 10);
     const w = parseFloat(weight);
     const h = parseFloat(height);
+    if (!isValidAssessmentDate(date)) { setError("Please enter a valid assessment date in YYYY-MM-DD format."); return false; }
     if (isNaN(a) || a < 18 || a > 110) { setError("Please enter a valid age (18–110)"); return false; }
     if (isNaN(w) || w < 20 || w > 300) { setError("Please enter a valid weight in kg"); return false; }
     if (isNaN(h) || h < 100 || h > 250) { setError("Please enter a valid height in cm"); return false; }
@@ -196,12 +221,14 @@ export default function FraxScreen() {
         secondaryOsteoporosis,
         tScore: useBmd && tScoreInput ? parseFloat(tScoreInput) : undefined,
       };
-      await addFraxResult({
-        date: new Date().toISOString().split("T")[0],
+      const nextResult = {
+        date,
         majorFractureRisk: result.major,
         hipFractureRisk: result.hip,
         inputs,
-      });
+      };
+      if (editingResult) await updateFraxResult(editingResult.id, nextResult);
+      else await addFraxResult(nextResult);
       setSaved(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/health/bone-tracker" as never);
@@ -233,7 +260,7 @@ export default function FraxScreen() {
             <View style={[styles.headerIconWrap, { backgroundColor: colors.primary + "20" }]}>
               <Feather name="shield" size={15} color={colors.primary} />
             </View>
-            <Text style={styles.headerTitle}>FRAX Calculator</Text>
+            <Text style={styles.headerTitle}>{editingResult ? "Edit FRAX Result" : "FRAX Calculator"}</Text>
           </View>
           {!result && (
             <Text style={styles.headerSub}>Step {step + 1} of {TOTAL_STEPS} · 10-year fracture risk</Text>
@@ -357,6 +384,15 @@ export default function FraxScreen() {
             <Text style={[styles.stepSub, { color: colors.mutedForeground }]}>
               This helps calibrate your risk estimate
             </Text>
+
+            <Text style={[styles.label, { color: colors.mutedForeground }]}>Assessment date</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
+              value={date}
+              onChangeText={setDate}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.mutedForeground}
+            />
 
             <Text style={[styles.label, { color: colors.mutedForeground }]}>Age</Text>
             <TextInput
