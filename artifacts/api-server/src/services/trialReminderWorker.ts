@@ -41,6 +41,7 @@ import {
   usersTable,
 } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { workersEnabled } from "../lib/workerGate";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -393,7 +394,7 @@ let timer: NodeJS.Timeout | null = null;
 export function startTrialReminderScheduler(
   intervalMs: number = ONE_HOUR_MS,
 ): void {
-  if (process.env.NODE_ENV === "test") return;
+  if (!workersEnabled()) return;
   if (timer) return;
   // Run once at boot so a freshly-restarted server doesn't wait an
   // hour to fire a reminder that came due during downtime.

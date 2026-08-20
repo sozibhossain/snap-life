@@ -15,6 +15,7 @@
 import { and, eq, isNull, isNotNull } from "drizzle-orm";
 import { db, pendingEmailsTable, usersTable } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { workersEnabled } from "../lib/workerGate";
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -164,7 +165,7 @@ let timer: NodeJS.Timeout | null = null;
 export function startMonthlyNewsletterScheduler(
   intervalMs: number = HOUR_MS,
 ): void {
-  if (process.env.NODE_ENV === "test") return;
+  if (!workersEnabled()) return;
   if (timer) return;
 
   const maybeSend = () => {

@@ -39,6 +39,7 @@ import {
   pendingEmailsTable,
 } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { workersEnabled } from "../lib/workerGate";
 import { insertAuditLog } from "../lib/audit";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -170,7 +171,7 @@ let timer: NodeJS.Timeout | null = null;
  * `NODE_ENV=test` so vitest runs don't keep open handles.
  */
 export function startHardDeleteScheduler(intervalMs: number = ONE_HOUR_MS): void {
-  if (process.env.NODE_ENV === "test") return;
+  if (!workersEnabled()) return;
   if (timer) return;
   // Run once at boot so a freshly-restarted server doesn't wait an
   // hour to honour pending erasures.

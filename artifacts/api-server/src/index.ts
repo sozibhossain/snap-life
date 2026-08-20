@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { workersEnabled } from "./lib/workerGate";
 import { startBillingIssueLapseScheduler } from "./services/billingIssueLapseWorker";
 import { startEmailSenderScheduler } from "./services/emailSenderWorker";
 import { startHardDeleteScheduler } from "./services/hardDeleteWorker";
@@ -43,6 +44,13 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+  // Each start* call below no-ops when the gate is closed; log once here
+  // so a worker-less boot is obvious rather than silently mysterious.
+  if (!workersEnabled()) {
+    logger.warn(
+      "Background schedulers disabled (WORKERS_ENABLED=false). Queued emails and the nightly sweeps will not run.",
+    );
+  }
   // GDPR hard-delete scheduler. Sweeps every hour and purges accounts
   // whose 30-day grace window (set by `DELETE /api/me`) has expired.
   // No-op under NODE_ENV=test.

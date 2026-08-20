@@ -15,6 +15,7 @@ import { summariseWeekSources, todayLocalISO } from "@/lib/weeklySnap";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -1211,7 +1212,11 @@ export default function CoachScreen() {
         ]}
       >
         <View style={styles.avatar}>
-          <Text style={styles.avatarEmoji}>🦴</Text>
+          <Image
+            source={require("../../public/bone-buddy.jpeg")}
+            style={styles.avatarImage}
+            accessibilityLabel="Bone Buddy"
+          />
         </View>
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={styles.headerTitle}>
@@ -1564,8 +1569,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.18)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.25)",
+    overflow: "hidden",
   },
-  avatarEmoji: { fontSize: 20 },
+  avatarImage: { width: "100%", height: "100%" },
   headerTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#fff", letterSpacing: -0.2 },
   headerSubtitle: {
     fontSize: 12,

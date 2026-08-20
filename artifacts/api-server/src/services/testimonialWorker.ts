@@ -31,6 +31,7 @@ import {
   usersTable,
 } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { workersEnabled } from "../lib/workerGate";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
@@ -235,7 +236,7 @@ let timer: NodeJS.Timeout | null = null;
 export function startTestimonialScheduler(
   intervalMs: number = 24 * 60 * 60 * 1000,
 ): void {
-  if (process.env.NODE_ENV === "test") return;
+  if (!workersEnabled()) return;
   if (timer) return;
   void runTestimonialWorkerPass().catch((err) => {
     logger.error({ err }, "testimonialWorker: initial pass failed");

@@ -27,6 +27,7 @@ import { db, pendingEmailsTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { renderEmail } from "../lib/emailTemplates";
 import { logger } from "../lib/logger";
+import { workersEnabled } from "../lib/workerGate";
 
 const MAX_ATTEMPTS = 5;
 const BATCH_SIZE = 20;
@@ -211,7 +212,7 @@ let timer: NodeJS.Timeout | null = null;
 export function startEmailSenderScheduler(
   intervalMs: number = INTERVAL_MS,
 ): void {
-  if (process.env.NODE_ENV === "test") return;
+  if (!workersEnabled()) return;
   if (timer) return;
 
   void runEmailSenderPass().catch((err) => {

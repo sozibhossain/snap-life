@@ -35,6 +35,7 @@ import {
   subscriptionEventsTable,
 } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { workersEnabled } from "../lib/workerGate";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -151,7 +152,7 @@ let timer: NodeJS.Timeout | null = null;
 export function startBillingIssueLapseScheduler(
   intervalMs: number = ONE_DAY_MS,
 ): void {
-  if (process.env.NODE_ENV === "test") return;
+  if (!workersEnabled()) return;
   if (timer) return;
   void runBillingIssueLapsePass().catch((err) => {
     logger.error({ err }, "billingIssueLapseWorker: initial pass failed");

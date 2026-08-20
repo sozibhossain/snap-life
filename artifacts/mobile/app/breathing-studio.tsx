@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useAudioPlayer } from "expo-audio";
+import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import * as Speech from "expo-speech";
 import { useSpeechVoice } from "@/lib/useSpeechVoice";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -55,6 +55,17 @@ interface DurationOption {
   tagline: string;
   /** Target session length in seconds. Cycles are derived from this. */
   seconds: number;
+}
+
+// Professional voice cues (same host as guided-meditation narration) —
+// resolve as `${base}/breathing/{breathe_in,hold,breathe_out}.mp3`. Falls
+// back to on-device speech (below) when unset or not yet loaded.
+const NARRATION_BASE_URL = (process.env.EXPO_PUBLIC_MEDITATION_NARRATION_BASE_URL ?? "")
+  .trim()
+  .replace(/\/+$/, "");
+
+function cueSource(file: string): { uri: string } | undefined {
+  return NARRATION_BASE_URL ? { uri: `${NARRATION_BASE_URL}/breathing/${file}.mp3` } : undefined;
 }
 
 // ─────────────────────── Spec data ───────────────────────
@@ -223,7 +234,9 @@ export default function BreathingStudioScreen() {
   // useSpeechVoice handles voice selection, quality prioritisation, and
   // persona-appropriate defaults. We pass a rate override here because
   // single-word cues ("Inhale", "Hold", "Exhale") benefit from a touch more
-  // space between words than the default narration rate.
+  // space between words than the default narration rate. This is the
+  // fallback path — see the professional cue players below, which take
+  // priority whenever NARRATION_BASE_URL is configured and loaded.
   const { speak: speakWellness } = useSpeechVoice("wellness");
 
   // Soft spoken equivalents for each phase label.
@@ -236,9 +249,34 @@ export default function BreathingStudioScreen() {
     Exhale: "Breathe out",
   };
 
+  // ─── Professional cue playback — pre-recorded, same host as meditation
+  // narration. Falls back to on-device speech until all three clips report
+  // loaded, or when NARRATION_BASE_URL isn't configured at all.
+  const inhaleCuePlayer = useAudioPlayer(cueSource("breathe_in"));
+  const holdCuePlayer   = useAudioPlayer(cueSource("hold"));
+  const exhaleCuePlayer = useAudioPlayer(cueSource("breathe_out"));
+  const inhaleCueStatus = useAudioPlayerStatus(inhaleCuePlayer);
+  const holdCueStatus   = useAudioPlayerStatus(holdCuePlayer);
+  const exhaleCueStatus = useAudioPlayerStatus(exhaleCuePlayer);
+  const professionalCuesReady =
+    Boolean(NARRATION_BASE_URL) &&
+    inhaleCueStatus.isLoaded &&
+    holdCueStatus.isLoaded &&
+    exhaleCueStatus.isLoaded;
+
   function speakPhase(label: Phase["label"]) {
     // Read from the ref so toggling mid-session takes effect immediately.
     if (!voiceOnRef.current) return;
+    if (professionalCuesReady) {
+      const cuePlayer =
+        label === "Inhale" ? inhaleCuePlayer : label === "Hold" ? holdCuePlayer : exhaleCuePlayer;
+      try {
+        void cuePlayer.seekTo(0).then(() => cuePlayer.play());
+        return;
+      } catch {
+        // Fall through to on-device speech below.
+      }
+    }
     // Rate 0.38 iOS / 0.68 Android — deliberately slow so there's genuine
     // space between the cue and the user's breath movement. Slower than
     // narration rate because a single short phrase needs more surrounding

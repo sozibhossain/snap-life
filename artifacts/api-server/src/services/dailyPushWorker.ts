@@ -6,6 +6,7 @@ import {
   webPushSubscriptionsTable,
 } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { workersEnabled } from "../lib/workerGate";
 import { sendBoneBuddyPush } from "../lib/pushSender";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -94,7 +95,7 @@ export async function runDailyPushPass(
 }
 
 export function startDailyPushScheduler(): void {
-  if (process.env.NODE_ENV === "test") return;
+  if (!workersEnabled()) return;
 
   let lastRunHour = "";
   const run = async () => {

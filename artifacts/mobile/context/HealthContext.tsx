@@ -57,7 +57,7 @@ export interface DexaScan {
 /** Classify a T-score per WHO criteria. */
 export function classifyTScore(t: number): "Normal" | "Osteopenia" | "Osteoporosis" {
   if (t >= -1.0) return "Normal";
-  if (t >= -2.5) return "Osteopenia";
+  if (t > -2.5) return "Osteopenia";
   return "Osteoporosis";
 }
 
@@ -802,7 +802,7 @@ export function HealthProvider({ children }: { children: React.ReactNode }) {
     const latest = getLatestDexaScore();
     if (latest === null) return "moderate";
     if (latest >= -1.0) return "low";
-    if (latest >= -2.5) return "moderate";
+    if (latest > -2.5) return "moderate";
     return "high";
   }
 

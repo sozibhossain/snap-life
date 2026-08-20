@@ -702,11 +702,16 @@ router.post("/chat/bone-buddy", async (req, res) => {
     );
     // Bone Buddy is a short, conversational coach — replies are 2-4 sentences.
     // gpt-5-mini gives near-instant first-token latency and is more than
-    // capable for this surface area. Cap output at 600 tokens to enforce
-    // brevity and reduce cost.
+    // capable for this surface area. reasoning_effort is capped low because
+    // this persona never needs multi-step reasoning; left at the model
+    // default, gpt-5-mini can spend its whole token budget on hidden
+    // reasoning tokens and emit zero visible content. max_completion_tokens
+    // has headroom above the ~2-4 sentence reply length so a few reasoning
+    // tokens don't crowd out the actual answer.
     const stream = await openai.chat.completions.create({
       model: "gpt-5-mini",
-      max_completion_tokens: 600,
+      max_completion_tokens: 900,
+      reasoning_effort: "low",
       stream: true,
       messages: [
         { role: "system", content: systemPrompt },
@@ -716,15 +721,31 @@ router.post("/chat/bone-buddy", async (req, res) => {
 
     req.log?.info("chat/bone-buddy openai stream created");
 
+    let receivedContent = false;
+    let finishReason: string | null | undefined;
     for await (const chunk of stream) {
-      const delta = chunk.choices?.[0]?.delta?.content;
+      const choice = chunk.choices?.[0];
+      if (choice?.finish_reason) finishReason = choice.finish_reason;
+      const delta = choice?.delta?.content;
       if (delta) {
+        receivedContent = true;
         res.write(
           `data: ${JSON.stringify({
             choices: [{ delta: { content: delta } }],
           })}\n\n`,
         );
       }
+    }
+
+    if (!receivedContent) {
+      // Surfaces in Render logs so a recurrence can be diagnosed from
+      // finishReason (e.g. "length" = token budget exhausted before any
+      // visible content) rather than only from the client's generic
+      // "couldn't generate a complete answer" fallback.
+      req.log?.warn(
+        { finishReason },
+        "chat/bone-buddy stream completed with no content",
+      );
     }
 
     res.write("data: [DONE]\n\n");

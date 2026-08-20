@@ -1,6 +1,8 @@
 import { initSentry, attachSentryErrorHandler } from "./lib/sentry";
 initSentry();
 
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
@@ -79,6 +81,14 @@ app.use(
 // preflight/Clerk-proxy responses aren't accidentally rewritten, but
 // before route handlers so every JSON response carries the headers.
 app.use(securityHeaders());
+
+// Pre-generated professional narration for guided meditations — public,
+// read-only mp3s, no auth needed. `${dirname}/../public` resolves to
+// artifacts/api-server/public both from src/ (dev) and dist/ (build.mjs
+// bundles into dist/index.mjs, so import.meta.url still points one level
+// below the package root at runtime).
+const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
+app.use("/narration", express.static(path.join(publicDir, "narration"), { maxAge: "7d" }));
 
 // Trust the Replit edge proxy so `req.ip` reflects the real client
 // address, which the rate-limit key generators rely on for pre-auth

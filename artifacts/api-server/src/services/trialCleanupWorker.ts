@@ -24,6 +24,7 @@
 import { and, eq, lt } from "drizzle-orm";
 import { db, subscribersTable } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { workersEnabled } from "../lib/workerGate";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -76,7 +77,7 @@ let timer: NodeJS.Timeout | null = null;
 export function startTrialCleanupScheduler(
   intervalMs: number = ONE_DAY_MS,
 ): void {
-  if (process.env.NODE_ENV === "test") return;
+  if (!workersEnabled()) return;
   if (timer) return;
   // Run once at boot so a freshly-restarted server doesn't wait a
   // full day to reconcile rows that expired while it was down.
