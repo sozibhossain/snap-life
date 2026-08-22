@@ -89,6 +89,13 @@
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "production"
       }
+    },
+    "testflight": {
+      "ios": {
+        "appleId": "saafsd.app@gmail.com",
+        "ascAppId": "6795775774",
+        "appleTeamId": "59Z5G8QUG2"
+      }
     }
   }
 }
