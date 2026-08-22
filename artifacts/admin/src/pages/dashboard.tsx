@@ -80,9 +80,9 @@ const POLL_INTERVAL_MS = 30_000;
 
 function fmtCurrencyCents(cents: number | undefined | null): string {
   if (cents == null || !Number.isFinite(cents)) return "—";
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-GB", {
     style: "currency",
-    currency: "USD",
+    currency: "GBP",
     maximumFractionDigits: 0,
   }).format(cents / 100);
 }

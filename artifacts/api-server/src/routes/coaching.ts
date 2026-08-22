@@ -52,6 +52,9 @@ async function handleCoachingBooking(req: Request, res: Response) {
   const preferred = isString(b.preferred) ? b.preferred.trim() : "";
   const message   = isString(b.message)   ? b.message.trim()   : "";
 
+  const transactionId = isString(b.transactionId) ? b.transactionId.trim() : "";
+  const paymentMethod = isString(b.paymentMethod) ? b.paymentMethod.trim() : (transactionId ? "Apple In-App Purchase" : "Web Checkout");
+
   if (!name || !email || !sessionId) {
     res.status(400).json({ error: "name, email and sessionId are required" });
     return;
@@ -70,13 +73,16 @@ async function handleCoachingBooking(req: Request, res: Response) {
     res.status(400).json({ error: "unknown_session" });
     return;
   }
-  if (session.paid && (!session.checkoutUrl || !/^https:\/\//i.test(session.checkoutUrl))) {
-    req.log?.error({ sessionId }, "coaching checkout URL missing or invalid");
-    res.status(503).json({
-      error: "payment_unavailable",
-      message: "Secure payment is temporarily unavailable for this session. Please try again shortly or contact teamsnap@snaplife.co.uk.",
-    });
-    return;
+  if (session.paid && !transactionId && (!session.checkoutUrl || !/^https:\/\//i.test(session.checkoutUrl))) {
+    // If not paid via IAP and web checkout is missing, still allow booking as requested if no strict checkout required
+    if (b.requireCheckoutUrl) {
+      req.log?.error({ sessionId }, "coaching checkout URL missing or invalid");
+      res.status(503).json({
+        error: "payment_unavailable",
+        message: "Secure payment is temporarily unavailable for this session. Please try again shortly or contact teamsnap@snaplife.co.uk.",
+      });
+      return;
+    }
   }
   const sessionLabel = session.label;
   const bookingReference = `coach-${randomUUID()}`;
@@ -86,6 +92,8 @@ async function handleCoachingBooking(req: Request, res: Response) {
   const safeEmail = escapeHtml(email);
   const safePreferred = escapeHtml(preferred);
   const safeMessage = escapeHtml(message).replace(/\n/g, "<br>");
+  const safeTransactionId = escapeHtml(transactionId);
+  const safePaymentMethod = escapeHtml(paymentMethod);
 
   if (!resend) {
     req.log?.error(
@@ -99,16 +107,22 @@ async function handleCoachingBooking(req: Request, res: Response) {
     return;
   }
 
+  const emailSubject = transactionId
+    ? `[PAID] Coaching session booked — ${sessionLabel}`
+    : session.paid
+    ? `Paid coaching checkout started — ${sessionLabel}`
+    : `Coaching booking request — ${sessionLabel}`;
+
   try {
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: COACHING_EMAIL,
       replyTo: email,
-      subject: `${session.paid ? "Paid coaching checkout started" : "Coaching booking request"} — ${sessionLabel}`,
+      subject: emailSubject,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1C3A4A;">
           <div style="background: linear-gradient(135deg, #F47530, #FFB07A); padding: 24px 28px; border-radius: 12px 12px 0 0;">
-            <h1 style="margin: 0; color: #fff; font-size: 20px;">New Coaching Booking Request</h1>
+            <h1 style="margin: 0; color: #fff; font-size: 20px;">${transactionId ? "Coaching Session Booked (PAID)" : "New Coaching Booking Request"}</h1>
             <p style="margin: 6px 0 0; color: rgba(255,255,255,0.85); font-size: 14px;">Received ${receivedAt}</p>
           </div>
           <div style="background: #f8fafc; padding: 24px 28px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
@@ -116,6 +130,12 @@ async function handleCoachingBooking(req: Request, res: Response) {
               <tr>
                 <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; width: 140px; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Session</td>
                 <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-weight: 700; color: #F47530;">${safeSessionLabel}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Payment Status</td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 15px; font-weight: 600; color: ${transactionId ? "#16a34a" : "#ca8a04"};">
+                  ${transactionId ? `PAID (${safePaymentMethod}) — Ref: ${safeTransactionId}` : (session.paid ? `Pending (${safePaymentMethod})` : "Free Consultation")}
+                </td>
               </tr>
               <tr>
                 <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Reference</td>

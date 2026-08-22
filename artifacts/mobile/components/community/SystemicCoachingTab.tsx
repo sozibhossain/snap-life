@@ -22,8 +22,15 @@ import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { resolveApiBase } from "@/lib/serverIdentity";
 import { logInteractionEvent } from "@/lib/events";
+import { purchaseStoreProductById } from "@/lib/revenuecat";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+const COACHING_PRODUCT_IDS: Record<string, string> = {
+  focus: "snaplife_coaching_focus",
+  deep: "snaplife_coaching_deep",
+  transformation: "snaplife_coaching_transformation",
+};
 
 interface SessionType {
   id: string;
@@ -149,6 +156,8 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
   const [submitted, setSubmitted]   = useState(false);
   const [sendError, setSendError]   = useState<string | null>(null);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [purchasingIap, setPurchasingIap] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
 
   async function handleSubmit() {
     if (!name.trim() || !email.trim() || !session || submitting) return;
@@ -207,12 +216,69 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
   function handleClose() {
     setSubmitted(false);
     setSendError(null);
+    setIsPaid(false);
+    setPurchasingIap(false);
     setName(`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim());
     setEmail(user?.email ?? "");
     setPreferred("");
     setMessage("");
     setPaymentUrl(null);
     onClose();
+  }
+
+  async function handlePaymentAction() {
+    if (session?.isFree || isPaid) {
+      handleClose();
+      return;
+    }
+
+    const productId = session ? COACHING_PRODUCT_IDS[session.id] : null;
+
+    if (Platform.OS !== "web" && productId) {
+      setPurchasingIap(true);
+      try {
+        const purchaseResult = await purchaseStoreProductById(productId);
+        setIsPaid(true);
+        const base = resolveApiBase() ?? "";
+        await fetch(`${base}/api/coaching/booking`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: session?.id,
+            name: name.trim(),
+            email: email.trim(),
+            preferred: preferred.trim(),
+            message: message.trim(),
+            transactionId: purchaseResult.customerInfo?.originalAppUserId || productId,
+            paymentMethod: "Apple In-App Purchase",
+          }),
+        }).catch(() => {});
+        Alert.alert("Payment Successful", "Thank you! Your coaching session booking is confirmed.");
+      } catch (err: unknown) {
+        const e = err as { userCancelled?: boolean; message?: string };
+        if (!e?.userCancelled) {
+          if (paymentUrl) {
+            const supported = await Linking.canOpenURL(paymentUrl);
+            if (supported) await Linking.openURL(paymentUrl);
+            else Alert.alert("Purchase Error", e?.message || "Could not complete purchase. Please try again.");
+          } else {
+            Alert.alert("Purchase Error", e?.message || "Could not complete purchase. Please try again.");
+          }
+        }
+      } finally {
+        setPurchasingIap(false);
+      }
+      return;
+    }
+
+    if (paymentUrl) {
+      const supported = await Linking.canOpenURL(paymentUrl);
+      if (supported) await Linking.openURL(paymentUrl);
+      else Alert.alert("Payment page unavailable", "Please contact teamsnap@snaplife.co.uk and quote the session name.");
+      return;
+    }
+
+    handleClose();
   }
 
   const accentColor = session?.accent ?? "#F47530";
@@ -248,12 +314,18 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
                 <Feather name="check" size={28} color="#fff" />
               </LinearGradient>
               <Text style={[styles.confirmTitle, { color: colors.foreground }]}>
-                {session?.isFree ? "Request sent" : "Details received"}
+                {isPaid
+                  ? "Booking & Payment Confirmed"
+                  : session?.isFree
+                  ? "Request sent"
+                  : "Details received"}
               </Text>
               <Text style={[styles.confirmBody, { color: colors.mutedForeground }]}>
-                Thank you, {name.split(" ")[0] || "there"}. {session?.isFree
+                Thank you, {name.split(" ")[0] || "there"}. {isPaid
+                  ? "Your session has been paid for and booked. Catherine will reach out within 24 hours to coordinate your "
+                  : session?.isFree
                   ? "Catherine will be in touch within 24 hours to confirm your "
-                  : "Continue to secure payment to complete your "}
+                  : "Complete secure payment to finish booking your "}
                 <Text style={{ color: accentColor, fontFamily: "Inter_600SemiBold" }}>
                   {session?.label}
                 </Text>
@@ -266,24 +338,33 @@ function BookingModal({ visible, session, onClose }: BookingModalProps) {
                 </Text>
                 .
               </Text>
-              {!session?.isFree && paymentUrl && (
-                <Text style={[styles.confirmNote, { color: colors.mutedForeground }]}>Payment is completed securely in your browser. SNAP Life does not receive or store your card details.</Text>
+              {!session?.isFree && !isPaid && (
+                <Text style={[styles.confirmNote, { color: colors.mutedForeground }]}>
+                  {Platform.OS !== "web"
+                    ? "Purchase securely using Apple In-App Purchase."
+                    : "Payment is completed securely in your browser."}
+                </Text>
               )}
               <Pressable
                 style={[styles.confirmBtn, { backgroundColor: accentColor }]}
-                onPress={async () => {
-                  if (paymentUrl) {
-                    const supported = await Linking.canOpenURL(paymentUrl);
-                    if (supported) await Linking.openURL(paymentUrl);
-                    else Alert.alert("Payment page unavailable", "Please contact teamsnap@snaplife.co.uk and quote the session name.");
-                    return;
-                  }
-                  handleClose();
-                }}
+                disabled={purchasingIap}
+                onPress={handlePaymentAction}
               >
-                <Text style={styles.confirmBtnText}>{paymentUrl ? "Continue to Secure Payment" : "Close"}</Text>
+                {purchasingIap ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.confirmBtnText}>
+                    {isPaid || session?.isFree
+                      ? "Close"
+                      : Platform.OS !== "web" && session && COACHING_PRODUCT_IDS[session.id]
+                      ? `Pay ${session.price} with Apple Store`
+                      : paymentUrl
+                      ? "Continue to Secure Payment"
+                      : "Close"}
+                  </Text>
+                )}
               </Pressable>
-              {paymentUrl && (
+              {!session?.isFree && !isPaid && (
                 <Pressable onPress={handleClose} style={{ padding: 12 }}>
                   <Text style={[styles.confirmNote, { color: colors.mutedForeground, marginBottom: 0 }]}>Pay later and close</Text>
                 </Pressable>

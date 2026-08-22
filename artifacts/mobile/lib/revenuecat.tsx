@@ -32,7 +32,7 @@ function getPurchasesModule(): PurchasesModule {
 // it until a property is read. Native reads it during startup; web reads it
 // only after an authenticated user is identified, keeping Stripe off the
 // public sign-in page.
-const Purchases = new Proxy({} as PurchasesModule, {
+export const Purchases = new Proxy({} as PurchasesModule, {
   get(_target, property) {
     const module = getPurchasesModule();
     const value = Reflect.get(module, property);
@@ -659,3 +659,18 @@ export function getOrCreateQueryClient(): QueryClient {
   if (!_qc) _qc = new QueryClient();
   return _qc;
 }
+
+/**
+ * Purchases a standalone Store Product (Consumable / One-Time Purchase) by its identifier.
+ */
+export async function purchaseStoreProductById(productId: string) {
+  if (Platform.OS === "web") {
+    throw new Error("In-app purchases are only available in the mobile app.");
+  }
+  const products = await Purchases.getProducts([productId]);
+  if (!products || products.length === 0) {
+    throw new Error(`Product ${productId} not found in store.`);
+  }
+  return await Purchases.purchaseStoreProduct(products[0]);
+}
+
